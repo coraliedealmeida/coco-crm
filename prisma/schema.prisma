@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Platform {
+  LINKEDIN
+  INSTAGRAM
+  BOTH
+}
+
+enum PipelineStatus {
+  ROUTINE_ENGAGEMENT
+  PREMIER_DM
+  RELANCE_1
+  RELANCE_2
+  GHOSTE
+  EN_DISCUSSION
+  APPEL_PREVU
+  DEVIS_A_FAIRE
+  DEVIS_ENVOYE
+  DEVIS_ACCEPTE
+  ARCHIVE
+}
+
+model Brand {
+  id                  String         @id @default(cuid())
+  name                String
+  platform            Platform
+  sector              String
+  source              String
+  notes               String?
+  engagementStartDate DateTime
+  pipelineStatus      PipelineStatus @default(ROUTINE_ENGAGEMENT)
+  contactName         String?
+  contactRole         String?
+  lastContactDate     DateTime?
+  nextActionDate      DateTime?
+  messageUsed         String?
+  archivedAt          DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  contactHistory ContactHistoryEntry[]
+  client         Client?
+}
+
+model ContactHistoryEntry {
+  id        String   @id @default(cuid())
+  brandId   String
+  brand     Brand    @relation(fields: [brandId], references: [id])
+  date      DateTime
+  type      String
+  content   String?
+  createdAt DateTime @default(now())
+}
+
+model SectorOption {
+  id    String @id @default(cuid())
+  label String @unique
+}
+
+model SourceOption {
+  id    String @id @default(cuid())
+  label String @unique
+}
+
+model Settings {
+  id                   String  @id @default("singleton")
+  daysBeforeGreenLight Int     @default(15)
+  daysBeforeRelance1   Int     @default(15)
+  daysBeforeRelance2   Int     @default(15)
+  emailNotifications   Boolean @default(false)
+}
+
+// ---- Squelette Phase 2 (créé mais inutilisé en Phase 1) ----
+
+enum ServiceType {
+  LA_PATTE
+  LEMPREINTE
+  SITE_ONE_PAGE
+  SITE_VITRINE
+  KIT_RS
+  GRAPHISME_A_LA_CARTE
+  ACCOMPAGNEMENT_MENSUEL
+  ECOLES_JURY
+}
+
+model Client {
+  id        String    @id @default(cuid())
+  brandId   String    @unique
+  brand     Brand     @relation(fields: [brandId], references: [id])
+  createdAt DateTime  @default(now())
+  projects  Project[]
+}
+
+model Project {
+  id          String      @id @default(cuid())
+  clientId    String
+  client      Client      @relation(fields: [clientId], references: [id])
+  serviceType ServiceType
+  currentStep String?
+  createdAt   DateTime    @default(now())
+  invoices    Invoice[]
+}
+
+model Invoice {
+  id        String    @id @default(cuid())
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id])
+  status    String
+  amount    Float?
+  sentAt    DateTime?
+  paidAt    DateTime?
+}
