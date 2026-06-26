@@ -15,7 +15,7 @@ export default function MessageCard({ template }: { template: MessageTemplate })
   const parts = template.content.split(/(\[[^\]]+\])/g);
 
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm">
+    <div className="rounded-3xl bg-white p-6 shadow-soft">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-sans text-base font-extrabold text-ink">{template.title}</h2>
         <button

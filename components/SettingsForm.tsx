@@ -8,6 +8,7 @@ type Settings = {
   daysBeforeRelance1: number;
   daysBeforeRelance2: number;
   emailNotifications: boolean;
+  showMonthlyStats: boolean;
 };
 
 export default function SettingsForm({ initial }: { initial: Settings }) {
@@ -31,7 +32,7 @@ export default function SettingsForm({ initial }: { initial: Settings }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-md flex-col gap-5 rounded-2xl bg-white p-6 shadow-sm">
+    <form onSubmit={handleSubmit} className="flex max-w-md flex-col gap-5 rounded-3xl bg-white p-6 shadow-soft">
       <NumberField
         label="Seuil jours ouvrés avant feu vert DM"
         value={settings.daysBeforeGreenLight}
@@ -48,20 +49,17 @@ export default function SettingsForm({ initial }: { initial: Settings }) {
         onChange={(v) => setSettings({ ...settings, daysBeforeRelance2: v })}
       />
 
-      <div className="flex items-center justify-between rounded-xl bg-soft px-4 py-3">
-        <span className="text-sm font-semibold text-ink">Notifications email pour les relances du jour</span>
-        <button
-          type="button"
-          onClick={() => setSettings({ ...settings, emailNotifications: !settings.emailNotifications })}
-          className={`h-6 w-11 rounded-full transition ${settings.emailNotifications ? "bg-accent" : "bg-ink/20"}`}
-        >
-          <span
-            className={`block h-5 w-5 translate-x-0.5 rounded-full bg-white transition ${
-              settings.emailNotifications ? "translate-x-5" : ""
-            }`}
-          />
-        </button>
-      </div>
+      <Toggle
+        label="Notifications email pour les relances du jour"
+        checked={settings.emailNotifications}
+        onChange={(v) => setSettings({ ...settings, emailNotifications: v })}
+      />
+
+      <Toggle
+        label="Afficher les statistiques du mois sur le Dashboard"
+        checked={settings.showMonthlyStats}
+        onChange={(v) => setSettings({ ...settings, showMonthlyStats: v })}
+      />
 
       <button
         type="submit"
@@ -71,6 +69,33 @@ export default function SettingsForm({ initial }: { initial: Settings }) {
         {saving ? "Enregistrement..." : saved ? "Enregistré ✓" : "Enregistrer"}
       </button>
     </form>
+  );
+}
+
+function Toggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-xl bg-soft px-4 py-3">
+      <span className="text-sm font-semibold text-ink">{label}</span>
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`h-6 w-11 shrink-0 rounded-full transition ${checked ? "bg-accent" : "bg-ink/20"}`}
+      >
+        <span
+          className={`block h-5 w-5 translate-x-0.5 rounded-full bg-white transition ${
+            checked ? "translate-x-5" : ""
+          }`}
+        />
+      </button>
+    </div>
   );
 }
 

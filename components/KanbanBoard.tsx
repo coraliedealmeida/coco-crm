@@ -12,7 +12,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { pipelineColumns, platformLabel } from "@/lib/pipeline";
+import { pipelineColumns, platformBadge, avatarColor, initials } from "@/lib/pipeline";
 import { countBusinessDays } from "@/lib/business-days";
 
 type Brand = {
@@ -84,14 +84,18 @@ function Column({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-64 shrink-0 flex-col gap-3 rounded-2xl p-3 ${isOver ? "bg-accent-light/30" : "bg-white"}`}
+      className={`flex w-72 shrink-0 flex-col gap-3 rounded-2xl p-3 transition ${
+        isOver ? "bg-accent-light/30 ring-2 ring-accent" : "bg-soft/60"
+      }`}
     >
-      <div className="flex items-center gap-2 px-2">
-        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+      <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-2.5 shadow-sm">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
         <h3 className="text-sm font-extrabold text-ink">{label}</h3>
-        <span className="ml-auto text-xs font-light text-ink/40">{brands.length}</span>
+        <span className="ml-auto rounded-full bg-soft px-2 py-0.5 text-xs font-semibold text-ink/50">
+          {brands.length}
+        </span>
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2.5">
         {brands.map((b) => (
           <Card key={b.id} brand={b} color={color} />
         ))}
@@ -103,6 +107,7 @@ function Column({
 function Card({ brand, color }: { brand: Brand; color: string }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: brand.id });
   const days = countBusinessDays(new Date(brand.engagementStartDate), new Date());
+  const badge = platformBadge[brand.platform];
 
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
@@ -114,24 +119,42 @@ function Card({ brand, color }: { brand: Brand; color: string }) {
       {...listeners}
       {...attributes}
       style={style}
-      className={`cursor-grab rounded-xl border-l-4 bg-soft p-3 shadow-sm ${isDragging ? "opacity-70" : ""}`}
+      className={`cursor-grab rounded-2xl bg-white p-4 shadow-md transition hover:shadow-lg ${
+        isDragging ? "rotate-1 opacity-80 shadow-xl" : ""
+      }`}
     >
-      <Link href={`/marques/${brand.id}`} className="block" style={{ borderColor: color }}>
-        <p className="text-sm font-semibold text-ink" style={{ borderLeftColor: color }}>
-          {brand.name}
-        </p>
-        <p className="text-xs font-light text-ink/60">{platformLabel[brand.platform]}</p>
-        {brand.lastContactDate && (
-          <p className="mt-1 text-xs font-light text-ink/50">
-            Dernier contact : {new Date(brand.lastContactDate).toLocaleDateString("fr-FR")}
-          </p>
-        )}
-        {brand.nextActionDate && (
-          <p className="text-xs font-light text-ink/50">
-            Prochaine action : {new Date(brand.nextActionDate).toLocaleDateString("fr-FR")}
-          </p>
-        )}
-        <p className="mt-1 text-xs font-semibold text-accent">🔥 {days}j d&apos;engagement</p>
+      <Link href={`/marques/${brand.id}`} className="block">
+        <div className="mb-3 flex items-center gap-3">
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white"
+            style={{ backgroundColor: avatarColor(brand.name) }}
+          >
+            {initials(brand.name)}
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <p className="truncate text-sm font-extrabold text-ink">{brand.name}</p>
+            <span
+              className="mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold"
+              style={{ backgroundColor: badge.bg, color: badge.text }}
+            >
+              {badge.icon}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1 border-t border-soft pt-2.5 text-xs font-light text-ink/60">
+          {brand.lastContactDate && (
+            <p>Dernier contact : {new Date(brand.lastContactDate).toLocaleDateString("fr-FR")}</p>
+          )}
+          {brand.nextActionDate && (
+            <p>Prochaine action : {new Date(brand.nextActionDate).toLocaleDateString("fr-FR")}</p>
+          )}
+        </div>
+
+        <div className="mt-3 flex items-center gap-1.5 rounded-full bg-soft px-2.5 py-1 text-xs font-semibold" style={{ color }}>
+          <span aria-hidden>🔥</span>
+          {days}j d&apos;engagement
+        </div>
       </Link>
     </div>
   );

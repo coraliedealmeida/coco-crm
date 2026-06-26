@@ -35,7 +35,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-soft px-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-sm"
+        className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-soft"
       >
         <h1 className="mb-1 font-sans text-2xl font-extrabold text-ink">CRM Prospection</h1>
         <p className="mb-6 text-sm font-light text-ink/70">Connecte-toi pour accéder à ton espace.</p>

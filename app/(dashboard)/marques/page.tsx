@@ -24,7 +24,7 @@ export default async function MarquesPage() {
         </Link>
       </header>
 
-      <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+      <div className="overflow-hidden rounded-3xl bg-white shadow-soft">
         <table className="w-full text-left text-sm">
           <thead className="bg-soft text-ink/60">
             <tr>

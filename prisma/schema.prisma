@@ -75,6 +75,7 @@ model Settings {
   daysBeforeRelance1   Int     @default(15)
   daysBeforeRelance2   Int     @default(15)
   emailNotifications   Boolean @default(false)
+  showMonthlyStats     Boolean @default(false)
 }
 
 // ---- Squelette Phase 2 (créé mais inutilisé en Phase 1) ----

@@ -13,7 +13,13 @@ export async function GET() {
 export async function PATCH(request: NextRequest) {
   const body = await request.json();
   const data: Record<string, unknown> = {};
-  for (const key of ["daysBeforeGreenLight", "daysBeforeRelance1", "daysBeforeRelance2", "emailNotifications"]) {
+  for (const key of [
+    "daysBeforeGreenLight",
+    "daysBeforeRelance1",
+    "daysBeforeRelance2",
+    "emailNotifications",
+    "showMonthlyStats",
+  ]) {
     if (key in body) data[key] = body[key];
   }
 

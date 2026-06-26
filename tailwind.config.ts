@@ -18,6 +18,11 @@ const config: Config = {
       borderRadius: {
         xl: "1rem",
         "2xl": "1.5rem",
+        "3xl": "2rem",
+      },
+      boxShadow: {
+        soft: "0 2px 24px rgba(139, 92, 246, 0.08)",
+        softer: "0 1px 12px rgba(29, 28, 31, 0.04)",
       },
     },
   },

@@ -29,12 +29,18 @@ export default async function DashboardPage() {
       b.nextActionDate <= now
   );
 
-  const monthEntries = await prisma.contactHistoryEntry.findMany({
-    where: { date: { gte: startOfMonth } },
-  });
-  const dmCount = monthEntries.filter((e) => e.type === "Premier DM" || e.type.startsWith("Relance")).length;
-  const reponseCount = monthEntries.filter((e) => e.type === "Réponse reçue").length;
-  const appelCount = monthEntries.filter((e) => e.type === "Appel découverte").length;
+  let dmCount = 0;
+  let reponseCount = 0;
+  let appelCount = 0;
+
+  if (settings.showMonthlyStats) {
+    const monthEntries = await prisma.contactHistoryEntry.findMany({
+      where: { date: { gte: startOfMonth } },
+    });
+    dmCount = monthEntries.filter((e) => e.type === "Premier DM" || e.type.startsWith("Relance")).length;
+    reponseCount = monthEntries.filter((e) => e.type === "Réponse reçue").length;
+    appelCount = monthEntries.filter((e) => e.type === "Appel découverte").length;
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -43,11 +49,13 @@ export default async function DashboardPage() {
         <p className="font-light text-ink/60">Tes actions du jour, en un coup d&apos;œil.</p>
       </header>
 
-      <section className="grid grid-cols-3 gap-4">
-        <StatCard label="DMs envoyés ce mois-ci" value={dmCount} />
-        <StatCard label="Réponses reçues" value={reponseCount} />
-        <StatCard label="Appels découverte" value={appelCount} />
-      </section>
+      {settings.showMonthlyStats && (
+        <section className="grid grid-cols-3 gap-4">
+          <StatCard label="DMs envoyés ce mois-ci" value={dmCount} />
+          <StatCard label="Réponses reçues" value={reponseCount} />
+          <StatCard label="Appels découverte" value={appelCount} />
+        </section>
+      )}
 
       <section className="grid grid-cols-3 gap-6">
         <DashboardSection title="Routine d'engagement en cours" isEmpty={routineBrands.length === 0}>
@@ -80,7 +88,7 @@ export default async function DashboardPage() {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm">
+    <div className="rounded-3xl bg-white p-6 shadow-soft">
       <p className="text-sm font-light text-ink/60">{label}</p>
       <p className="mt-2 font-sans text-3xl font-extrabold text-accent">{value}</p>
     </div>

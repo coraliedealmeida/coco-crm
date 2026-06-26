@@ -39,7 +39,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
 
       <div className="grid grid-cols-2 gap-6">
         <div className="flex flex-col gap-6">
-          <div className="rounded-2xl bg-white p-6 shadow-sm">
+          <div className="rounded-3xl bg-white p-6 shadow-soft">
             <h2 className="mb-4 font-sans text-base font-extrabold text-ink">Informations</h2>
             <BrandForm
               initial={{
@@ -58,7 +58,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
           <BrandActions brandId={brand.id} />
         </div>
 
-        <div className="rounded-2xl bg-white p-6 shadow-sm">
+        <div className="rounded-3xl bg-white p-6 shadow-soft">
           <h2 className="mb-4 font-sans text-base font-extrabold text-ink">Historique complet</h2>
           <div className="flex flex-col gap-3">
             {brand.contactHistory.length === 0 && (

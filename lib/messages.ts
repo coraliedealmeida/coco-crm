@@ -2,12 +2,14 @@ export type MessageTemplate = {
   id: string;
   title: string;
   content: string;
+  platform: "LINKEDIN" | "INSTAGRAM";
 };
 
 export const messageTemplates: MessageTemplate[] = [
   {
     id: "dm-linkedin-standard",
     title: "DM LinkedIn — version standard",
+    platform: "LINKEDIN",
     content: `Bonjour [Prénom],
 
 Je suis Coralie, graphiste et directrice artistique spécialisée dans le secteur animalier 🐾
@@ -29,6 +31,7 @@ Coralie
   {
     id: "dm-linkedin-compliment",
     title: "DM LinkedIn — version compliment d'abord",
+    platform: "LINKEDIN",
     content: `Bonjour [Prénom],
 
 [Marque] fait partie des marques que j'admire dans le secteur animalier — [observation spécifique] me parle vraiment.
@@ -50,6 +53,7 @@ Coralie
   {
     id: "dm-instagram-standard",
     title: "DM Instagram — version standard",
+    platform: "INSTAGRAM",
     content: `Hello [Prénom],
 
 Je suis Coralie, graphiste et directrice artistique spécialisée dans le secteur animalier 🐾
@@ -67,6 +71,7 @@ Coralie & Swan 🐶`,
   {
     id: "dm-instagram-compliment",
     title: "DM Instagram — version compliment d'abord",
+    platform: "INSTAGRAM",
     content: `Hello [Prénom],
 
 J'adore l'univers de [Marque] — [observation spécifique] me parle vraiment 🐾
@@ -84,6 +89,7 @@ Coralie & Swan 🐶`,
   {
     id: "relance-1-linkedin",
     title: "Relance 1 — LinkedIn",
+    platform: "LINKEDIN",
     content: `Bonjour [Prénom],
 
 Je me permets de revenir vers vous suite à mon message du [date] — je sais que les agendas sont bien chargés en cette période. Je vous avais contactée au sujet d'une éventuelle collaboration créative en freelance...
@@ -97,6 +103,7 @@ Coralie`,
   {
     id: "relance-2-linkedin",
     title: "Relance 2 — LinkedIn",
+    platform: "LINKEDIN",
     content: `Bonjour [Prénom],
 
 Je reviens une dernière fois, sans vouloir vous importuner — peut-être que le timing n'est simplement pas le bon en ce moment.
@@ -110,6 +117,7 @@ Coralie`,
   {
     id: "relance-1-instagram",
     title: "Relance 1 — Instagram",
+    platform: "INSTAGRAM",
     content: `Bonjour [Prénom] 👋
 
 Je me permets de revenir vers toi suite à mon message — je sais que les DMs peuvent vite se perdre ! Je t'avais contactée au sujet d'une éventuelle collaboration créative...
@@ -123,6 +131,7 @@ Coralie`,
   {
     id: "relance-2-instagram",
     title: "Relance 2 — Instagram",
+    platform: "INSTAGRAM",
     content: `Bonjour [Prénom],
 
 Je reviens une dernière fois, sans vouloir être trop insistante — peut-être que le timing n'est juste pas le bon en ce moment.

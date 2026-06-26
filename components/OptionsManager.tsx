@@ -27,7 +27,7 @@ export default function OptionsManager({
   }
 
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm">
+    <div className="rounded-3xl bg-white p-6 shadow-soft">
       <h2 className="mb-4 font-sans text-base font-extrabold text-ink">{title}</h2>
       <div className="mb-3 flex flex-wrap gap-2">
         {options.map((opt) => (

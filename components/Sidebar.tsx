@@ -22,14 +22,19 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="flex h-screen w-64 flex-col justify-between border-r border-soft bg-white px-5 py-6">
+    <aside className="flex h-screen w-64 flex-col justify-between border-r border-soft bg-white px-5 py-7">
       <div>
-        <div className="mb-8 px-2">
-          <p className="font-sans text-xl font-extrabold text-ink">CRM Prospection</p>
-          <p className="text-xs font-light text-ink/60">Coralie de Almeida</p>
+        <div className="mb-10 flex items-center gap-3 px-2">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-lg">
+            🐾
+          </div>
+          <div>
+            <p className="font-sans text-base font-extrabold leading-tight text-ink">CRM Prospection</p>
+            <p className="text-xs font-light text-ink/50">Coralie de Almeida</p>
+          </div>
         </div>
 
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-col gap-1.5">
           {links.map((link) => {
             const active = pathname === link.href;
             return (
@@ -37,7 +42,7 @@ export default function Sidebar() {
                 key={link.href}
                 href={link.href}
                 className={`rounded-xl px-4 py-3 text-sm font-semibold transition ${
-                  active ? "bg-accent text-white" : "text-ink hover:bg-soft"
+                  active ? "bg-accent text-white shadow-soft" : "text-ink/80 hover:bg-soft"
                 }`}
               >
                 {link.label}
@@ -49,7 +54,7 @@ export default function Sidebar() {
 
       <button
         onClick={handleLogout}
-        className="rounded-xl px-4 py-3 text-left text-sm font-semibold text-ink/60 transition hover:bg-soft"
+        className="rounded-xl px-4 py-3 text-left text-sm font-semibold text-ink/50 transition hover:bg-soft hover:text-ink"
       >
         Se déconnecter
       </button>
