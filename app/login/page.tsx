@@ -37,7 +37,7 @@ export default function LoginPage() {
         onSubmit={handleSubmit}
         className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-soft"
       >
-        <h1 className="mb-1 font-sans text-2xl font-extrabold text-ink">CRM Prospection</h1>
+        <h1 className="mb-1 font-sans text-2xl font-extrabold text-ink">Dashboard COCO</h1>
         <p className="mb-6 text-sm font-light text-ink/70">Connecte-toi pour accéder à ton espace.</p>
 
         <label className="mb-2 block text-sm font-semibold text-ink">Mot de passe</label>

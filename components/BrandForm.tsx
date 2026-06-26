@@ -151,7 +151,6 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
       <Field label="Revenu potentiel (€)">
         <input
           type="number"
-          min={0}
           step="50"
           value={brand.potentialRevenue ?? ""}
           onChange={(e) =>

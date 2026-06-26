@@ -8,7 +8,7 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
-  title: "CRM Prospection — Coralie de Almeida",
+  title: "Dashboard COCO — Coralie de Almeida",
   description: "CRM de prospection pour graphiste/DA spécialisée secteur animalier",
 };
 

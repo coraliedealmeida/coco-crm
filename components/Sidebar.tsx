@@ -29,7 +29,7 @@ export default function Sidebar() {
             🐾
           </div>
           <div>
-            <p className="font-sans text-base font-extrabold leading-tight text-ink">CRM Prospection</p>
+            <p className="font-sans text-base font-extrabold leading-tight text-ink">Dashboard COCO</p>
             <p className="text-xs font-light text-ink/50">Coralie de Almeida</p>
           </div>
         </div>

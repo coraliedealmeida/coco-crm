@@ -1,13 +1,19 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { countBusinessDays } from "@/lib/business-days";
-import { statusLabel, platformLabel } from "@/lib/pipeline";
+import MarquesTable from "@/components/MarquesTable";
 
 export const dynamic = "force-dynamic";
 
 export default async function MarquesPage() {
   const brands = await prisma.brand.findMany({ orderBy: { createdAt: "desc" } });
-  const now = new Date();
+
+  const rows = brands.map((b) => ({
+    id: b.id,
+    name: b.name,
+    platform: b.platform,
+    pipelineStatus: b.pipelineStatus,
+    nextActionDate: b.nextActionDate?.toISOString() ?? null,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -24,43 +30,7 @@ export default async function MarquesPage() {
         </Link>
       </header>
 
-      <div className="overflow-hidden rounded-3xl bg-white shadow-soft">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-soft text-ink/60">
-            <tr>
-              <th className="px-5 py-3 font-semibold">Marque</th>
-              <th className="px-5 py-3 font-semibold">Plateforme</th>
-              <th className="px-5 py-3 font-semibold">Secteur</th>
-              <th className="px-5 py-3 font-semibold">Statut</th>
-              <th className="px-5 py-3 font-semibold">Jours ouvrés</th>
-            </tr>
-          </thead>
-          <tbody>
-            {brands.map((b) => (
-              <tr key={b.id} className="border-t border-soft hover:bg-soft/50">
-                <td className="px-5 py-3">
-                  <Link href={`/marques/${b.id}`} className="font-semibold text-ink">
-                    {b.name}
-                  </Link>
-                </td>
-                <td className="px-5 py-3 text-ink/70">{platformLabel[b.platform]}</td>
-                <td className="px-5 py-3 text-ink/70">{b.sector}</td>
-                <td className="px-5 py-3 text-ink/70">{statusLabel(b.pipelineStatus)}</td>
-                <td className="px-5 py-3 text-ink/70">
-                  {countBusinessDays(b.engagementStartDate, now)}
-                </td>
-              </tr>
-            ))}
-            {brands.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-5 py-6 text-center text-ink/50">
-                  Aucune marque pour le moment.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <MarquesTable rows={rows} />
     </div>
   );
 }

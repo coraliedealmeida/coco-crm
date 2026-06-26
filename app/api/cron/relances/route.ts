@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     .join("");
 
   await resend.emails.send({
-    from: "CRM Prospection <onboarding@resend.dev>",
+    from: "Dashboard COCO <onboarding@resend.dev>",
     to: process.env.NOTIFICATION_EMAIL ?? "",
     subject: `${brands.length} relance(s) à faire aujourd'hui`,
     html: `<p>Voici les marques à relancer aujourd'hui :</p><ul>${list}</ul>`,

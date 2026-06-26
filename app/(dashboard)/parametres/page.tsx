@@ -29,16 +29,8 @@ export default async function ParametresPage() {
           }}
         />
         <div className="flex flex-col gap-6">
-          <OptionsManager
-            title="Secteurs"
-            endpoint="/api/options/sectors"
-            initial={sectors.map((s) => s.label)}
-          />
-          <OptionsManager
-            title="Sources"
-            endpoint="/api/options/sources"
-            initial={sources.map((s) => s.label)}
-          />
+          <OptionsManager title="Secteurs" endpoint="/api/options/sectors" initial={sectors} />
+          <OptionsManager title="Sources" endpoint="/api/options/sources" initial={sources} />
         </div>
       </div>
     </div>

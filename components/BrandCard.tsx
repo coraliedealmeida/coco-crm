@@ -45,17 +45,18 @@ export default function BrandCard({
         >
           {initials(brand.name)}
         </div>
-        <div className="flex-1 overflow-hidden">
-          <Link href={`/marques/${brand.id}`} className="truncate text-sm font-extrabold text-ink hover:underline">
-            {brand.name}
-          </Link>
-          <span
-            className="mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold"
-            style={{ backgroundColor: badge.bg, color: badge.text }}
-          >
-            {badge.icon}
-          </span>
-        </div>
+        <Link
+          href={`/marques/${brand.id}`}
+          className="flex-1 truncate text-sm font-extrabold text-ink hover:underline"
+        >
+          {brand.name}
+        </Link>
+        <span
+          className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+          style={{ backgroundColor: badge.bg, color: badge.text }}
+        >
+          {badge.icon}
+        </span>
       </div>
 
       <div className="mb-2.5">{statusContent}</div>

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+type Option = { id: string; label: string };
+
 export default function OptionsManager({
   title,
   endpoint,
@@ -9,21 +11,27 @@ export default function OptionsManager({
 }: {
   title: string;
   endpoint: string;
-  initial: string[];
+  initial: Option[];
 }) {
   const [options, setOptions] = useState(initial);
   const [newValue, setNewValue] = useState("");
 
   async function handleAdd() {
     const trimmed = newValue.trim();
-    if (!trimmed || options.includes(trimmed)) return;
-    await fetch(endpoint, {
+    if (!trimmed || options.some((o) => o.label === trimmed)) return;
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ label: trimmed }),
     });
-    setOptions((prev) => [...prev, trimmed]);
+    const created = await res.json();
+    setOptions((prev) => [...prev, created]);
     setNewValue("");
+  }
+
+  async function handleDelete(id: string) {
+    setOptions((prev) => prev.filter((o) => o.id !== id));
+    await fetch(`${endpoint}/${id}`, { method: "DELETE" });
   }
 
   return (
@@ -31,10 +39,21 @@ export default function OptionsManager({
       <h2 className="mb-4 font-sans text-base font-extrabold text-ink">{title}</h2>
       <div className="mb-3 flex flex-wrap gap-2">
         {options.map((opt) => (
-          <span key={opt} className="rounded-full bg-soft px-3 py-1.5 text-sm text-ink">
-            {opt}
+          <span
+            key={opt.id}
+            className="flex items-center gap-1.5 rounded-full bg-soft px-3 py-1.5 text-sm text-ink"
+          >
+            {opt.label}
+            <button
+              onClick={() => handleDelete(opt.id)}
+              aria-label={`Supprimer ${opt.label}`}
+              className="text-ink/40 hover:text-red-500"
+            >
+              ×
+            </button>
           </span>
         ))}
+        {options.length === 0 && <p className="text-sm font-light text-ink/40">Aucune valeur.</p>}
       </div>
       <div className="flex gap-2">
         <input

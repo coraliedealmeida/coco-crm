@@ -44,69 +44,103 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <header>
-        <h1 className="font-sans text-3xl font-extrabold text-ink">Dashboard</h1>
-        <p className="font-light text-ink/60">Tes actions du jour, en un coup d&apos;œil.</p>
+      <header className="flex items-center gap-3">
+        <span className="text-3xl">🐾</span>
+        <div>
+          <h1 className="font-sans text-4xl font-extrabold tracking-tight text-ink">Dashboard</h1>
+          <p className="font-light text-ink/50">Tes actions du jour, en un coup d&apos;œil.</p>
+        </div>
       </header>
 
       {settings.showMonthlyStats && (
         <section className="grid grid-cols-3 gap-4">
-          <StatCard label="DMs envoyés ce mois-ci" value={dmCount} />
-          <StatCard label="Réponses reçues" value={reponseCount} />
-          <StatCard label="Appels découverte" value={appelCount} />
+          <StatCard label="DMs envoyés ce mois-ci" value={dmCount} accent="#8B5CF6" />
+          <StatCard label="Réponses reçues" value={reponseCount} accent="#34D399" />
+          <StatCard label="Appels découverte" value={appelCount} accent="#CCFF00" />
         </section>
       )}
 
-      <section className="grid grid-cols-3 gap-6">
-        <DashboardSection title="Routine d'engagement en cours" isEmpty={routineBrands.length === 0}>
-          {routineBrands.map((b) => (
-            <BrandCard
-              key={b.id}
-              brand={{ ...b, engagementDays: b.days, potentialRevenue: b.potentialRevenue }}
-              statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
-            />
-          ))}
-        </DashboardSection>
+      <section>
+        <h2 className="mb-4 font-sans text-lg font-extrabold text-ink">Prospection</h2>
+        <div className="grid grid-cols-3 gap-6">
+          <DashboardSection
+            title="Routine d'engagement"
+            icon="🌱"
+            accent="#C4B5FD"
+            count={routineBrands.length}
+            isEmpty={routineBrands.length === 0}
+          >
+            {routineBrands.map((b) => (
+              <BrandCard
+                key={b.id}
+                brand={{ ...b, engagementDays: b.days, potentialRevenue: b.potentialRevenue }}
+                statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
+              />
+            ))}
+          </DashboardSection>
 
-        <DashboardSection title="Feux verts DM" isEmpty={greenLightBrands.length === 0} emptyLabel="Aucun feu vert pour le moment.">
-          {greenLightBrands.map((b) => (
-            <BrandCard
-              key={b.id}
-              brand={{ ...b, engagementDays: b.days, potentialRevenue: b.potentialRevenue }}
-              statusContent={<span className="text-xs font-semibold text-accent">🟢 Prête pour le premier DM</span>}
-            />
-          ))}
-        </DashboardSection>
+          <DashboardSection
+            title="Feux verts DM"
+            icon="🟢"
+            accent="#CCFF00"
+            count={greenLightBrands.length}
+            isEmpty={greenLightBrands.length === 0}
+            emptyLabel="Aucun feu vert pour le moment."
+          >
+            {greenLightBrands.map((b) => (
+              <BrandCard
+                key={b.id}
+                brand={{ ...b, engagementDays: b.days, potentialRevenue: b.potentialRevenue }}
+                statusContent={<span className="text-xs font-semibold text-accent">🟢 Prête pour le premier DM</span>}
+              />
+            ))}
+          </DashboardSection>
 
-        <DashboardSection title="Relances du jour" isEmpty={relanceBrands.length === 0} emptyLabel="Aucune relance aujourd'hui.">
-          {relanceBrands.map((b) => (
-            <BrandCard
-              key={b.id}
-              brand={{
-                ...b,
-                engagementDays: null,
-                potentialRevenue: b.potentialRevenue,
-              }}
-              statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
-            />
-          ))}
-        </DashboardSection>
+          <DashboardSection
+            title="Relances du jour"
+            icon="⏰"
+            accent="#8B5CF6"
+            count={relanceBrands.length}
+            isEmpty={relanceBrands.length === 0}
+            emptyLabel="Aucune relance aujourd'hui."
+          >
+            {relanceBrands.map((b) => (
+              <BrandCard
+                key={b.id}
+                brand={{
+                  ...b,
+                  engagementDays: null,
+                  potentialRevenue: b.potentialRevenue,
+                }}
+                statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
+              />
+            ))}
+          </DashboardSection>
+        </div>
       </section>
 
-      <section className="grid grid-cols-3 gap-6">
-        <DashboardSection title="Projets en cours" isEmpty emptyLabel="Disponible en Phase 2." />
-        <DashboardSection title="À facturer" isEmpty emptyLabel="Disponible en Phase 2." />
-        <DashboardSection title="Factures en attente de paiement" isEmpty emptyLabel="Disponible en Phase 2." />
+      <section>
+        <h2 className="mb-4 font-sans text-lg font-extrabold text-ink/40">Suivi projets (Phase 2)</h2>
+        <div className="grid grid-cols-3 gap-6 opacity-60">
+          <DashboardSection title="Projets en cours" icon="📁" accent="#9CA3AF" isEmpty emptyLabel="Disponible en Phase 2." />
+          <DashboardSection title="À facturer" icon="🧾" accent="#9CA3AF" isEmpty emptyLabel="Disponible en Phase 2." />
+          <DashboardSection title="Factures en attente" icon="⏳" accent="#9CA3AF" isEmpty emptyLabel="Disponible en Phase 2." />
+        </div>
       </section>
     </div>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({ label, value, accent }: { label: string; value: number; accent: string }) {
   return (
-    <div className="rounded-3xl bg-white p-6 shadow-soft">
-      <p className="text-sm font-light text-ink/60">{label}</p>
-      <p className="mt-2 font-sans text-3xl font-extrabold text-accent">{value}</p>
+    <div className="overflow-hidden rounded-3xl bg-white shadow-soft">
+      <div className="h-1.5" style={{ backgroundColor: accent }} />
+      <div className="p-6">
+        <p className="text-sm font-light text-ink/50">{label}</p>
+        <p className="mt-2 font-sans text-4xl font-extrabold" style={{ color: accent === "#CCFF00" ? "#1D1C1F" : accent }}>
+          {value}
+        </p>
+      </div>
     </div>
   );
 }
