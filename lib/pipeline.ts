@@ -22,6 +22,49 @@ export function statusColor(status: PipelineStatus): string {
   return pipelineColumns.find((c) => c.status === status)?.color ?? "#9CA3AF";
 }
 
+/**
+ * Le pipeline visuel regroupe les 11 statuts détaillés en 4 colonnes macro,
+ * pour éviter un scroll horizontal interminable. Le statut détaillé exact
+ * reste modifiable depuis le menu déroulant de chaque carte.
+ */
+export type MacroGroup = {
+  id: string;
+  label: string;
+  color: string;
+  statuses: PipelineStatus[];
+};
+
+export const macroGroups: MacroGroup[] = [
+  {
+    id: "A_CONTACTER",
+    label: "À contacter",
+    color: "#C4B5FD",
+    statuses: ["ROUTINE_ENGAGEMENT", "PREMIER_DM"],
+  },
+  {
+    id: "A_RELANCER",
+    label: "À relancer",
+    color: "#8B5CF6",
+    statuses: ["RELANCE_1", "RELANCE_2"],
+  },
+  {
+    id: "EN_DISCUSSION",
+    label: "En discussion",
+    color: "#60A5FA",
+    statuses: ["EN_DISCUSSION", "APPEL_PREVU"],
+  },
+  {
+    id: "CLOSING",
+    label: "Closing",
+    color: "#CCFF00",
+    statuses: ["DEVIS_A_FAIRE", "DEVIS_ENVOYE", "DEVIS_ACCEPTE", "GHOSTE", "ARCHIVE"],
+  },
+];
+
+export function macroGroupForStatus(status: PipelineStatus): MacroGroup {
+  return macroGroups.find((g) => g.statuses.includes(status)) ?? macroGroups[0];
+}
+
 export const platformLabel: Record<string, string> = {
   LINKEDIN: "LinkedIn",
   INSTAGRAM: "Instagram",
