@@ -26,7 +26,7 @@ export default function StatusSelector({
     <select
       value={status}
       onChange={(e) => handleChange(e.target.value as PipelineStatus)}
-      className="mt-1 w-full rounded-md border-none bg-transparent text-sm font-semibold text-ink outline-none"
+      className="mt-2 w-full rounded-md border-none bg-transparent font-sans text-2xl font-extrabold text-ink outline-none"
     >
       {pipelineColumns.map((c) => (
         <option key={c.status} value={c.status}>

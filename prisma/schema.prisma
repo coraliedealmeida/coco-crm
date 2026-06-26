@@ -48,7 +48,19 @@ model Brand {
   updatedAt           DateTime       @updatedAt
 
   contactHistory ContactHistoryEntry[]
+  reminders      Reminder[]
   client         Client?
+}
+
+// Rappel programmable librement (date + libellé), indépendant du calcul automatique des relances.
+model Reminder {
+  id        String   @id @default(cuid())
+  brandId   String
+  brand     Brand    @relation(fields: [brandId], references: [id])
+  date      DateTime
+  label     String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model ContactHistoryEntry {

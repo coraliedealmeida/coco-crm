@@ -7,9 +7,14 @@ import BrandCard from "@/components/BrandCard";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [brands, settings] = await Promise.all([
+  const [brands, settings, dueReminders] = await Promise.all([
     prisma.brand.findMany({ where: { archivedAt: null } }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+    prisma.reminder.findMany({
+      where: { completed: false, date: { lte: new Date() }, brand: { archivedAt: null } },
+      include: { brand: true },
+      orderBy: { date: "asc" },
+    }),
   ]);
 
   const now = new Date();
@@ -100,19 +105,30 @@ export default async function DashboardPage() {
             title="Relances du jour"
             icon="⏰"
             accent="#8B5CF6"
-            count={relanceBrands.length}
-            isEmpty={relanceBrands.length === 0}
+            count={relanceBrands.length + dueReminders.length}
+            isEmpty={relanceBrands.length === 0 && dueReminders.length === 0}
             emptyLabel="Aucune relance aujourd'hui."
           >
             {relanceBrands.map((b) => (
               <BrandCard
-                key={b.id}
+                key={`relance-${b.id}`}
                 brand={{
                   ...b,
                   engagementDays: null,
                   potentialRevenue: b.potentialRevenue,
                 }}
                 statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
+              />
+            ))}
+            {dueReminders.map((r) => (
+              <BrandCard
+                key={`reminder-${r.id}`}
+                brand={{
+                  ...r.brand,
+                  engagementDays: null,
+                  potentialRevenue: r.brand.potentialRevenue,
+                }}
+                statusContent={<span className="text-xs font-semibold text-accent">📌 {r.label}</span>}
               />
             ))}
           </DashboardSection>

@@ -195,7 +195,13 @@ function DraggableCard({
     : undefined;
 
   return (
-    <div ref={setNodeRef} style={style} className={isDragging ? "rotate-1 opacity-80" : ""}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className={`cursor-grab ${isDragging ? "rotate-1 opacity-80" : ""}`}
+    >
       <BrandCard
         brand={{
           ...brand,
@@ -217,11 +223,7 @@ function DraggableCard({
           </select>
         }
         footer={
-          <div
-            {...listeners}
-            {...attributes}
-            className="mb-2.5 flex cursor-grab flex-col gap-1 border-t border-soft pt-2.5 text-xs font-light text-ink/60"
-          >
+          <div className="mb-2.5 flex flex-col gap-1 border-t border-soft pt-2.5 text-xs font-light text-ink/60">
             {brand.lastContactDate && (
               <p>Dernier contact : {new Date(brand.lastContactDate).toLocaleDateString("fr-FR")}</p>
             )}
