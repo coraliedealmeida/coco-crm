@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { archivingStatuses } from "@/lib/pipeline";
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const brand = await prisma.brand.findUnique({
@@ -36,7 +37,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   if ("nextActionDate" in body) data.nextActionDate = body.nextActionDate ? new Date(body.nextActionDate) : null;
 
   if ("pipelineStatus" in body) {
-    data.archivedAt = body.pipelineStatus === "ARCHIVE" ? new Date() : null;
+    data.archivedAt = archivingStatuses.includes(body.pipelineStatus) ? new Date() : null;
   }
 
   const brand = await prisma.brand.update({

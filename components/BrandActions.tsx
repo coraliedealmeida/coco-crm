@@ -12,6 +12,7 @@ const actionTypes = [
   "Devis envoyé",
   "Relance devis 1",
   "Relance devis 2",
+  "Devis refusé",
   "Note",
 ];
 

@@ -10,7 +10,6 @@ type Settings = {
   daysBeforeDevisRelance1: number;
   daysBeforeDevisRelance2: number;
   emailNotifications: boolean;
-  showMonthlyStats: boolean;
 };
 
 export default function SettingsForm({ initial }: { initial: Settings }) {
@@ -67,11 +66,6 @@ export default function SettingsForm({ initial }: { initial: Settings }) {
         onChange={(v) => setSettings({ ...settings, emailNotifications: v })}
       />
 
-      <Toggle
-        label="Afficher les statistiques du mois sur le Dashboard"
-        checked={settings.showMonthlyStats}
-        onChange={(v) => setSettings({ ...settings, showMonthlyStats: v })}
-      />
 
       <button
         type="submit"

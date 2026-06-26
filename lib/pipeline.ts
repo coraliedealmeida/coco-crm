@@ -13,6 +13,7 @@ export const pipelineColumns: { status: PipelineStatus; label: string; color: st
   { status: "RELANCE_DEVIS_1", label: "Relance devis 1", color: "#F59E0B" },
   { status: "RELANCE_DEVIS_2", label: "Relance devis 2", color: "#D97706" },
   { status: "DEVIS_ACCEPTE", label: "Devis accepté", color: "#CCFF00" },
+  { status: "DEVIS_REFUSE", label: "Devis refusé", color: "#EF4444" },
   { status: "ARCHIVE", label: "Archivé", color: "#D1D5DB" },
 ];
 
@@ -59,7 +60,7 @@ export const macroGroups: MacroGroup[] = [
     id: "CLOSING",
     label: "Closing",
     color: "#CCFF00",
-    statuses: ["DEVIS_ACCEPTE", "GHOSTE", "ARCHIVE"],
+    statuses: ["DEVIS_ACCEPTE", "GHOSTE", "DEVIS_REFUSE", "ARCHIVE"],
   },
 ];
 
@@ -67,7 +68,10 @@ export function macroGroupForStatus(status: PipelineStatus): MacroGroup {
   return macroGroups.find((g) => g.statuses.includes(status)) ?? macroGroups[0];
 }
 
-const terminalStatuses: PipelineStatus[] = ["DEVIS_ACCEPTE", "GHOSTE", "ARCHIVE"];
+const terminalStatuses: PipelineStatus[] = ["DEVIS_ACCEPTE", "GHOSTE", "DEVIS_REFUSE", "ARCHIVE"];
+
+/** Statuts qui comptent comme "archivés" : on enregistre archivedAt et on les exclut des calculs actifs. */
+export const archivingStatuses: PipelineStatus[] = ["ARCHIVE", "DEVIS_REFUSE"];
 
 /**
  * Le compteur de jours d'engagement n'a plus de sens une fois le devis signé

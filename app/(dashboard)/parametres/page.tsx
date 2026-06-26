@@ -27,7 +27,6 @@ export default async function ParametresPage() {
             daysBeforeDevisRelance1: settings.daysBeforeDevisRelance1,
             daysBeforeDevisRelance2: settings.daysBeforeDevisRelance2,
             emailNotifications: settings.emailNotifications,
-            showMonthlyStats: settings.showMonthlyStats,
           }}
         />
         <div className="flex flex-col gap-6">

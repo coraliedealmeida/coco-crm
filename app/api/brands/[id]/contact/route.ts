@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { addBusinessDays } from "@/lib/business-days";
 import { PipelineStatus } from "@prisma/client";
+import { archivingStatuses } from "@/lib/pipeline";
 
 /**
  * Journalise un contact (premier DM, relance, appel, etc.) et fait avancer
@@ -43,6 +44,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   } else if (type === "Relance devis 2") {
     nextStatus = "RELANCE_DEVIS_2";
     nextActionDate = null;
+  } else if (type === "Devis refusé") {
+    nextStatus = "DEVIS_REFUSE";
+    nextActionDate = null;
   }
 
   await prisma.contactHistoryEntry.create({
@@ -54,6 +58,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     data: {
       lastContactDate: now,
       ...(nextStatus ? { pipelineStatus: nextStatus } : {}),
+      ...(nextStatus ? { archivedAt: archivingStatuses.includes(nextStatus) ? now : null } : {}),
       ...(nextActionDate !== undefined ? { nextActionDate } : {}),
     },
   });

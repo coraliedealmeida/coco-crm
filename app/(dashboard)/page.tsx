@@ -18,7 +18,6 @@ export default async function DashboardPage() {
   ]);
 
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
   const routineBrands = brands
     .filter((b) => b.pipelineStatus === "ROUTINE_ENGAGEMENT")
@@ -34,19 +33,6 @@ export default async function DashboardPage() {
       b.nextActionDate <= now
   );
 
-  let dmCount = 0;
-  let reponseCount = 0;
-  let appelCount = 0;
-
-  if (settings.showMonthlyStats) {
-    const monthEntries = await prisma.contactHistoryEntry.findMany({
-      where: { date: { gte: startOfMonth } },
-    });
-    dmCount = monthEntries.filter((e) => e.type === "Premier DM" || e.type.startsWith("Relance")).length;
-    reponseCount = monthEntries.filter((e) => e.type === "Réponse reçue").length;
-    appelCount = monthEntries.filter((e) => e.type === "Appel découverte").length;
-  }
-
   return (
     <div className="flex flex-col gap-8">
       <header className="flex items-center gap-3">
@@ -56,14 +42,6 @@ export default async function DashboardPage() {
           <p className="font-light text-ink/50">Tes actions du jour, en un coup d&apos;œil.</p>
         </div>
       </header>
-
-      {settings.showMonthlyStats && (
-        <section className="grid grid-cols-3 gap-4">
-          <StatCard label="DMs envoyés ce mois-ci" value={dmCount} accent="#8B5CF6" />
-          <StatCard label="Réponses reçues" value={reponseCount} accent="#34D399" />
-          <StatCard label="Appels découverte" value={appelCount} accent="#CCFF00" />
-        </section>
-      )}
 
       <section>
         <h2 className="mb-4 font-sans text-lg font-extrabold text-ink">Prospection</h2>
@@ -143,20 +121,6 @@ export default async function DashboardPage() {
           <DashboardSection title="Factures en attente" icon="⏳" accent="#9CA3AF" isEmpty emptyLabel="Disponible en Phase 2." />
         </div>
       </section>
-    </div>
-  );
-}
-
-function StatCard({ label, value, accent }: { label: string; value: number; accent: string }) {
-  return (
-    <div className="overflow-hidden rounded-3xl bg-white shadow-soft">
-      <div className="h-1.5" style={{ backgroundColor: accent }} />
-      <div className="p-6">
-        <p className="text-sm font-light text-ink/50">{label}</p>
-        <p className="mt-2 font-sans text-4xl font-extrabold" style={{ color: accent === "#CCFF00" ? "#1D1C1F" : accent }}>
-          {value}
-        </p>
-      </div>
     </div>
   );
 }

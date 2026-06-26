@@ -27,6 +27,7 @@ enum PipelineStatus {
   RELANCE_DEVIS_1
   RELANCE_DEVIS_2
   DEVIS_ACCEPTE
+  DEVIS_REFUSE
   ARCHIVE
 }
 
@@ -93,7 +94,6 @@ model Settings {
   daysBeforeDevisRelance1 Int  @default(15)
   daysBeforeDevisRelance2 Int  @default(15)
   emailNotifications   Boolean @default(false)
-  showMonthlyStats     Boolean @default(false)
 }
 
 // ---- Squelette Phase 2 (créé mais inutilisé en Phase 1) ----
