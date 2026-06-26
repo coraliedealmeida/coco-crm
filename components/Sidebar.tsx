@@ -25,9 +25,8 @@ export default function Sidebar() {
     <aside className="flex h-screen w-64 flex-col justify-between border-r border-soft bg-white px-5 py-7">
       <div>
         <div className="mb-10 flex items-center gap-3 px-2">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-lg">
-            🐾
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="Logo Coco" className="h-10 w-10 shrink-0 object-contain" />
           <div>
             <p className="font-sans text-base font-extrabold leading-tight text-ink">Dashboard COCO</p>
             <p className="text-xs font-light text-ink/50">Coralie de Almeida</p>
