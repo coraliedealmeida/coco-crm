@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   const brands = await prisma.brand.findMany({
     where: {
       archivedAt: null,
-      pipelineStatus: { in: ["PREMIER_DM", "RELANCE_1"] },
+      pipelineStatus: { in: ["PREMIER_DM", "RELANCE_1", "DEVIS_ENVOYE", "RELANCE_DEVIS_1"] },
       nextActionDate: { lte: now },
     },
   });

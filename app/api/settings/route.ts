@@ -17,6 +17,8 @@ export async function PATCH(request: NextRequest) {
     "daysBeforeGreenLight",
     "daysBeforeRelance1",
     "daysBeforeRelance2",
+    "daysBeforeDevisRelance1",
+    "daysBeforeDevisRelance2",
     "emailNotifications",
     "showMonthlyStats",
   ]) {

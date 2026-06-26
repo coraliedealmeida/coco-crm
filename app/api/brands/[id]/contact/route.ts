@@ -14,10 +14,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   const settings = await prisma.settings.findUnique({ where: { id: "singleton" } });
   const delay1 = settings?.daysBeforeRelance1 ?? 15;
   const delay2 = settings?.daysBeforeRelance2 ?? 15;
+  const devisDelay1 = settings?.daysBeforeDevisRelance1 ?? 15;
+  const devisDelay2 = settings?.daysBeforeDevisRelance2 ?? 15;
 
   const now = new Date();
   let nextStatus: PipelineStatus | undefined;
-  let nextActionDate: Date | null = null;
+  let nextActionDate: Date | null | undefined;
 
   if (type === "Premier DM") {
     nextStatus = "PREMIER_DM";
@@ -32,6 +34,15 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     nextStatus = "EN_DISCUSSION";
   } else if (type === "Appel découverte") {
     nextStatus = "APPEL_PREVU";
+  } else if (type === "Devis envoyé") {
+    nextStatus = "DEVIS_ENVOYE";
+    nextActionDate = addBusinessDays(now, devisDelay1);
+  } else if (type === "Relance devis 1") {
+    nextStatus = "RELANCE_DEVIS_1";
+    nextActionDate = addBusinessDays(now, devisDelay2);
+  } else if (type === "Relance devis 2") {
+    nextStatus = "RELANCE_DEVIS_2";
+    nextActionDate = null;
   }
 
   await prisma.contactHistoryEntry.create({
@@ -43,7 +54,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     data: {
       lastContactDate: now,
       ...(nextStatus ? { pipelineStatus: nextStatus } : {}),
-      nextActionDate,
+      ...(nextActionDate !== undefined ? { nextActionDate } : {}),
     },
   });
 

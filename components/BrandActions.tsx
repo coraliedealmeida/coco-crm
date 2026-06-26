@@ -3,7 +3,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const actionTypes = ["Premier DM", "Relance 1", "Relance 2", "Réponse reçue", "Appel découverte", "Note"];
+const actionTypes = [
+  "Premier DM",
+  "Relance 1",
+  "Relance 2",
+  "Réponse reçue",
+  "Appel découverte",
+  "Devis envoyé",
+  "Relance devis 1",
+  "Relance devis 2",
+  "Note",
+];
 
 export default function BrandActions({ brandId }: { brandId: string }) {
   const router = useRouter();

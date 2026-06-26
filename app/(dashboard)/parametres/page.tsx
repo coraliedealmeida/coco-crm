@@ -24,6 +24,8 @@ export default async function ParametresPage() {
             daysBeforeGreenLight: settings.daysBeforeGreenLight,
             daysBeforeRelance1: settings.daysBeforeRelance1,
             daysBeforeRelance2: settings.daysBeforeRelance2,
+            daysBeforeDevisRelance1: settings.daysBeforeDevisRelance1,
+            daysBeforeDevisRelance2: settings.daysBeforeDevisRelance2,
             emailNotifications: settings.emailNotifications,
             showMonthlyStats: settings.showMonthlyStats,
           }}

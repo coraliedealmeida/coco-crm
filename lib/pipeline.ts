@@ -10,6 +10,8 @@ export const pipelineColumns: { status: PipelineStatus; label: string; color: st
   { status: "APPEL_PREVU", label: "Appel prévu", color: "#34D399" },
   { status: "DEVIS_A_FAIRE", label: "Devis à faire", color: "#FBBF24" },
   { status: "DEVIS_ENVOYE", label: "Devis envoyé", color: "#FB923C" },
+  { status: "RELANCE_DEVIS_1", label: "Relance devis 1", color: "#F59E0B" },
+  { status: "RELANCE_DEVIS_2", label: "Relance devis 2", color: "#D97706" },
   { status: "DEVIS_ACCEPTE", label: "Devis accepté", color: "#CCFF00" },
   { status: "ARCHIVE", label: "Archivé", color: "#D1D5DB" },
 ];
@@ -51,7 +53,7 @@ export const macroGroups: MacroGroup[] = [
     id: "EN_DISCUSSION",
     label: "En discussion",
     color: "#60A5FA",
-    statuses: ["EN_DISCUSSION", "APPEL_PREVU", "DEVIS_A_FAIRE", "DEVIS_ENVOYE"],
+    statuses: ["EN_DISCUSSION", "APPEL_PREVU", "DEVIS_A_FAIRE", "DEVIS_ENVOYE", "RELANCE_DEVIS_1", "RELANCE_DEVIS_2"],
   },
   {
     id: "CLOSING",
@@ -74,6 +76,18 @@ const terminalStatuses: PipelineStatus[] = ["DEVIS_ACCEPTE", "GHOSTE", "ARCHIVE"
  */
 export function showsEngagementDays(status: PipelineStatus, days: number, greenLightThreshold: number): boolean {
   return !terminalStatuses.includes(status) && days <= greenLightThreshold;
+}
+
+const nextAutomaticAction: Partial<Record<PipelineStatus, string>> = {
+  PREMIER_DM: "Relance 1",
+  RELANCE_1: "Relance 2",
+  DEVIS_ENVOYE: "Relance devis 1",
+  RELANCE_DEVIS_1: "Relance devis 2",
+};
+
+/** Décrit l'action que représente le nextActionDate calculé automatiquement, selon le statut courant. */
+export function nextAutomaticActionLabel(status: PipelineStatus): string | null {
+  return nextAutomaticAction[status] ?? null;
 }
 
 export const platformLabel: Record<string, string> = {

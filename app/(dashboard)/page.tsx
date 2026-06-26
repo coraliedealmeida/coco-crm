@@ -29,7 +29,7 @@ export default async function DashboardPage() {
 
   const relanceBrands = brands.filter(
     (b) =>
-      ["PREMIER_DM", "RELANCE_1"].includes(b.pipelineStatus) &&
+      ["PREMIER_DM", "RELANCE_1", "DEVIS_ENVOYE", "RELANCE_DEVIS_1"].includes(b.pipelineStatus) &&
       b.nextActionDate &&
       b.nextActionDate <= now
   );

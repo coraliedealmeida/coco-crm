@@ -1,11 +1,10 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
-import { platformLabel, avatarColor, initials } from "@/lib/pipeline";
+import { platformLabel, avatarColor, initials, statusLabel, nextAutomaticActionLabel } from "@/lib/pipeline";
 import BrandForm from "@/components/BrandForm";
 import BrandActions from "@/components/BrandActions";
 import HistoryPanel from "@/components/HistoryPanel";
-import StatusSelector from "@/components/StatusSelector";
 import RemindersPanel from "@/components/RemindersPanel";
 
 export const dynamic = "force-dynamic";
@@ -38,10 +37,11 @@ export default async function BrandDetailPage({ params }: { params: { id: string
       : brand.engagementStartDate;
 
   const nextReminder = brand.reminders.find((r) => !r.completed);
+  const autoActionLabel = nextAutomaticActionLabel(brand.pipelineStatus);
   const nextActionLabel = nextReminder
     ? `${nextReminder.label} — ${new Date(nextReminder.date).toLocaleDateString("fr-FR")}`
     : brand.nextActionDate
-      ? new Date(brand.nextActionDate).toLocaleDateString("fr-FR")
+      ? `${autoActionLabel ?? "Action prévue"} — ${new Date(brand.nextActionDate).toLocaleDateString("fr-FR")}`
       : "Aucune prévue";
 
   return (
@@ -75,9 +75,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
           value={new Date(firstContactDate).toLocaleDateString("fr-FR")}
           accent="#C4B5FD"
         />
-        <InfoTile icon="🎯" label="Statut actuel" accent="#60A5FA">
-          <StatusSelector brandId={brand.id} status={brand.pipelineStatus} />
-        </InfoTile>
+        <InfoTile icon="🎯" label="Statut actuel" value={statusLabel(brand.pipelineStatus)} accent="#60A5FA" />
         <InfoTile icon="⏰" label="Prochaine action" value={nextActionLabel} accent="#8B5CF6" />
         <InfoTile
           icon="💰"
@@ -108,15 +106,6 @@ export default async function BrandDetailPage({ params }: { params: { id: string
               }}
             />
           </div>
-          <RemindersPanel
-            brandId={brand.id}
-            reminders={brand.reminders.map((r) => ({
-              id: r.id,
-              date: r.date.toISOString(),
-              label: r.label,
-              completed: r.completed,
-            }))}
-          />
         </div>
 
         <div className="flex flex-col gap-6">
@@ -136,6 +125,15 @@ export default async function BrandDetailPage({ params }: { params: { id: string
               />
             </div>
           </div>
+          <RemindersPanel
+            brandId={brand.id}
+            reminders={brand.reminders.map((r) => ({
+              id: r.id,
+              date: r.date.toISOString(),
+              label: r.label,
+              completed: r.completed,
+            }))}
+          />
           <BrandActions brandId={brand.id} />
         </div>
       </div>

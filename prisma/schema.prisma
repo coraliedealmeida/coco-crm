@@ -24,6 +24,8 @@ enum PipelineStatus {
   APPEL_PREVU
   DEVIS_A_FAIRE
   DEVIS_ENVOYE
+  RELANCE_DEVIS_1
+  RELANCE_DEVIS_2
   DEVIS_ACCEPTE
   ARCHIVE
 }
@@ -88,6 +90,8 @@ model Settings {
   daysBeforeGreenLight Int     @default(15)
   daysBeforeRelance1   Int     @default(15)
   daysBeforeRelance2   Int     @default(15)
+  daysBeforeDevisRelance1 Int  @default(15)
+  daysBeforeDevisRelance2 Int  @default(15)
   emailNotifications   Boolean @default(false)
   showMonthlyStats     Boolean @default(false)
 }
