@@ -31,9 +31,24 @@ type Brand = {
   nextActionDate: string | null;
   engagementStartDate: string;
   potentialRevenue: number | null;
+  updatedAt: string;
 };
 
-export default function KanbanBoard({ brands: initialBrands }: { brands: Brand[] }) {
+const RECENT_WIN_DAYS = 30;
+
+function isRecentWin(brand: Brand): boolean {
+  if (brand.pipelineStatus !== "DEVIS_ACCEPTE") return false;
+  const daysSinceUpdate = (Date.now() - new Date(brand.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
+  return daysSinceUpdate <= RECENT_WIN_DAYS;
+}
+
+export default function KanbanBoard({
+  brands: initialBrands,
+  greenLightThreshold,
+}: {
+  brands: Brand[];
+  greenLightThreshold: number;
+}) {
   const [brands, setBrands] = useState(initialBrands);
   const router = useRouter();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -71,14 +86,23 @@ export default function KanbanBoard({ brands: initialBrands }: { brands: Brand[]
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="flex gap-4 overflow-x-auto pb-4">
-        {macroGroups.map((group) => (
-          <Column
-            key={group.id}
-            group={group}
-            brands={brands.filter((b) => macroGroupForStatus(b.pipelineStatus).id === group.id)}
-            onStatusChange={updateStatus}
-          />
-        ))}
+        {macroGroups.map((group) => {
+          const groupBrands = brands.filter((b) => macroGroupForStatus(b.pipelineStatus).id === group.id);
+          const isClosing = group.id === "CLOSING";
+          const visible = isClosing ? groupBrands.filter(isRecentWin) : groupBrands;
+          const collapsed = isClosing ? groupBrands.filter((b) => !isRecentWin(b)) : [];
+
+          return (
+            <Column
+              key={group.id}
+              group={group}
+              visibleBrands={visible}
+              collapsedBrands={collapsed}
+              greenLightThreshold={greenLightThreshold}
+              onStatusChange={updateStatus}
+            />
+          );
+        })}
       </div>
     </DndContext>
   );
@@ -86,14 +110,19 @@ export default function KanbanBoard({ brands: initialBrands }: { brands: Brand[]
 
 function Column({
   group,
-  brands,
+  visibleBrands,
+  collapsedBrands,
+  greenLightThreshold,
   onStatusChange,
 }: {
   group: { id: string; label: string; color: string };
-  brands: Brand[];
+  visibleBrands: Brand[];
+  collapsedBrands: Brand[];
+  greenLightThreshold: number;
   onStatusChange: (brandId: string, status: PipelineStatus) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: group.id });
+  const [showCollapsed, setShowCollapsed] = useState(false);
 
   return (
     <div
@@ -106,13 +135,42 @@ function Column({
         <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: group.color }} />
         <h3 className="text-sm font-extrabold text-ink">{group.label}</h3>
         <span className="ml-auto rounded-full bg-soft px-2 py-0.5 text-xs font-semibold text-ink/50">
-          {brands.length}
+          {visibleBrands.length + collapsedBrands.length}
         </span>
       </div>
       <div className="flex flex-col gap-2.5">
-        {brands.map((b) => (
-          <DraggableCard key={b.id} brand={b} groupColor={group.color} onStatusChange={onStatusChange} />
+        {visibleBrands.map((b) => (
+          <DraggableCard
+            key={b.id}
+            brand={b}
+            groupColor={group.color}
+            greenLightThreshold={greenLightThreshold}
+            onStatusChange={onStatusChange}
+          />
         ))}
+
+        {collapsedBrands.length > 0 && (
+          <>
+            <button
+              onClick={() => setShowCollapsed((v) => !v)}
+              className="w-fit text-xs font-semibold text-ink/50 hover:text-accent hover:underline"
+            >
+              {showCollapsed
+                ? "Réduire"
+                : `Voir les marques ghostées/archivées/anciennes (${collapsedBrands.length})`}
+            </button>
+            {showCollapsed &&
+              collapsedBrands.map((b) => (
+                <DraggableCard
+                  key={b.id}
+                  brand={b}
+                  groupColor={group.color}
+                  greenLightThreshold={greenLightThreshold}
+                  onStatusChange={onStatusChange}
+                />
+              ))}
+          </>
+        )}
       </div>
     </div>
   );
@@ -121,10 +179,12 @@ function Column({
 function DraggableCard({
   brand,
   groupColor,
+  greenLightThreshold,
   onStatusChange,
 }: {
   brand: Brand;
   groupColor: string;
+  greenLightThreshold: number;
   onStatusChange: (brandId: string, status: PipelineStatus) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: brand.id });
@@ -139,7 +199,7 @@ function DraggableCard({
       <BrandCard
         brand={{
           ...brand,
-          engagementDays: showsEngagementDays(brand.pipelineStatus) ? days : null,
+          engagementDays: showsEngagementDays(brand.pipelineStatus, days, greenLightThreshold) ? days : null,
         }}
         engagementColor={groupColor}
         statusContent={

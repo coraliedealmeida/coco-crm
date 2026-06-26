@@ -29,7 +29,7 @@ export default function Sidebar() {
           <img src="/logo.svg" alt="Logo Coco" className="h-10 w-10 shrink-0 object-contain" />
           <div>
             <p className="font-sans text-base font-extrabold leading-tight text-ink">Dashboard COCO</p>
-            <p className="text-xs font-light text-ink/50">Coralie de Almeida</p>
+            <p className="text-xs font-light text-ink/50">Coralie De Almeida</p>
           </div>
         </div>
 

@@ -67,9 +67,13 @@ export function macroGroupForStatus(status: PipelineStatus): MacroGroup {
 
 const terminalStatuses: PipelineStatus[] = ["DEVIS_ACCEPTE", "GHOSTE", "ARCHIVE"];
 
-/** Le compteur de jours d'engagement n'a plus de sens une fois le devis signé (ou la marque ghostée/archivée). */
-export function showsEngagementDays(status: PipelineStatus): boolean {
-  return !terminalStatuses.includes(status);
+/**
+ * Le compteur de jours d'engagement n'a plus de sens une fois le devis signé
+ * (ou la marque ghostée/archivée), ni une fois le seuil du feu vert dépassé
+ * (l'info a rempli son rôle de signal, elle devient juste du bruit après).
+ */
+export function showsEngagementDays(status: PipelineStatus, days: number, greenLightThreshold: number): boolean {
+  return !terminalStatuses.includes(status) && days <= greenLightThreshold;
 }
 
 export const platformLabel: Record<string, string> = {

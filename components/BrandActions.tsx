@@ -25,7 +25,9 @@ export default function BrandActions({ brandId }: { brandId: string }) {
 
   return (
     <div className="rounded-3xl bg-white p-6 shadow-soft">
-      <h2 className="mb-4 font-sans text-base font-extrabold text-ink">Commentaires</h2>
+      <h2 className="mb-4 flex items-center gap-2 font-sans text-base font-extrabold text-ink">
+        <span>💬</span> Commentaires
+      </h2>
       <div className="flex flex-col gap-3">
         <select
           value={type}

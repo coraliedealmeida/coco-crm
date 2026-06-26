@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
-import { statusLabel, platformLabel, avatarColor, initials } from "@/lib/pipeline";
+import { platformLabel, avatarColor, initials } from "@/lib/pipeline";
 import BrandForm from "@/components/BrandForm";
 import BrandActions from "@/components/BrandActions";
 import HistoryPanel from "@/components/HistoryPanel";
+import StatusSelector from "@/components/StatusSelector";
 
 export const dynamic = "force-dynamic";
 
@@ -59,15 +60,21 @@ export default async function BrandDetailPage({ params }: { params: { id: string
       <div className="overflow-hidden rounded-3xl bg-white shadow-soft">
         <div className="h-1.5 bg-accent" />
         <div className="p-6">
-          <h2 className="mb-4 font-sans text-base font-extrabold text-ink">État des lieux</h2>
+          <h2 className="mb-4 flex items-center gap-2 font-sans text-base font-extrabold text-ink">
+            <span>🐾</span> État des lieux
+          </h2>
           <div className="grid grid-cols-4 gap-4">
             <InfoTile
+              icon="📅"
               label="Premier contact"
               value={new Date(firstContactDate).toLocaleDateString("fr-FR")}
               accent="#C4B5FD"
             />
-            <InfoTile label="Statut actuel" value={statusLabel(brand.pipelineStatus)} accent="#60A5FA" />
+            <InfoTile icon="🎯" label="Statut actuel" accent="#60A5FA">
+              <StatusSelector brandId={brand.id} status={brand.pipelineStatus} />
+            </InfoTile>
             <InfoTile
+              icon="⏰"
               label="Prochaine action"
               value={
                 brand.nextActionDate
@@ -77,6 +84,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
               accent="#8B5CF6"
             />
             <InfoTile
+              icon="💰"
               label="Revenu potentiel"
               value={brand.potentialRevenue != null ? formatRevenue(brand.potentialRevenue) : "Non renseigné"}
               accent="#CCFF00"
@@ -87,7 +95,9 @@ export default async function BrandDetailPage({ params }: { params: { id: string
 
       <div className="grid grid-cols-2 gap-6">
         <div className="rounded-3xl bg-white p-6 shadow-soft">
-          <h2 className="mb-4 font-sans text-base font-extrabold text-ink">Informations</h2>
+          <h2 className="mb-4 flex items-center gap-2 font-sans text-base font-extrabold text-ink">
+            <span>📝</span> Informations
+          </h2>
           <BrandForm
             initial={{
               id: brand.id,
@@ -106,9 +116,12 @@ export default async function BrandDetailPage({ params }: { params: { id: string
 
         <div className="flex flex-col gap-6">
           <div className="rounded-3xl bg-white p-6 shadow-soft">
-            <h2 className="mb-4 font-sans text-base font-extrabold text-ink">Suivi</h2>
+            <h2 className="mb-4 flex items-center gap-2 font-sans text-base font-extrabold text-ink">
+              <span>🗓️</span> Suivi
+            </h2>
             <div className="max-h-72 overflow-y-auto pr-1">
               <HistoryPanel
+                brandId={brand.id}
                 entries={brand.contactHistory.map((e) => ({
                   id: e.id,
                   type: e.type,
@@ -125,13 +138,28 @@ export default async function BrandDetailPage({ params }: { params: { id: string
   );
 }
 
-function InfoTile({ label, value, accent }: { label: string; value: string; accent: string }) {
+function InfoTile({
+  icon,
+  label,
+  value,
+  accent,
+  children,
+}: {
+  icon: string;
+  label: string;
+  value?: string;
+  accent: string;
+  children?: React.ReactNode;
+}) {
   return (
     <div className="overflow-hidden rounded-xl bg-soft">
       <div className="h-1" style={{ backgroundColor: accent }} />
       <div className="px-4 py-3">
-        <p className="text-xs font-light text-ink/50">{label}</p>
-        <p className="mt-1 text-sm font-semibold text-ink">{value}</p>
+        <p className="flex items-center gap-1.5 text-xs font-light text-ink/50">
+          <span>{icon}</span>
+          {label}
+        </p>
+        {children ?? <p className="mt-1 text-sm font-semibold text-ink">{value}</p>}
       </div>
     </div>
   );

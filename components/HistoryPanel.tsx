@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Entry = {
   id: string;
@@ -9,21 +10,41 @@ type Entry = {
   date: string;
 };
 
-function EntryRow({ entry }: { entry: Entry }) {
+function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
+  const router = useRouter();
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!confirm("Supprimer cette entrée du suivi ? Cette action est irréversible.")) return;
+    setDeleting(true);
+    await fetch(`/api/brands/${brandId}/contact/${entry.id}`, { method: "DELETE" });
+    router.refresh();
+  }
+
   return (
-    <div className="rounded-xl bg-soft px-4 py-3">
+    <div className="group rounded-xl bg-soft px-4 py-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-ink">{entry.type}</span>
-        <span className="text-xs font-light text-ink/50">
-          {new Date(entry.date).toLocaleDateString("fr-FR")}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-light text-ink/50">
+            {new Date(entry.date).toLocaleDateString("fr-FR")}
+          </span>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            aria-label="Supprimer cette entrée"
+            className="text-ink/30 opacity-0 transition group-hover:opacity-100 hover:text-red-500"
+          >
+            ×
+          </button>
+        </div>
       </div>
       {entry.content && <p className="mt-1 text-sm font-light text-ink/70">{entry.content}</p>}
     </div>
   );
 }
 
-export default function HistoryPanel({ entries }: { entries: Entry[] }) {
+export default function HistoryPanel({ brandId, entries }: { brandId: string; entries: Entry[] }) {
   const [expanded, setExpanded] = useState(false);
 
   if (entries.length === 0) {
@@ -34,7 +55,7 @@ export default function HistoryPanel({ entries }: { entries: Entry[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <EntryRow entry={latest} />
+      <EntryRow brandId={brandId} entry={latest} />
 
       {rest.length > 0 && (
         <>
@@ -47,7 +68,7 @@ export default function HistoryPanel({ entries }: { entries: Entry[] }) {
           {expanded && (
             <div className="flex flex-col gap-3">
               {rest.map((entry) => (
-                <EntryRow key={entry.id} entry={entry} />
+                <EntryRow key={entry.id} brandId={brandId} entry={entry} />
               ))}
             </div>
           )}

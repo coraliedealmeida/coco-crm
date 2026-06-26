@@ -35,8 +35,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   if ("lastContactDate" in body) data.lastContactDate = body.lastContactDate ? new Date(body.lastContactDate) : null;
   if ("nextActionDate" in body) data.nextActionDate = body.nextActionDate ? new Date(body.nextActionDate) : null;
 
-  if (body.pipelineStatus === "ARCHIVE") {
-    data.archivedAt = new Date();
+  if ("pipelineStatus" in body) {
+    data.archivedAt = body.pipelineStatus === "ARCHIVE" ? new Date() : null;
   }
 
   const brand = await prisma.brand.update({

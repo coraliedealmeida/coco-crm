@@ -4,10 +4,10 @@ import KanbanBoard from "@/components/KanbanBoard";
 export const dynamic = "force-dynamic";
 
 export default async function PipelinePage() {
-  const brands = await prisma.brand.findMany({
-    where: { archivedAt: null },
-    orderBy: { updatedAt: "desc" },
-  });
+  const [brands, settings] = await Promise.all([
+    prisma.brand.findMany({ orderBy: { updatedAt: "desc" } }),
+    prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+  ]);
 
   const serialized = brands.map((b) => ({
     id: b.id,
@@ -18,6 +18,7 @@ export default async function PipelinePage() {
     nextActionDate: b.nextActionDate?.toISOString() ?? null,
     engagementStartDate: b.engagementStartDate.toISOString(),
     potentialRevenue: b.potentialRevenue,
+    updatedAt: b.updatedAt.toISOString(),
   }));
 
   return (
@@ -26,7 +27,7 @@ export default async function PipelinePage() {
         <h1 className="font-sans text-3xl font-extrabold text-ink">Pipeline prospection</h1>
         <p className="font-light text-ink/60">Glisse-dépose les marques entre les statuts.</p>
       </header>
-      <KanbanBoard brands={serialized} />
+      <KanbanBoard brands={serialized} greenLightThreshold={settings.daysBeforeGreenLight} />
     </div>
   );
 }
