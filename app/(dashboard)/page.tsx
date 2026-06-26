@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { statusLabel } from "@/lib/pipeline";
 import DashboardSection from "@/components/DashboardSection";
+import BrandCard from "@/components/BrandCard";
 
 export const dynamic = "force-dynamic";
 
@@ -60,19 +60,35 @@ export default async function DashboardPage() {
       <section className="grid grid-cols-3 gap-6">
         <DashboardSection title="Routine d'engagement en cours" isEmpty={routineBrands.length === 0}>
           {routineBrands.map((b) => (
-            <BrandRow key={b.id} id={b.id} name={b.name} detail={`${b.days} jours ouvrés`} />
+            <BrandCard
+              key={b.id}
+              brand={{ ...b, engagementDays: b.days, potentialRevenue: b.potentialRevenue }}
+              statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
+            />
           ))}
         </DashboardSection>
 
         <DashboardSection title="Feux verts DM" isEmpty={greenLightBrands.length === 0} emptyLabel="Aucun feu vert pour le moment.">
           {greenLightBrands.map((b) => (
-            <BrandRow key={b.id} id={b.id} name={b.name} detail="Prête pour le premier DM" highlight />
+            <BrandCard
+              key={b.id}
+              brand={{ ...b, engagementDays: b.days, potentialRevenue: b.potentialRevenue }}
+              statusContent={<span className="text-xs font-semibold text-accent">🟢 Prête pour le premier DM</span>}
+            />
           ))}
         </DashboardSection>
 
         <DashboardSection title="Relances du jour" isEmpty={relanceBrands.length === 0} emptyLabel="Aucune relance aujourd'hui.">
           {relanceBrands.map((b) => (
-            <BrandRow key={b.id} id={b.id} name={b.name} detail={statusLabel(b.pipelineStatus)} />
+            <BrandCard
+              key={b.id}
+              brand={{
+                ...b,
+                engagementDays: null,
+                potentialRevenue: b.potentialRevenue,
+              }}
+              statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
+            />
           ))}
         </DashboardSection>
       </section>
@@ -92,29 +108,5 @@ function StatCard({ label, value }: { label: string; value: number }) {
       <p className="text-sm font-light text-ink/60">{label}</p>
       <p className="mt-2 font-sans text-3xl font-extrabold text-accent">{value}</p>
     </div>
-  );
-}
-
-function BrandRow({
-  id,
-  name,
-  detail,
-  highlight,
-}: {
-  id: string;
-  name: string;
-  detail: string;
-  highlight?: boolean;
-}) {
-  return (
-    <Link
-      href={`/marques/${id}`}
-      className={`flex items-center justify-between rounded-xl px-4 py-3 transition hover:bg-soft ${
-        highlight ? "bg-cta/20" : "bg-soft/60"
-      }`}
-    >
-      <span className="text-sm font-semibold text-ink">{name}</span>
-      <span className="text-xs font-light text-ink/60">{detail}</span>
-    </Link>
   );
 }

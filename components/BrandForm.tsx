@@ -15,6 +15,7 @@ type Brand = {
   engagementStartDate: string | null;
   contactName: string;
   contactRole: string;
+  potentialRevenue: number | null;
 };
 
 const emptyBrand: Brand = {
@@ -26,6 +27,7 @@ const emptyBrand: Brand = {
   engagementStartDate: new Date().toISOString(),
   contactName: "",
   contactRole: "",
+  potentialRevenue: null,
 };
 
 export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id?: string } }) {
@@ -142,6 +144,20 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
         <input
           value={brand.contactRole}
           onChange={(e) => setBrand({ ...brand, contactRole: e.target.value })}
+          className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
+        />
+      </Field>
+
+      <Field label="Revenu potentiel (€)">
+        <input
+          type="number"
+          min={0}
+          step="50"
+          value={brand.potentialRevenue ?? ""}
+          onChange={(e) =>
+            setBrand({ ...brand, potentialRevenue: e.target.value === "" ? null : Number(e.target.value) })
+          }
+          placeholder="ex: 1200"
           className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
         />
       </Field>

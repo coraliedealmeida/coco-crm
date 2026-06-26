@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
       engagementStartDate: new Date(body.engagementStartDate),
       contactName: body.contactName || null,
       contactRole: body.contactRole || null,
+      potentialRevenue: body.potentialRevenue != null ? Number(body.potentialRevenue) : null,
     },
   });
 

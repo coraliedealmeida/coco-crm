@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   DndContext,
   DragEndEvent,
@@ -17,12 +16,11 @@ import {
   macroGroups,
   macroGroupForStatus,
   pipelineColumns,
-  platformBadge,
-  avatarColor,
-  initials,
   statusLabel,
+  showsEngagementDays,
 } from "@/lib/pipeline";
 import { countBusinessDays } from "@/lib/business-days";
+import BrandCard from "@/components/BrandCard";
 
 type Brand = {
   id: string;
@@ -32,6 +30,7 @@ type Brand = {
   lastContactDate: string | null;
   nextActionDate: string | null;
   engagementStartDate: string;
+  potentialRevenue: number | null;
 };
 
 export default function KanbanBoard({ brands: initialBrands }: { brands: Brand[] }) {
@@ -112,14 +111,14 @@ function Column({
       </div>
       <div className="flex flex-col gap-2.5">
         {brands.map((b) => (
-          <Card key={b.id} brand={b} groupColor={group.color} onStatusChange={onStatusChange} />
+          <DraggableCard key={b.id} brand={b} groupColor={group.color} onStatusChange={onStatusChange} />
         ))}
       </div>
     </div>
   );
 }
 
-function Card({
+function DraggableCard({
   brand,
   groupColor,
   onStatusChange,
@@ -130,69 +129,49 @@ function Card({
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: brand.id });
   const days = countBusinessDays(new Date(brand.engagementStartDate), new Date());
-  const badge = platformBadge[brand.platform];
 
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
     : undefined;
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`rounded-2xl bg-white p-4 shadow-md transition hover:shadow-lg ${
-        isDragging ? "rotate-1 opacity-80 shadow-xl" : ""
-      }`}
-    >
-      <div {...listeners} {...attributes} className="mb-3 flex cursor-grab items-center gap-3">
-        <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white"
-          style={{ backgroundColor: avatarColor(brand.name) }}
-        >
-          {initials(brand.name)}
-        </div>
-        <div className="flex-1 overflow-hidden">
-          <Link href={`/marques/${brand.id}`} className="truncate text-sm font-extrabold text-ink hover:underline">
-            {brand.name}
-          </Link>
-          <span
-            className="mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold"
-            style={{ backgroundColor: badge.bg, color: badge.text }}
+    <div ref={setNodeRef} style={style} className={isDragging ? "rotate-1 opacity-80" : ""}>
+      <BrandCard
+        brand={{
+          ...brand,
+          engagementDays: showsEngagementDays(brand.pipelineStatus) ? days : null,
+        }}
+        engagementColor={groupColor}
+        statusContent={
+          <select
+            value={brand.pipelineStatus}
+            onChange={(e) => onStatusChange(brand.id, e.target.value as PipelineStatus)}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="w-full rounded-lg border border-accent-light bg-soft px-2.5 py-1.5 text-xs font-semibold text-ink outline-none focus:border-accent"
           >
-            {badge.icon}
-          </span>
-        </div>
-      </div>
-
-      <select
-        value={brand.pipelineStatus}
-        onChange={(e) => onStatusChange(brand.id, e.target.value as PipelineStatus)}
-        onPointerDown={(e) => e.stopPropagation()}
-        className="mb-2.5 w-full rounded-lg border border-accent-light bg-soft px-2.5 py-1.5 text-xs font-semibold text-ink outline-none focus:border-accent"
-      >
-        {pipelineColumns.map((c) => (
-          <option key={c.status} value={c.status}>
-            {statusLabel(c.status)}
-          </option>
-        ))}
-      </select>
-
-      <div className="flex flex-col gap-1 border-t border-soft pt-2.5 text-xs font-light text-ink/60">
-        {brand.lastContactDate && (
-          <p>Dernier contact : {new Date(brand.lastContactDate).toLocaleDateString("fr-FR")}</p>
-        )}
-        {brand.nextActionDate && (
-          <p>Prochaine action : {new Date(brand.nextActionDate).toLocaleDateString("fr-FR")}</p>
-        )}
-      </div>
-
-      <div
-        className="mt-3 flex w-fit items-center gap-1.5 rounded-full bg-soft px-2.5 py-1 text-xs font-semibold"
-        style={{ color: groupColor === "#CCFF00" ? "#1D1C1F" : groupColor }}
-      >
-        <span aria-hidden>🔥</span>
-        {days}j d&apos;engagement
-      </div>
+            {pipelineColumns.map((c) => (
+              <option key={c.status} value={c.status}>
+                {statusLabel(c.status)}
+              </option>
+            ))}
+          </select>
+        }
+        footer={
+          <div
+            {...listeners}
+            {...attributes}
+            className="mb-2.5 flex cursor-grab flex-col gap-1 border-t border-soft pt-2.5 text-xs font-light text-ink/60"
+          >
+            {brand.lastContactDate && (
+              <p>Dernier contact : {new Date(brand.lastContactDate).toLocaleDateString("fr-FR")}</p>
+            )}
+            {brand.nextActionDate && (
+              <p>Prochaine action : {new Date(brand.nextActionDate).toLocaleDateString("fr-FR")}</p>
+            )}
+            {!brand.lastContactDate && !brand.nextActionDate && <p className="text-ink/30">⠿ Glisser ici</p>}
+          </div>
+        }
+      />
     </div>
   );
 }

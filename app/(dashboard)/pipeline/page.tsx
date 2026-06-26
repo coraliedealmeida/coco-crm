@@ -17,6 +17,7 @@ export default async function PipelinePage() {
     lastContactDate: b.lastContactDate?.toISOString() ?? null,
     nextActionDate: b.nextActionDate?.toISOString() ?? null,
     engagementStartDate: b.engagementStartDate.toISOString(),
+    potentialRevenue: b.potentialRevenue,
   }));
 
   return (

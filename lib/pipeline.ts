@@ -51,18 +51,25 @@ export const macroGroups: MacroGroup[] = [
     id: "EN_DISCUSSION",
     label: "En discussion",
     color: "#60A5FA",
-    statuses: ["EN_DISCUSSION", "APPEL_PREVU"],
+    statuses: ["EN_DISCUSSION", "APPEL_PREVU", "DEVIS_A_FAIRE", "DEVIS_ENVOYE"],
   },
   {
     id: "CLOSING",
     label: "Closing",
     color: "#CCFF00",
-    statuses: ["DEVIS_A_FAIRE", "DEVIS_ENVOYE", "DEVIS_ACCEPTE", "GHOSTE", "ARCHIVE"],
+    statuses: ["DEVIS_ACCEPTE", "GHOSTE", "ARCHIVE"],
   },
 ];
 
 export function macroGroupForStatus(status: PipelineStatus): MacroGroup {
   return macroGroups.find((g) => g.statuses.includes(status)) ?? macroGroups[0];
+}
+
+const terminalStatuses: PipelineStatus[] = ["DEVIS_ACCEPTE", "GHOSTE", "ARCHIVE"];
+
+/** Le compteur de jours d'engagement n'a plus de sens une fois le devis signé (ou la marque ghostée/archivée). */
+export function showsEngagementDays(status: PipelineStatus): boolean {
+  return !terminalStatuses.includes(status);
 }
 
 export const platformLabel: Record<string, string> = {

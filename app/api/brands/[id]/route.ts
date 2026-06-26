@@ -28,6 +28,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   ]) {
     if (key in body) data[key] = body[key];
   }
+  if ("potentialRevenue" in body) {
+    data.potentialRevenue = body.potentialRevenue != null ? Number(body.potentialRevenue) : null;
+  }
   if ("engagementStartDate" in body) data.engagementStartDate = new Date(body.engagementStartDate);
   if ("lastContactDate" in body) data.lastContactDate = body.lastContactDate ? new Date(body.lastContactDate) : null;
   if ("nextActionDate" in body) data.nextActionDate = body.nextActionDate ? new Date(body.nextActionDate) : null;

@@ -42,6 +42,7 @@ model Brand {
   lastContactDate     DateTime?
   nextActionDate      DateTime?
   messageUsed         String?
+  potentialRevenue    Float?
   archivedAt          DateTime?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
