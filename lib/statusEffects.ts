@@ -16,11 +16,25 @@ export const statusActionType: Partial<Record<PipelineStatus, string>> = {
   RELANCE_1: "Relance 1",
   RELANCE_2: "Relance 2",
   EN_DISCUSSION: "Réponse reçue",
-  APPEL_PREVU: "Appel prévu",
+  APPEL_PREVU: "Appel découverte",
   DEVIS_ENVOYE: "Devis envoyé",
   RELANCE_DEVIS_1: "Relance devis 1",
   RELANCE_DEVIS_2: "Relance devis 2",
   DEVIS_REFUSE: "Devis refusé",
+};
+
+/** Mapping inverse : à partir d'un libellé d'action loggé (Suivi/Commentaires), quel statut a-t-il déclenché. */
+export const statusForActionType: Partial<Record<string, PipelineStatus>> = {
+  "Premier DM": "PREMIER_DM",
+  "Relance 1": "RELANCE_1",
+  "Relance 2": "RELANCE_2",
+  "Réponse reçue": "EN_DISCUSSION",
+  "Appel découverte": "APPEL_PREVU",
+  "Appel réalisé": "DEVIS_A_FAIRE",
+  "Devis envoyé": "DEVIS_ENVOYE",
+  "Relance devis 1": "RELANCE_DEVIS_1",
+  "Relance devis 2": "RELANCE_DEVIS_2",
+  "Devis refusé": "DEVIS_REFUSE",
 };
 
 type RelanceSettings = {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import DatePicker from "@/components/DatePicker";
 
 type Entry = {
   id: string;
@@ -13,11 +14,23 @@ type Entry = {
 function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
+  const [editingDate, setEditingDate] = useState(false);
 
   async function handleDelete() {
     if (!confirm("Supprimer cette entrée du suivi ? Cette action est irréversible.")) return;
     setDeleting(true);
     await fetch(`/api/brands/${brandId}/contact/${entry.id}`, { method: "DELETE" });
+    router.refresh();
+  }
+
+  async function handleDateChange(newDate: Date | null) {
+    if (!newDate) return;
+    setEditingDate(false);
+    await fetch(`/api/brands/${brandId}/contact/${entry.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: newDate.toISOString() }),
+    });
     router.refresh();
   }
 
@@ -35,9 +48,19 @@ function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
           {entry.type}
         </span>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-light text-ink/50">
-            {new Date(entry.date).toLocaleDateString("fr-FR")}
-          </span>
+          {editingDate ? (
+            <div className="w-40">
+              <DatePicker value={new Date(entry.date)} onChange={handleDateChange} />
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditingDate(true)}
+              className="text-xs font-light text-ink/50 underline-offset-2 hover:underline"
+              title="Modifier la date"
+            >
+              {new Date(entry.date).toLocaleDateString("fr-FR")}
+            </button>
+          )}
           <button
             onClick={handleDelete}
             disabled={deleting}

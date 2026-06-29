@@ -7,7 +7,7 @@ export const pipelineColumns: { status: PipelineStatus; label: string; color: st
   { status: "RELANCE_2", label: "Relance 2", color: "#7C3AED" },
   { status: "GHOSTE", label: "Ghosté", color: "#9CA3AF" },
   { status: "EN_DISCUSSION", label: "En discussion", color: "#60A5FA" },
-  { status: "APPEL_PREVU", label: "Appel prévu", color: "#34D399" },
+  { status: "APPEL_PREVU", label: "Appel découverte", color: "#34D399" },
   { status: "DEVIS_A_FAIRE", label: "Devis à faire", color: "#FBBF24" },
   { status: "DEVIS_ENVOYE", label: "Devis envoyé", color: "#FB923C" },
   { status: "RELANCE_DEVIS_1", label: "Relance devis 1", color: "#F59E0B" },

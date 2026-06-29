@@ -20,7 +20,7 @@ export default async function PipelinePage() {
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
     prisma.contactHistoryEntry.groupBy({
       by: ["brandId"],
-      where: { type: "Appel prévu", date: { gte: thirtyDaysAgo } },
+      where: { type: "Appel découverte", date: { gte: thirtyDaysAgo } },
     }),
   ]);
 
@@ -53,7 +53,7 @@ export default async function PipelinePage() {
 
       <div className="grid grid-cols-3 gap-4">
         <StatCard label="Revenu potentiel en cours" value={formatRevenue(potentialRevenue)} accent="#CCFF00" />
-        <StatCard label="Appels prévus (30 derniers jours)" value={String(appelsCount)} accent="#34D399" />
+        <StatCard label="Appels découverte (30 derniers jours)" value={String(appelsCount)} accent="#34D399" />
         <StatCard label="Devis envoyés" value={String(devisCount)} accent="#8B5CF6" />
       </div>
 

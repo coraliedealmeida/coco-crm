@@ -1,21 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { PipelineStatus } from "@prisma/client";
 import { archivingStatuses } from "@/lib/pipeline";
-import { computeNextActionDate } from "@/lib/statusEffects";
-
-const statusForType: Partial<Record<string, PipelineStatus>> = {
-  "Premier DM": "PREMIER_DM",
-  "Relance 1": "RELANCE_1",
-  "Relance 2": "RELANCE_2",
-  "Réponse reçue": "EN_DISCUSSION",
-  "Appel prévu": "APPEL_PREVU",
-  "Appel réalisé": "DEVIS_A_FAIRE",
-  "Devis envoyé": "DEVIS_ENVOYE",
-  "Relance devis 1": "RELANCE_DEVIS_1",
-  "Relance devis 2": "RELANCE_DEVIS_2",
-  "Devis refusé": "DEVIS_REFUSE",
-};
+import { computeNextActionDate, statusForActionType } from "@/lib/statusEffects";
 
 /**
  * Journalise un contact (premier DM, relance, appel, etc.) et fait avancer
@@ -32,7 +18,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   });
 
   const now = new Date();
-  const nextStatus = statusForType[type];
+  const nextStatus = statusForActionType[type];
   const nextActionDate = nextStatus ? computeNextActionDate(nextStatus, now, settings) : undefined;
 
   await prisma.contactHistoryEntry.create({
