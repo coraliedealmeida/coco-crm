@@ -5,6 +5,19 @@ const prisma = new PrismaClient();
 const sectors = ["Nutrition", "Accessoires", "Santé", "Retail", "Événementiel", "Autre"];
 const sources = ["Recherche", "Recommandation", "Salon", "Autre"];
 
+const services: { name: string; category: string; price: number; priceType: "FIXED" | "HOURLY" | "MONTHLY" }[] = [
+  { name: "La Patte", category: "Identité visuelle", price: 1290, priceType: "FIXED" },
+  { name: "L'Empreinte (Kit RS inclus)", category: "Identité visuelle", price: 1990, priceType: "FIXED" },
+  { name: "Kit RS (seul)", category: "Templates réseaux sociaux", price: 690, priceType: "FIXED" },
+  { name: "Site One Page", category: "Site web", price: 1690, priceType: "FIXED" },
+  { name: "Site Vitrine", category: "Site web", price: 2990, priceType: "FIXED" },
+  { name: "Rédaction contenus One Page", category: "Add-ons site web", price: 300, priceType: "FIXED" },
+  { name: "Rédaction contenus Site Vitrine", category: "Add-ons site web", price: 500, priceType: "FIXED" },
+  { name: "Sourcing / banque d'images", category: "Add-ons site web", price: 150, priceType: "FIXED" },
+  { name: "Graphisme à la carte", category: "Graphisme", price: 65, priceType: "HOURLY" },
+  { name: "Accompagnement mensuel", category: "Graphisme", price: 850, priceType: "MONTHLY" },
+];
+
 async function main() {
   for (const label of sectors) {
     await prisma.sectorOption.upsert({
@@ -27,6 +40,11 @@ async function main() {
     update: {},
     create: { id: "singleton" },
   });
+
+  const existingServices = await prisma.service.count();
+  if (existingServices === 0) {
+    await prisma.service.createMany({ data: services });
+  }
 
   console.log("Seed terminé.");
 }

@@ -46,6 +46,7 @@ model Brand {
   nextActionDate      DateTime?
   messageUsed         String?
   potentialRevenue    Float?
+  discoveryNotes      Json?
   archivedAt          DateTime?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
@@ -135,4 +136,21 @@ model Invoice {
   amount    Float?
   sentAt    DateTime?
   paidAt    DateTime?
+}
+
+enum PriceType {
+  FIXED
+  HOURLY
+  MONTHLY
+}
+
+// Grille tarifaire — gérée depuis l'interface (Phase 2, étape "Grille tarifaire").
+model Service {
+  id       String    @id @default(cuid())
+  name     String
+  category String
+  price    Float
+  priceType PriceType @default(FIXED)
+  active   Boolean   @default(true)
+  createdAt DateTime @default(now())
 }

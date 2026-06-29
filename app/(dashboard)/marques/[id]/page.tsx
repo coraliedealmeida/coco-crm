@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { platformLabel, avatarColor, initials, statusLabel, nextAutomaticActionLabel } from "@/lib/pipeline";
@@ -61,11 +62,19 @@ export default async function BrandDetailPage({ params }: { params: { id: string
             </p>
           </div>
         </div>
-        {greenLight && (
-          <span className="rounded-full bg-cta px-4 py-2 text-sm font-semibold text-ink shadow-soft">
-            🟢 Feu vert DM
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/marques/${brand.id}/notes`}
+            className="rounded-full bg-soft px-4 py-2 text-sm font-semibold text-ink transition hover:bg-accent-light/40"
+          >
+            📋 Notes d&apos;appel découverte
+          </Link>
+          {greenLight && (
+            <span className="rounded-full bg-cta px-4 py-2 text-sm font-semibold text-ink shadow-soft">
+              🟢 Feu vert DM
+            </span>
+          )}
+        </div>
       </header>
 
       <div className="grid grid-cols-4 gap-6">
