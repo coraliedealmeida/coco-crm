@@ -16,7 +16,7 @@ export const statusActionType: Partial<Record<PipelineStatus, string>> = {
   RELANCE_1: "Relance 1",
   RELANCE_2: "Relance 2",
   EN_DISCUSSION: "Réponse reçue",
-  APPEL_PREVU: "Appel découverte",
+  APPEL_PREVU: "Appel prévu",
   DEVIS_ENVOYE: "Devis envoyé",
   RELANCE_DEVIS_1: "Relance devis 1",
   RELANCE_DEVIS_2: "Relance devis 2",

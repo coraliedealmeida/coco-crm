@@ -5,9 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 
 const links = [
   { href: "/", label: "Dashboard" },
-  { href: "/marques", label: "Marques prospects" },
-  { href: "/pipeline", label: "Pipeline prospection" },
-  { href: "/messages", label: "Messages types" },
+  { href: "/marques", label: "Prospects" },
+  { href: "/pipeline", label: "Pipeline" },
+  { href: "/messages", label: "Ressources" },
   { href: "/parametres", label: "Paramètres" },
 ];
 
@@ -24,14 +24,10 @@ export default function Sidebar() {
   return (
     <aside className="flex h-screen w-64 flex-col justify-between border-r border-soft bg-white px-5 py-7">
       <div>
-        <div className="mb-10 flex items-center gap-3 px-2">
+        <Link href="/" className="mb-10 flex items-center px-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.svg" alt="Logo Coco" className="h-10 w-10 shrink-0 object-contain" />
-          <div>
-            <p className="font-sans text-base font-extrabold leading-tight text-ink">Dashboard COCO</p>
-            <p className="text-xs font-light text-ink/50">Coralie De Almeida</p>
-          </div>
-        </div>
+          <img src="/logo.svg" alt="Dashboard Coco" className="h-14 w-auto object-contain" />
+        </Link>
 
         <nav className="flex flex-col gap-1.5">
           {links.map((link) => {

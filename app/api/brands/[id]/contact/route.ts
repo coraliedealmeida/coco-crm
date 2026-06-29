@@ -9,7 +9,7 @@ const statusForType: Partial<Record<string, PipelineStatus>> = {
   "Relance 1": "RELANCE_1",
   "Relance 2": "RELANCE_2",
   "Réponse reçue": "EN_DISCUSSION",
-  "Appel découverte": "APPEL_PREVU",
+  "Appel prévu": "APPEL_PREVU",
   "Appel réalisé": "DEVIS_A_FAIRE",
   "Devis envoyé": "DEVIS_ENVOYE",
   "Relance devis 1": "RELANCE_DEVIS_1",
