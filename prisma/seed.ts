@@ -14,8 +14,10 @@ const services: { name: string; category: string; price: number; priceType: "FIX
   { name: "Rédaction contenus One Page", category: "Add-ons site web", price: 300, priceType: "FIXED" },
   { name: "Rédaction contenus Site Vitrine", category: "Add-ons site web", price: 500, priceType: "FIXED" },
   { name: "Sourcing / banque d'images", category: "Add-ons site web", price: 150, priceType: "FIXED" },
+  { name: "Heures supplémentaires", category: "Add-ons site web", price: 65, priceType: "HOURLY" },
   { name: "Graphisme à la carte", category: "Graphisme", price: 65, priceType: "HOURLY" },
-  { name: "Accompagnement mensuel", category: "Graphisme", price: 850, priceType: "MONTHLY" },
+  { name: "Accompagnement mensuel", category: "Services récurrents", price: 850, priceType: "MONTHLY" },
+  { name: "Maintenance", category: "Services récurrents", price: 150, priceType: "MONTHLY" },
 ];
 
 async function main() {
@@ -41,9 +43,11 @@ async function main() {
     create: { id: "singleton" },
   });
 
-  const existingServices = await prisma.service.count();
-  if (existingServices === 0) {
-    await prisma.service.createMany({ data: services });
+  for (const service of services) {
+    const existing = await prisma.service.findFirst({ where: { name: service.name } });
+    if (!existing) {
+      await prisma.service.create({ data: service });
+    }
   }
 
   console.log("Seed terminé.");
