@@ -21,10 +21,19 @@ function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
     router.refresh();
   }
 
+  const highlighted = Boolean(entry.content) || entry.type === "Appel réalisé";
+
   return (
-    <div className="group rounded-xl bg-soft px-4 py-3">
+    <div
+      className={`group rounded-xl px-4 py-3 ${
+        highlighted ? "border-l-4 border-cta bg-cta/15" : "bg-soft"
+      }`}
+    >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-ink">{entry.type}</span>
+        <span className="text-sm font-semibold text-ink">
+          {highlighted && <span className="mr-1">💬</span>}
+          {entry.type}
+        </span>
         <div className="flex items-center gap-2">
           <span className="text-xs font-light text-ink/50">
             {new Date(entry.date).toLocaleDateString("fr-FR")}

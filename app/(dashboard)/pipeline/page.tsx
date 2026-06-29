@@ -4,6 +4,8 @@ import StatCard from "@/components/StatCard";
 
 export const dynamic = "force-dynamic";
 
+const devisInProgressStatuses = ["DEVIS_ENVOYE", "RELANCE_DEVIS_1", "RELANCE_DEVIS_2", "DEVIS_ACCEPTE", "DEVIS_REFUSE"];
+
 function formatRevenue(amount: number): string {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
     amount
@@ -11,24 +13,21 @@ function formatRevenue(amount: number): string {
 }
 
 export default async function PipelinePage() {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const [brands, settings, appelsCount, devisCount] = await Promise.all([
+  const [brands, settings, appelsCount] = await Promise.all([
     prisma.brand.findMany({ orderBy: { updatedAt: "desc" } }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
     prisma.contactHistoryEntry.count({
-      where: { type: "Appel réalisé", date: { gte: thirtyDaysAgo } },
-    }),
-    prisma.contactHistoryEntry.count({
-      where: { type: "Devis envoyé", date: { gte: startOfMonth } },
+      where: { type: "Appel découverte", date: { gte: thirtyDaysAgo } },
     }),
   ]);
 
   const potentialRevenue = brands
     .filter((b) => !b.archivedAt)
     .reduce((sum, b) => sum + (b.potentialRevenue ?? 0), 0);
+
+  const devisCount = brands.filter((b) => devisInProgressStatuses.includes(b.pipelineStatus)).length;
 
   const serialized = brands.map((b) => ({
     id: b.id,
@@ -52,7 +51,7 @@ export default async function PipelinePage() {
       <div className="grid grid-cols-3 gap-4">
         <StatCard label="Revenu potentiel en cours" value={formatRevenue(potentialRevenue)} accent="#CCFF00" />
         <StatCard label="Appels découverte (30 derniers jours)" value={String(appelsCount)} accent="#34D399" />
-        <StatCard label="Devis envoyés ce mois-ci" value={String(devisCount)} accent="#8B5CF6" />
+        <StatCard label="Devis envoyés" value={String(devisCount)} accent="#8B5CF6" />
       </div>
 
       <KanbanBoard brands={serialized} greenLightThreshold={settings.daysBeforeGreenLight} />
