@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import DatePicker from "@/components/DatePicker";
+
+function toDateInputValue(isoDate: string): string {
+  return new Date(isoDate).toISOString().slice(0, 10);
+}
 
 type Entry = {
   id: string;
@@ -23,13 +26,13 @@ function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
     router.refresh();
   }
 
-  async function handleDateChange(newDate: Date | null) {
-    if (!newDate) return;
+  async function handleDateChange(value: string) {
+    if (!value) return;
     setEditingDate(false);
     await fetch(`/api/brands/${brandId}/contact/${entry.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: newDate.toISOString() }),
+      body: JSON.stringify({ date: new Date(value).toISOString() }),
     });
     router.refresh();
   }
@@ -49,9 +52,14 @@ function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
         </span>
         <div className="flex items-center gap-2">
           {editingDate ? (
-            <div className="w-40">
-              <DatePicker value={new Date(entry.date)} onChange={handleDateChange} />
-            </div>
+            <input
+              type="date"
+              autoFocus
+              defaultValue={toDateInputValue(entry.date)}
+              onBlur={() => setEditingDate(false)}
+              onChange={(e) => handleDateChange(e.target.value)}
+              className="rounded-lg border border-accent-light bg-soft px-2 py-1 text-xs text-ink outline-none focus:border-accent"
+            />
           ) : (
             <button
               onClick={() => setEditingDate(true)}
