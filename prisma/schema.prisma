@@ -107,7 +107,8 @@ enum ServiceType {
   KIT_RS
   GRAPHISME_A_LA_CARTE
   ACCOMPAGNEMENT_MENSUEL
-  ECOLES_JURY
+  ECOLES
+  JURY
 }
 
 model Client {
@@ -146,11 +147,22 @@ enum PriceType {
 
 // Grille tarifaire — gérée depuis l'interface (Phase 2, étape "Grille tarifaire").
 model Service {
-  id       String    @id @default(cuid())
-  name     String
-  category String
-  price    Float
+  id        String    @id @default(cuid())
+  name      String
+  category  String
+  price     Float
   priceType PriceType @default(FIXED)
-  active   Boolean   @default(true)
-  createdAt DateTime @default(now())
+  active    Boolean   @default(true)
+  order     Int       @default(0)
+  createdAt DateTime  @default(now())
+}
+
+// Bundle = regroupement de prestations avec une remise automatique.
+model Bundle {
+  id              String   @id @default(cuid())
+  name            String
+  serviceIds      String[]
+  discountPercent Float    @default(10)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
 }

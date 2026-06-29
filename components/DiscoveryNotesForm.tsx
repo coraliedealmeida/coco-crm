@@ -5,14 +5,27 @@ import { useRouter } from "next/navigation";
 import { ServiceType } from "@prisma/client";
 import { serviceTypeOptions } from "@/lib/serviceTypes";
 
-type ServiceOption = { id: string; name: string; price: number; priceType: "FIXED" | "HOURLY" | "MONTHLY" };
+type ServiceOption = {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  priceType: "FIXED" | "HOURLY" | "MONTHLY";
+};
+
+type BundleOption = {
+  id: string;
+  name: string;
+  discountPercent: number;
+  serviceIds: string[];
+};
 
 type NotesData = {
   summary: string;
   brandPresentation: string;
   visualSituation: string;
   mainObjective: string;
-  serviceType: ServiceType | "";
+  serviceTypes: ServiceType[];
   elementsToKeep: string;
   visualReferences: string;
   existingSiteOrNew: string;
@@ -25,12 +38,16 @@ type NotesData = {
   whoUsesTemplates: string;
   recurringNeeds: string;
   currentOrganization: string;
+  graphismeBrief: string;
+  ecoleJuryModalites: string;
   desiredDelay: string;
   delayIfNotSpecified: string;
   paymentTermsPresented: boolean;
   clientQuestions: string;
   nextStepAgreed: string;
-  serviceIds: string[];
+  selectedServiceIds: string[];
+  serviceQuantities: Record<string, number>;
+  selectedBundleIds: string[];
 };
 
 const emptyNotes: NotesData = {
@@ -38,7 +55,7 @@ const emptyNotes: NotesData = {
   brandPresentation: "",
   visualSituation: "",
   mainObjective: "",
-  serviceType: "",
+  serviceTypes: [],
   elementsToKeep: "",
   visualReferences: "",
   existingSiteOrNew: "",
@@ -51,12 +68,16 @@ const emptyNotes: NotesData = {
   whoUsesTemplates: "",
   recurringNeeds: "",
   currentOrganization: "",
+  graphismeBrief: "",
+  ecoleJuryModalites: "",
   desiredDelay: "",
   delayIfNotSpecified: "",
   paymentTermsPresented: false,
   clientQuestions: "",
   nextStepAgreed: "",
-  serviceIds: [],
+  selectedServiceIds: [],
+  serviceQuantities: {},
+  selectedBundleIds: [],
 };
 
 function formatPrice(amount: number): string {
@@ -69,10 +90,12 @@ export default function DiscoveryNotesForm({
   brandId,
   initial,
   services,
+  bundles,
 }: {
   brandId: string;
   initial: Partial<NotesData> | null;
   services: ServiceOption[];
+  bundles: BundleOption[];
 }) {
   const router = useRouter();
   const [notes, setNotes] = useState<NotesData>({ ...emptyNotes, ...initial });
@@ -83,12 +106,41 @@ export default function DiscoveryNotesForm({
     setNotes((prev) => ({ ...prev, [key]: value }));
   }
 
+  function toggleServiceType(type: ServiceType, checked: boolean) {
+    set("serviceTypes", checked ? [...notes.serviceTypes, type] : notes.serviceTypes.filter((t) => t !== type));
+  }
+
+  const has = (type: ServiceType) => notes.serviceTypes.includes(type);
+
+  // Services couverts par un bundle sélectionné = exclus du total individuel pour éviter le double comptage.
+  const coveredServiceIds = new Set(
+    bundles.filter((b) => notes.selectedBundleIds.includes(b.id)).flatMap((b) => b.serviceIds)
+  );
+
+  const bundleTotal = bundles
+    .filter((b) => notes.selectedBundleIds.includes(b.id))
+    .reduce((sum, b) => {
+      const base = b.serviceIds.reduce((s, id) => s + (services.find((sv) => sv.id === id)?.price ?? 0), 0);
+      return sum + base * (1 - b.discountPercent / 100);
+    }, 0);
+
+  const individualTotal = services
+    .filter((s) => notes.selectedServiceIds.includes(s.id) && !coveredServiceIds.has(s.id))
+    .reduce((sum, s) => {
+      const qty = s.priceType === "HOURLY" ? notes.serviceQuantities[s.id] ?? 0 : 1;
+      return sum + s.price * qty;
+    }, 0);
+
+  const totalHT = bundleTotal + individualTotal;
+  const deposit30 = totalHT * 0.3;
+  const threeInstallments = totalHT / 3;
+
   async function handleSave() {
     setSaving(true);
     await fetch(`/api/brands/${brandId}/discovery-notes`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(notes),
+      body: JSON.stringify({ ...notes, computedTotal: totalHT }),
     });
     setSaving(false);
     setSaved(true);
@@ -96,10 +148,7 @@ export default function DiscoveryNotesForm({
     setTimeout(() => setSaved(false), 2000);
   }
 
-  const selectedServices = services.filter((s) => notes.serviceIds.includes(s.id));
-  const totalHT = selectedServices.reduce((sum, s) => sum + s.price, 0);
-  const deposit30 = totalHT * 0.3;
-  const threeInstallments = totalHT / 3;
+  let lastCategory = "";
 
   return (
     <div className="flex flex-col gap-6">
@@ -121,23 +170,23 @@ export default function DiscoveryNotesForm({
         </Field>
       </Section>
 
-      <Section title="3. Questions selon le type de prestation" icon="🎯">
-        <Field label="Type de prestation">
-          <select
-            value={notes.serviceType}
-            onChange={(e) => set("serviceType", e.target.value as ServiceType)}
-            className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
-          >
-            <option value="">Choisir...</option>
+      <Section title="3. Questions selon le(s) type(s) de prestation" icon="🎯">
+        <Field label="Type(s) de prestation envisagé(s)">
+          <div className="flex flex-wrap gap-3">
             {serviceTypeOptions.map((o) => (
-              <option key={o.value} value={o.value}>
+              <label key={o.value} className="flex items-center gap-2 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  checked={has(o.value)}
+                  onChange={(e) => toggleServiceType(o.value, e.target.checked)}
+                />
                 {o.label}
-              </option>
+              </label>
             ))}
-          </select>
+          </div>
         </Field>
 
-        {(notes.serviceType === "LA_PATTE" || notes.serviceType === "LEMPREINTE") && (
+        {(has("LA_PATTE") || has("LEMPREINTE")) && (
           <>
             <Field label="Éléments à conserver ou inclure">
               <Textarea value={notes.elementsToKeep} onChange={(v) => set("elementsToKeep", v)} />
@@ -145,13 +194,10 @@ export default function DiscoveryNotesForm({
             <Field label="Références visuelles et univers inspirants">
               <Textarea value={notes.visualReferences} onChange={(v) => set("visualReferences", v)} />
             </Field>
-            <Field label="Délai souhaité">
-              <Textarea value={notes.desiredDelay} onChange={(v) => set("desiredDelay", v)} rows={2} />
-            </Field>
           </>
         )}
 
-        {(notes.serviceType === "SITE_ONE_PAGE" || notes.serviceType === "SITE_VITRINE") && (
+        {(has("SITE_ONE_PAGE") || has("SITE_VITRINE")) && (
           <>
             <Field label="Site existant ou création ?">
               <Textarea value={notes.existingSiteOrNew} onChange={(v) => set("existingSiteOrNew", v)} rows={2} />
@@ -168,13 +214,10 @@ export default function DiscoveryNotesForm({
             <Field label="Notes sur les contenus">
               <Textarea value={notes.contentReadyNotes} onChange={(v) => set("contentReadyNotes", v)} rows={2} />
             </Field>
-            <Field label="Délai souhaité">
-              <Textarea value={notes.desiredDelay} onChange={(v) => set("desiredDelay", v)} rows={2} />
-            </Field>
           </>
         )}
 
-        {notes.serviceType === "KIT_RS" && (
+        {has("KIT_RS") && (
           <>
             <Field label="Réseaux concernés">
               <div className="flex gap-4">
@@ -203,13 +246,10 @@ export default function DiscoveryNotesForm({
             <Field label="Qui utilisera les templates ?">
               <Textarea value={notes.whoUsesTemplates} onChange={(v) => set("whoUsesTemplates", v)} rows={2} />
             </Field>
-            <Field label="Délai souhaité">
-              <Textarea value={notes.desiredDelay} onChange={(v) => set("desiredDelay", v)} rows={2} />
-            </Field>
           </>
         )}
 
-        {notes.serviceType === "ACCOMPAGNEMENT_MENSUEL" && (
+        {has("ACCOMPAGNEMENT_MENSUEL") && (
           <>
             <Field label="Besoins récurrents identifiés">
               <Textarea value={notes.recurringNeeds} onChange={(v) => set("recurringNeeds", v)} />
@@ -221,6 +261,24 @@ export default function DiscoveryNotesForm({
               <Textarea value={notes.toolsUsed} onChange={(v) => set("toolsUsed", v)} rows={2} />
             </Field>
           </>
+        )}
+
+        {has("GRAPHISME_A_LA_CARTE") && (
+          <Field label="Brief du projet">
+            <Textarea value={notes.graphismeBrief} onChange={(v) => set("graphismeBrief", v)} />
+          </Field>
+        )}
+
+        {(has("ECOLES") || has("JURY")) && (
+          <Field label="Modalités (école / jury)">
+            <Textarea value={notes.ecoleJuryModalites} onChange={(v) => set("ecoleJuryModalites", v)} />
+          </Field>
+        )}
+
+        {notes.serviceTypes.length > 0 && (
+          <Field label="Délai souhaité">
+            <Textarea value={notes.desiredDelay} onChange={(v) => set("desiredDelay", v)} rows={2} />
+          </Field>
         )}
       </Section>
 
@@ -242,26 +300,85 @@ export default function DiscoveryNotesForm({
       </Section>
 
       <Section title="5. Récapitulatif devis" icon="💰">
-        <Field label="Prestations identifiées">
+        {bundles.length > 0 && (
+          <Field label="Bundles (remplacent les prestations individuelles couvertes)">
+            <div className="flex flex-col gap-2">
+              {bundles.map((b) => {
+                const base = b.serviceIds.reduce(
+                  (s, id) => s + (services.find((sv) => sv.id === id)?.price ?? 0),
+                  0
+                );
+                const bundlePrice = base * (1 - b.discountPercent / 100);
+                return (
+                  <label key={b.id} className="flex items-center gap-2 text-sm text-ink">
+                    <input
+                      type="checkbox"
+                      checked={notes.selectedBundleIds.includes(b.id)}
+                      onChange={(e) =>
+                        set(
+                          "selectedBundleIds",
+                          e.target.checked
+                            ? [...notes.selectedBundleIds, b.id]
+                            : notes.selectedBundleIds.filter((id) => id !== b.id)
+                        )
+                      }
+                    />
+                    {b.name} — {formatPrice(bundlePrice)} (−{b.discountPercent}%)
+                  </label>
+                );
+              })}
+            </div>
+          </Field>
+        )}
+
+        <Field label="Prestations individuelles">
           <div className="flex flex-col gap-2">
-            {services.map((s) => (
-              <label key={s.id} className="flex items-center gap-2 text-sm text-ink">
-                <input
-                  type="checkbox"
-                  checked={notes.serviceIds.includes(s.id)}
-                  onChange={(e) =>
-                    set(
-                      "serviceIds",
-                      e.target.checked
-                        ? [...notes.serviceIds, s.id]
-                        : notes.serviceIds.filter((id) => id !== s.id)
-                    )
-                  }
-                />
-                {s.name} — {formatPrice(s.price)}
-                {s.priceType === "HOURLY" ? "/h" : s.priceType === "MONTHLY" ? "/mois" : ""}
-              </label>
-            ))}
+            {services.map((s) => {
+              const showCategory = s.category !== lastCategory;
+              lastCategory = s.category;
+              const covered = coveredServiceIds.has(s.id);
+              return (
+                <div key={s.id}>
+                  {showCategory && (
+                    <p className="mb-1 mt-2 text-xs font-semibold uppercase tracking-wide text-ink/40">
+                      {s.category}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <label className={`flex flex-1 items-center gap-2 text-sm ${covered ? "text-ink/30" : "text-ink"}`}>
+                      <input
+                        type="checkbox"
+                        checked={notes.selectedServiceIds.includes(s.id)}
+                        disabled={covered}
+                        onChange={(e) =>
+                          set(
+                            "selectedServiceIds",
+                            e.target.checked
+                              ? [...notes.selectedServiceIds, s.id]
+                              : notes.selectedServiceIds.filter((id) => id !== s.id)
+                          )
+                        }
+                      />
+                      {s.name} — {formatPrice(s.price)}
+                      {s.priceType === "HOURLY" ? "/h" : s.priceType === "MONTHLY" ? "/mois" : ""}
+                      {covered && " (inclus dans le bundle)"}
+                    </label>
+                    {s.priceType === "HOURLY" && notes.selectedServiceIds.includes(s.id) && !covered && (
+                      <input
+                        type="number"
+                        min={0}
+                        value={notes.serviceQuantities[s.id] ?? 0}
+                        onChange={(e) =>
+                          set("serviceQuantities", { ...notes.serviceQuantities, [s.id]: Number(e.target.value) })
+                        }
+                        placeholder="h"
+                        className="w-20 rounded-lg border border-accent-light bg-soft px-2 py-1 text-sm text-ink outline-none focus:border-accent"
+                      />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </Field>
 

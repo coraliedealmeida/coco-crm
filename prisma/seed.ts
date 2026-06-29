@@ -43,10 +43,35 @@ async function main() {
     create: { id: "singleton" },
   });
 
-  for (const service of services) {
+  const servicesByName: Record<string, { id: string }> = {};
+  for (let i = 0; i < services.length; i++) {
+    const service = services[i];
     const existing = await prisma.service.findFirst({ where: { name: service.name } });
+    const saved = existing
+      ? await prisma.service.update({ where: { id: existing.id }, data: { order: i } })
+      : await prisma.service.create({ data: { ...service, order: i } });
+    servicesByName[service.name] = saved;
+  }
+
+  const bundles: { name: string; serviceNames: string[]; discountPercent: number }[] = [
+    { name: "La Patte Digitale", serviceNames: ["La Patte", "Site One Page"], discountPercent: 10 },
+    {
+      name: "L'Empreinte Digitale",
+      serviceNames: ["L'Empreinte (Kit RS inclus)", "Site Vitrine"],
+      discountPercent: 10,
+    },
+  ];
+
+  for (const bundle of bundles) {
+    const existing = await prisma.bundle.findFirst({ where: { name: bundle.name } });
     if (!existing) {
-      await prisma.service.create({ data: service });
+      await prisma.bundle.create({
+        data: {
+          name: bundle.name,
+          discountPercent: bundle.discountPercent,
+          serviceIds: bundle.serviceNames.map((n) => servicesByName[n].id),
+        },
+      });
     }
   }
 

@@ -6,9 +6,10 @@ import DiscoveryNotesForm from "@/components/DiscoveryNotesForm";
 export const dynamic = "force-dynamic";
 
 export default async function DiscoveryNotesPage({ params }: { params: { id: string } }) {
-  const [brand, services] = await Promise.all([
+  const [brand, services, bundles] = await Promise.all([
     prisma.brand.findUnique({ where: { id: params.id } }),
-    prisma.service.findMany({ where: { active: true }, orderBy: { category: "asc" } }),
+    prisma.service.findMany({ where: { active: true }, orderBy: { order: "asc" } }),
+    prisma.bundle.findMany({ where: { active: true } }),
   ]);
 
   if (!brand) notFound();
@@ -29,8 +30,15 @@ export default async function DiscoveryNotesPage({ params }: { params: { id: str
         services={services.map((s) => ({
           id: s.id,
           name: s.name,
+          category: s.category,
           price: s.price,
           priceType: s.priceType,
+        }))}
+        bundles={bundles.map((b) => ({
+          id: b.id,
+          name: b.name,
+          discountPercent: b.discountPercent,
+          serviceIds: b.serviceIds,
         }))}
       />
     </div>

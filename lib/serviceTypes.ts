@@ -8,7 +8,8 @@ export const serviceTypeLabel: Record<ServiceType, string> = {
   KIT_RS: "Kit RS",
   GRAPHISME_A_LA_CARTE: "Graphisme à la carte",
   ACCOMPAGNEMENT_MENSUEL: "Accompagnement mensuel",
-  ECOLES_JURY: "Écoles & Jury",
+  ECOLES: "École",
+  JURY: "Jury",
 };
 
 export const serviceTypeOptions: { value: ServiceType; label: string }[] = (
@@ -125,5 +126,6 @@ export const projectSteps: Record<ServiceType, string[]> = {
     "Demande avis",
     "Terminé",
   ],
-  ECOLES_JURY: ["Confirmé", "En cours", "Terminé", "À facturer", "Facture envoyée", "Payé"],
+  ECOLES: ["Confirmé", "En cours", "Terminé", "À facturer", "Facture envoyée", "Payé"],
+  JURY: ["Confirmé", "En cours", "Terminé", "À facturer", "Facture envoyée", "Payé"],
 };

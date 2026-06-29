@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 function toDateInputValue(isoDate: string): string {
   return new Date(isoDate).toISOString().slice(0, 10);
@@ -38,6 +39,7 @@ function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
   }
 
   const highlighted = Boolean(entry.content) || entry.type === "Appel réalisé";
+  const isDiscoveryCall = entry.type === "Appel découverte";
 
   return (
     <div
@@ -46,10 +48,20 @@ function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-ink">
-          {highlighted && <span className="mr-1">💬</span>}
-          {entry.type}
-        </span>
+        {isDiscoveryCall ? (
+          <Link
+            href={`/marques/${brandId}/notes`}
+            className="flex items-center gap-1 text-sm font-semibold text-accent hover:underline"
+          >
+            📋 {entry.type}
+            <span aria-hidden>→</span>
+          </Link>
+        ) : (
+          <span className="text-sm font-semibold text-ink">
+            {highlighted && <span className="mr-1">💬</span>}
+            {entry.type}
+          </span>
+        )}
         <div className="flex items-center gap-2">
           {editingDate ? (
             <input
