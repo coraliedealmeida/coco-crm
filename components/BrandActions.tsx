@@ -9,6 +9,7 @@ const actionTypes = [
   "Relance 2",
   "Réponse reçue",
   "Appel découverte",
+  "Appel réalisé",
   "Devis envoyé",
   "Relance devis 1",
   "Relance devis 2",

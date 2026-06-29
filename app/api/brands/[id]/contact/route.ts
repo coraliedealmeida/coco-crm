@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { addBusinessDays } from "@/lib/business-days";
 import { PipelineStatus } from "@prisma/client";
 import { archivingStatuses } from "@/lib/pipeline";
+import { computeNextActionDate } from "@/lib/statusEffects";
+
+const statusForType: Partial<Record<string, PipelineStatus>> = {
+  "Premier DM": "PREMIER_DM",
+  "Relance 1": "RELANCE_1",
+  "Relance 2": "RELANCE_2",
+  "Réponse reçue": "EN_DISCUSSION",
+  "Appel découverte": "APPEL_PREVU",
+  "Appel réalisé": "DEVIS_A_FAIRE",
+  "Devis envoyé": "DEVIS_ENVOYE",
+  "Relance devis 1": "RELANCE_DEVIS_1",
+  "Relance devis 2": "RELANCE_DEVIS_2",
+  "Devis refusé": "DEVIS_REFUSE",
+};
 
 /**
  * Journalise un contact (premier DM, relance, appel, etc.) et fait avancer
@@ -12,42 +25,15 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   const body = await request.json();
   const { type, content } = body as { type: string; content?: string };
 
-  const settings = await prisma.settings.findUnique({ where: { id: "singleton" } });
-  const delay1 = settings?.daysBeforeRelance1 ?? 15;
-  const delay2 = settings?.daysBeforeRelance2 ?? 15;
-  const devisDelay1 = settings?.daysBeforeDevisRelance1 ?? 15;
-  const devisDelay2 = settings?.daysBeforeDevisRelance2 ?? 15;
+  const settings = await prisma.settings.upsert({
+    where: { id: "singleton" },
+    update: {},
+    create: { id: "singleton" },
+  });
 
   const now = new Date();
-  let nextStatus: PipelineStatus | undefined;
-  let nextActionDate: Date | null | undefined;
-
-  if (type === "Premier DM") {
-    nextStatus = "PREMIER_DM";
-    nextActionDate = addBusinessDays(now, delay1);
-  } else if (type === "Relance 1") {
-    nextStatus = "RELANCE_1";
-    nextActionDate = addBusinessDays(now, delay2);
-  } else if (type === "Relance 2") {
-    nextStatus = "RELANCE_2";
-    nextActionDate = null;
-  } else if (type === "Réponse reçue") {
-    nextStatus = "EN_DISCUSSION";
-  } else if (type === "Appel découverte") {
-    nextStatus = "APPEL_PREVU";
-  } else if (type === "Devis envoyé") {
-    nextStatus = "DEVIS_ENVOYE";
-    nextActionDate = addBusinessDays(now, devisDelay1);
-  } else if (type === "Relance devis 1") {
-    nextStatus = "RELANCE_DEVIS_1";
-    nextActionDate = addBusinessDays(now, devisDelay2);
-  } else if (type === "Relance devis 2") {
-    nextStatus = "RELANCE_DEVIS_2";
-    nextActionDate = null;
-  } else if (type === "Devis refusé") {
-    nextStatus = "DEVIS_REFUSE";
-    nextActionDate = null;
-  }
+  const nextStatus = statusForType[type];
+  const nextActionDate = nextStatus ? computeNextActionDate(nextStatus, now, settings) : undefined;
 
   await prisma.contactHistoryEntry.create({
     data: { brandId: params.id, date: now, type, content: content || null },

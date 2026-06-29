@@ -19,7 +19,7 @@ export default async function PipelinePage() {
     prisma.brand.findMany({ orderBy: { updatedAt: "desc" } }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
     prisma.contactHistoryEntry.count({
-      where: { type: "Appel découverte", date: { gte: thirtyDaysAgo } },
+      where: { type: "Appel réalisé", date: { gte: thirtyDaysAgo } },
     }),
     prisma.contactHistoryEntry.count({
       where: { type: "Devis envoyé", date: { gte: startOfMonth } },

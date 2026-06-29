@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PipelineStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { archivingStatuses } from "@/lib/pipeline";
+import { archivingStatuses, statusLabel } from "@/lib/pipeline";
+import { computeNextActionDate, statusActionType } from "@/lib/statusEffects";
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const brand = await prisma.brand.findUnique({
@@ -36,8 +38,24 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   if ("lastContactDate" in body) data.lastContactDate = body.lastContactDate ? new Date(body.lastContactDate) : null;
   if ("nextActionDate" in body) data.nextActionDate = body.nextActionDate ? new Date(body.nextActionDate) : null;
 
+  const now = new Date();
+  let logType: string | null = null;
+
   if ("pipelineStatus" in body) {
-    data.archivedAt = archivingStatuses.includes(body.pipelineStatus) ? new Date() : null;
+    const newStatus = body.pipelineStatus as PipelineStatus;
+    data.archivedAt = archivingStatuses.includes(newStatus) ? now : null;
+    data.lastContactDate = now;
+    logType = statusActionType[newStatus] ?? `Statut → ${statusLabel(newStatus)}`;
+
+    if (!("nextActionDate" in body)) {
+      const settings = await prisma.settings.upsert({
+        where: { id: "singleton" },
+        update: {},
+        create: { id: "singleton" },
+      });
+      const computed = computeNextActionDate(newStatus, now, settings);
+      if (computed !== undefined) data.nextActionDate = computed;
+    }
   }
 
   const brand = await prisma.brand.update({
@@ -45,13 +63,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     data,
   });
 
-  if ("pipelineStatus" in body) {
+  if (logType) {
     await prisma.contactHistoryEntry.create({
-      data: {
-        brandId: brand.id,
-        date: new Date(),
-        type: `Statut → ${body.pipelineStatus}`,
-      },
+      data: { brandId: brand.id, date: now, type: logType },
     });
   }
 
