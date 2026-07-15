@@ -20,7 +20,7 @@ export default async function ClientsPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="font-sans text-3xl font-extrabold text-ink">Clients & Projets</h1>
+        <h1 className="font-sans text-3xl font-extrabold text-ink">Projets</h1>
         <p className="font-light text-ink/60">Marques passées en devis accepté, avec le suivi de leurs projets.</p>
       </header>
 
