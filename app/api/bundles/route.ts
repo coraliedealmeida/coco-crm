@@ -8,12 +8,12 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { name, discountPercent, serviceIds } = body;
+  const { name, discountPercent, serviceIds, description } = body;
   if (!name || !Array.isArray(serviceIds) || serviceIds.length < 2) {
     return NextResponse.json({ error: "Un bundle nécessite un nom et au moins 2 prestations." }, { status: 400 });
   }
   const bundle = await prisma.bundle.create({
-    data: { name, discountPercent: discountPercent ?? 10, serviceIds },
+    data: { name, discountPercent: discountPercent ?? 10, serviceIds, description: description ?? null },
   });
   return NextResponse.json(bundle, { status: 201 });
 }

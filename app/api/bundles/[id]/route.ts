@@ -3,13 +3,14 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   const body = await request.json();
-  const { name, discountPercent, serviceIds, active } = body;
+  const { name, discountPercent, serviceIds, description, active } = body;
   const bundle = await prisma.bundle.update({
     where: { id: params.id },
     data: {
       ...(name !== undefined ? { name } : {}),
       ...(discountPercent !== undefined ? { discountPercent } : {}),
       ...(serviceIds !== undefined ? { serviceIds } : {}),
+      ...(description !== undefined ? { description } : {}),
       ...(active !== undefined ? { active } : {}),
     },
   });

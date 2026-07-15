@@ -152,6 +152,7 @@ model Service {
   category  String
   price     Float
   priceType PriceType @default(FIXED)
+  content   String?
   active    Boolean   @default(true)
   order     Int       @default(0)
   createdAt DateTime  @default(now())
@@ -163,6 +164,7 @@ model Bundle {
   name            String
   serviceIds      String[]
   discountPercent Float    @default(10)
+  description     String?
   active          Boolean  @default(true)
   createdAt       DateTime @default(now())
 }
