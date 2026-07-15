@@ -15,9 +15,9 @@ const services: { name: string; category: string; price: number; priceType: "FIX
   { name: "Rédaction contenus Site Vitrine", category: "Add-ons site web", price: 500, priceType: "FIXED" },
   { name: "Sourcing / banque d'images", category: "Add-ons site web", price: 150, priceType: "FIXED" },
   { name: "Heures supplémentaires", category: "Add-ons site web", price: 65, priceType: "HOURLY" },
+  { name: "Maintenance", category: "Add-ons site web", price: 150, priceType: "MONTHLY" },
   { name: "Graphisme à la carte", category: "Graphisme", price: 65, priceType: "HOURLY" },
   { name: "Accompagnement mensuel", category: "Services récurrents", price: 850, priceType: "MONTHLY" },
-  { name: "Maintenance", category: "Services récurrents", price: 150, priceType: "MONTHLY" },
 ];
 
 async function main() {
@@ -48,7 +48,7 @@ async function main() {
     const service = services[i];
     const existing = await prisma.service.findFirst({ where: { name: service.name } });
     const saved = existing
-      ? await prisma.service.update({ where: { id: existing.id }, data: { order: i } })
+      ? await prisma.service.update({ where: { id: existing.id }, data: { ...service, order: i } })
       : await prisma.service.create({ data: { ...service, order: i } });
     servicesByName[service.name] = saved;
   }

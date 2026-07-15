@@ -7,6 +7,7 @@ const links = [
   { href: "/", label: "Dashboard" },
   { href: "/marques", label: "Prospects" },
   { href: "/pipeline", label: "Pipeline" },
+  { href: "/grille-tarifaire", label: "Grille tarifaire" },
   { href: "/messages", label: "Ressources" },
   { href: "/parametres", label: "Paramètres" },
 ];

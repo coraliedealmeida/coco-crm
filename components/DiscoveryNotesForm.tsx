@@ -270,14 +270,8 @@ export default function DiscoveryNotesForm({
         )}
 
         {(has("ECOLES") || has("JURY")) && (
-          <Field label="Modalités (école / jury)">
+          <Field label="Modalités">
             <Textarea value={notes.ecoleJuryModalites} onChange={(v) => set("ecoleJuryModalites", v)} />
-          </Field>
-        )}
-
-        {notes.serviceTypes.length > 0 && (
-          <Field label="Délai souhaité">
-            <Textarea value={notes.desiredDelay} onChange={(v) => set("desiredDelay", v)} rows={2} />
           </Field>
         )}
       </Section>
@@ -300,6 +294,55 @@ export default function DiscoveryNotesForm({
       </Section>
 
       <Section title="5. Récapitulatif devis" icon="💰">
+        <div className="flex flex-col gap-2">
+          {services.map((s) => {
+            const showCategory = s.category !== lastCategory;
+            lastCategory = s.category;
+            const covered = coveredServiceIds.has(s.id);
+            return (
+              <div key={s.id}>
+                {showCategory && (
+                  <p className="mb-1 mt-2 text-xs font-semibold uppercase tracking-wide text-ink/40">
+                    {s.category}
+                  </p>
+                )}
+                <div className="flex items-center gap-2">
+                  <label className={`flex flex-1 items-center gap-2 text-sm ${covered ? "text-ink/30" : "text-ink"}`}>
+                    <input
+                      type="checkbox"
+                      checked={notes.selectedServiceIds.includes(s.id)}
+                      disabled={covered}
+                      onChange={(e) =>
+                        set(
+                          "selectedServiceIds",
+                          e.target.checked
+                            ? [...notes.selectedServiceIds, s.id]
+                            : notes.selectedServiceIds.filter((id) => id !== s.id)
+                        )
+                      }
+                    />
+                    {s.name} — {formatPrice(s.price)}
+                    {s.priceType === "HOURLY" ? "/h" : s.priceType === "MONTHLY" ? "/mois" : ""}
+                    {covered && " (inclus dans le bundle)"}
+                  </label>
+                  {s.priceType === "HOURLY" && notes.selectedServiceIds.includes(s.id) && !covered && (
+                    <input
+                      type="number"
+                      min={0}
+                      value={notes.serviceQuantities[s.id] ?? 0}
+                      onChange={(e) =>
+                        set("serviceQuantities", { ...notes.serviceQuantities, [s.id]: Number(e.target.value) })
+                      }
+                      placeholder="h"
+                      className="w-20 rounded-lg border border-accent-light bg-soft px-2 py-1 text-sm text-ink outline-none focus:border-accent"
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
         {bundles.length > 0 && (
           <Field label="Bundles (remplacent les prestations individuelles couvertes)">
             <div className="flex flex-col gap-2">
@@ -330,57 +373,6 @@ export default function DiscoveryNotesForm({
             </div>
           </Field>
         )}
-
-        <Field label="Prestations individuelles">
-          <div className="flex flex-col gap-2">
-            {services.map((s) => {
-              const showCategory = s.category !== lastCategory;
-              lastCategory = s.category;
-              const covered = coveredServiceIds.has(s.id);
-              return (
-                <div key={s.id}>
-                  {showCategory && (
-                    <p className="mb-1 mt-2 text-xs font-semibold uppercase tracking-wide text-ink/40">
-                      {s.category}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <label className={`flex flex-1 items-center gap-2 text-sm ${covered ? "text-ink/30" : "text-ink"}`}>
-                      <input
-                        type="checkbox"
-                        checked={notes.selectedServiceIds.includes(s.id)}
-                        disabled={covered}
-                        onChange={(e) =>
-                          set(
-                            "selectedServiceIds",
-                            e.target.checked
-                              ? [...notes.selectedServiceIds, s.id]
-                              : notes.selectedServiceIds.filter((id) => id !== s.id)
-                          )
-                        }
-                      />
-                      {s.name} — {formatPrice(s.price)}
-                      {s.priceType === "HOURLY" ? "/h" : s.priceType === "MONTHLY" ? "/mois" : ""}
-                      {covered && " (inclus dans le bundle)"}
-                    </label>
-                    {s.priceType === "HOURLY" && notes.selectedServiceIds.includes(s.id) && !covered && (
-                      <input
-                        type="number"
-                        min={0}
-                        value={notes.serviceQuantities[s.id] ?? 0}
-                        onChange={(e) =>
-                          set("serviceQuantities", { ...notes.serviceQuantities, [s.id]: Number(e.target.value) })
-                        }
-                        placeholder="h"
-                        className="w-20 rounded-lg border border-accent-light bg-soft px-2 py-1 text-sm text-ink outline-none focus:border-accent"
-                      />
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Field>
 
         <div className="grid grid-cols-3 gap-4">
           <RecapTile label="Total HT" value={formatPrice(totalHT)} accent="#8B5CF6" />

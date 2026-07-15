@@ -38,8 +38,8 @@ function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
     router.refresh();
   }
 
-  const highlighted = Boolean(entry.content) || entry.type === "Appel réalisé";
   const isDiscoveryCall = entry.type === "Appel découverte";
+  const highlighted = Boolean(entry.content) || entry.type === "Appel réalisé" || isDiscoveryCall;
 
   return (
     <div
