@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { GROUP_ORDER, groupFor } from "@/lib/serviceGroups";
 
 type PriceType = "FIXED" | "HOURLY" | "MONTHLY";
 
@@ -32,19 +33,6 @@ function formatPrice(amount: number): string {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
     amount
   );
-}
-
-// Regroupement d'affichage fixe, indépendant de la catégorie brute stockée en base :
-// les Add-ons site web rejoignent visuellement "Site web", et Maintenance / Graphisme à la
-// carte rejoignent "Abonnements" aux côtés de l'Accompagnement mensuel, sur demande de Coralie.
-const GROUP_ORDER = ["Identité visuelle", "Templates réseaux sociaux", "Site web", "Abonnements"];
-const ABONNEMENT_NAMES = ["Accompagnement mensuel", "Maintenance", "Graphisme à la carte"];
-
-function groupFor(service: ServiceRow): string {
-  if (ABONNEMENT_NAMES.includes(service.name)) return "Abonnements";
-  if (service.category === "Add-ons site web") return "Site web";
-  if (service.category === "Services récurrents" || service.category === "Graphisme") return "Abonnements";
-  return service.category;
 }
 
 const emptyNewService = { name: "", category: GROUP_ORDER[0], price: "", priceType: "FIXED" as PriceType, content: "" };

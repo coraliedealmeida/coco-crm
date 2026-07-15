@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ServiceType } from "@prisma/client";
 import { serviceTypeOptions } from "@/lib/serviceTypes";
+import { GROUP_ORDER, groupFor } from "@/lib/serviceGroups";
 
 type ServiceOption = {
   id: string;
@@ -151,7 +152,10 @@ export default function DiscoveryNotesForm({
     setTimeout(() => setSaved(false), 2000);
   }
 
-  let lastCategory = "";
+  const serviceGroups = GROUP_ORDER.map((title) => ({
+    title,
+    items: services.filter((s) => groupFor(s) === title),
+  })).filter((g) => g.items.length > 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -297,53 +301,53 @@ export default function DiscoveryNotesForm({
       </Section>
 
       <Section title="5. Récapitulatif devis" icon="💰">
-        <div className="flex flex-col gap-2">
-          {services.map((s) => {
-            const showCategory = s.category !== lastCategory;
-            lastCategory = s.category;
-            const covered = coveredServiceIds.has(s.id);
-            return (
-              <div key={s.id}>
-                {showCategory && (
-                  <p className="mb-1 mt-2 text-xs font-semibold uppercase tracking-wide text-ink/40">
-                    {s.category}
-                  </p>
-                )}
-                <div className="flex items-center gap-2">
-                  <label className={`flex flex-1 items-center gap-2 text-sm ${covered ? "text-ink/30" : "text-ink"}`}>
-                    <input
-                      type="checkbox"
-                      checked={notes.selectedServiceIds.includes(s.id)}
-                      disabled={covered}
-                      onChange={(e) =>
-                        set(
-                          "selectedServiceIds",
-                          e.target.checked
-                            ? [...notes.selectedServiceIds, s.id]
-                            : notes.selectedServiceIds.filter((id) => id !== s.id)
-                        )
-                      }
-                    />
-                    {s.name} — {formatPrice(s.price)}
-                    {s.priceType === "HOURLY" ? "/h" : s.priceType === "MONTHLY" ? "/mois" : ""}
-                    {covered && " (inclus dans le bundle)"}
-                  </label>
-                  {s.priceType === "HOURLY" && notes.selectedServiceIds.includes(s.id) && !covered && (
-                    <input
-                      type="number"
-                      min={0}
-                      value={notes.serviceQuantities[s.id] ?? 0}
-                      onChange={(e) =>
-                        set("serviceQuantities", { ...notes.serviceQuantities, [s.id]: Number(e.target.value) })
-                      }
-                      placeholder="h"
-                      className="w-20 rounded-lg border border-accent-light bg-soft px-2 py-1 text-sm text-ink outline-none focus:border-accent"
-                    />
-                  )}
-                </div>
+        <div className="flex flex-col gap-4">
+          {serviceGroups.map(({ title, items }) => (
+            <div key={title}>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink/40">{title}</p>
+              <div className="flex flex-col gap-2">
+                {items.map((s) => {
+                  const covered = coveredServiceIds.has(s.id);
+                  return (
+                    <div key={s.id} className="flex items-center gap-2">
+                      <label
+                        className={`flex flex-1 items-center gap-2 text-sm ${covered ? "text-ink/30" : "text-ink"}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={notes.selectedServiceIds.includes(s.id)}
+                          disabled={covered}
+                          onChange={(e) =>
+                            set(
+                              "selectedServiceIds",
+                              e.target.checked
+                                ? [...notes.selectedServiceIds, s.id]
+                                : notes.selectedServiceIds.filter((id) => id !== s.id)
+                            )
+                          }
+                        />
+                        {s.name} — {formatPrice(s.price)}
+                        {s.priceType === "HOURLY" ? "/h" : s.priceType === "MONTHLY" ? "/mois" : ""}
+                        {covered && " (inclus dans le bundle)"}
+                      </label>
+                      {s.priceType === "HOURLY" && notes.selectedServiceIds.includes(s.id) && !covered && (
+                        <input
+                          type="number"
+                          min={0}
+                          value={notes.serviceQuantities[s.id] ?? 0}
+                          onChange={(e) =>
+                            set("serviceQuantities", { ...notes.serviceQuantities, [s.id]: Number(e.target.value) })
+                          }
+                          placeholder="h"
+                          className="w-20 rounded-lg border border-accent-light bg-soft px-2 py-1 text-sm text-ink outline-none focus:border-accent"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
 
         {bundles.length > 0 && (
