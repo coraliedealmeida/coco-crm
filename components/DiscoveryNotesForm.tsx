@@ -48,6 +48,7 @@ type NotesData = {
   selectedServiceIds: string[];
   serviceQuantities: Record<string, number>;
   selectedBundleIds: string[];
+  loyaltyDiscount: boolean;
 };
 
 const emptyNotes: NotesData = {
@@ -78,6 +79,7 @@ const emptyNotes: NotesData = {
   selectedServiceIds: [],
   serviceQuantities: {},
   selectedBundleIds: [],
+  loyaltyDiscount: false,
 };
 
 function formatPrice(amount: number): string {
@@ -131,7 +133,8 @@ export default function DiscoveryNotesForm({
       return sum + s.price * qty;
     }, 0);
 
-  const totalHT = bundleTotal + individualTotal;
+  const subtotalHT = bundleTotal + individualTotal;
+  const totalHT = notes.loyaltyDiscount ? subtotalHT * 0.85 : subtotalHT;
   const deposit30 = totalHT * 0.3;
   const threeInstallments = totalHT / 3;
 
@@ -372,6 +375,18 @@ export default function DiscoveryNotesForm({
               })}
             </div>
           </Field>
+        )}
+
+        <CheckboxField
+          label="Client fidèle (−15%)"
+          checked={notes.loyaltyDiscount}
+          onChange={(v) => set("loyaltyDiscount", v)}
+        />
+
+        {notes.loyaltyDiscount && (
+          <p className="text-sm font-light text-ink/50">
+            Sous-total {formatPrice(subtotalHT)} → {formatPrice(totalHT)} avec la remise fidélité
+          </p>
         )}
 
         <div className="grid grid-cols-3 gap-4">
