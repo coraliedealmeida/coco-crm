@@ -42,7 +42,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
     ? `${nextReminder.label} — ${new Date(nextReminder.date).toLocaleDateString("fr-FR")}`
     : brand.nextActionDate
       ? `${autoActionLabel ?? "Action prévue"} — ${new Date(brand.nextActionDate).toLocaleDateString("fr-FR")}`
-      : "Aucune prévue";
+      : (autoActionLabel ?? "Aucune prévue");
 
   return (
     <div className="flex flex-col gap-6">

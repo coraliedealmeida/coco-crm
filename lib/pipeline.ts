@@ -85,6 +85,7 @@ export function showsEngagementDays(status: PipelineStatus, days: number, greenL
 const nextAutomaticAction: Partial<Record<PipelineStatus, string>> = {
   PREMIER_DM: "Relance 1",
   RELANCE_1: "Relance 2",
+  APPEL_PREVU: "Devis à faire",
   DEVIS_ENVOYE: "Relance devis 1",
   RELANCE_DEVIS_1: "Relance devis 2",
 };

@@ -8,7 +8,7 @@ const links = [
   { href: "/marques", label: "Prospects" },
   { href: "/pipeline", label: "Pipeline" },
   { href: "/clients", label: "Clients & Projets" },
-  { href: "/offre", label: "Offre" },
+  { href: "/offre", label: "Offres" },
   { href: "/messages", label: "Ressources" },
   { href: "/parametres", label: "Paramètres" },
 ];

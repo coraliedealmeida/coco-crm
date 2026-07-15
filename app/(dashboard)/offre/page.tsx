@@ -12,8 +12,7 @@ export default async function OffrePage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="font-sans text-3xl font-extrabold text-ink">Offre</h1>
-        <p className="font-light text-ink/60">Prestations et bundles utilisés dans les notes d&apos;appel découverte et le configurateur de devis.</p>
+        <h1 className="font-sans text-3xl font-extrabold text-ink">Offres</h1>
       </header>
 
       <PricingGridManager initialServices={services} initialBundles={bundles} />
