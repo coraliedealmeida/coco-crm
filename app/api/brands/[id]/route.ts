@@ -97,16 +97,20 @@ async function createClientAndProjectsIfNeeded(
   const serviceTypes = Array.isArray(notes?.serviceTypes) ? notes!.serviceTypes : [];
   if (serviceTypes.length === 0) return;
 
-  const client = await prisma.client.create({ data: { brandId } });
+  // Transaction : soit le client et tous ses projets sont créés ensemble, soit rien ne l'est
+  // (évite un client orphelin sans projet si une des créations échoue en cours de route).
+  await prisma.$transaction(async (tx) => {
+    const client = await tx.client.create({ data: { brandId } });
 
-  for (const [index, serviceType] of serviceTypes.entries()) {
-    await prisma.project.create({
-      data: {
-        clientId: client.id,
-        serviceType,
-        currentStep: projectSteps[serviceType][0],
-        quoteAmount: index === 0 ? potentialRevenue : null,
-      },
-    });
-  }
+    for (const [index, serviceType] of serviceTypes.entries()) {
+      await tx.project.create({
+        data: {
+          clientId: client.id,
+          serviceType,
+          currentStep: projectSteps[serviceType][0],
+          quoteAmount: index === 0 ? potentialRevenue : null,
+        },
+      });
+    }
+  });
 }
