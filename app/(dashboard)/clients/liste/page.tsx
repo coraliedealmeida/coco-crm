@@ -40,7 +40,7 @@ export default async function ClientsListPage() {
             return (
               <Link
                 key={client.id}
-                href={`/clients/${client.id}`}
+                href={`/marques/${client.brand.id}?from=clients`}
                 className="flex items-center justify-between rounded-3xl bg-white p-6 shadow-soft transition hover:shadow-softer"
               >
                 <div>

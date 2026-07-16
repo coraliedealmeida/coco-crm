@@ -1,11 +1,15 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { platformLabel, avatarColor, initials, statusLabel, nextAutomaticActionLabel } from "@/lib/pipeline";
+import { serviceTypeLabel } from "@/lib/serviceTypes";
+import { isProjectDone, isProjectPaid } from "@/lib/projects";
 import BrandForm from "@/components/BrandForm";
 import BrandActions from "@/components/BrandActions";
 import HistoryPanel from "@/components/HistoryPanel";
 import RemindersPanel from "@/components/RemindersPanel";
+import NewProjectButton from "@/components/NewProjectButton";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +19,22 @@ function formatRevenue(amount: number): string {
   );
 }
 
-export default async function BrandDetailPage({ params }: { params: { id: string } }) {
-  const [brand, settings] = await Promise.all([
+const backLinks: Record<string, { href: string; label: string }> = {
+  pipeline: { href: "/pipeline", label: "← Retour au Pipeline" },
+  projets: { href: "/clients", label: "← Retour aux projets" },
+  clients: { href: "/clients/liste", label: "← Retour aux clients" },
+  prospects: { href: "/marques", label: "← Retour aux prospects" },
+  dashboard: { href: "/", label: "← Retour au Dashboard" },
+};
+
+export default async function BrandDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { from?: string };
+}) {
+  const [brand, settings, client] = await Promise.all([
     prisma.brand.findUnique({
       where: { id: params.id },
       include: {
@@ -25,9 +43,15 @@ export default async function BrandDetailPage({ params }: { params: { id: string
       },
     }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+    prisma.client.findUnique({
+      where: { brandId: params.id },
+      include: { projects: { orderBy: { createdAt: "desc" } } },
+    }),
   ]);
 
   if (!brand) notFound();
+
+  const back = backLinks[searchParams.from ?? ""] ?? backLinks.prospects;
 
   const days = countBusinessDays(brand.engagementStartDate, new Date());
   const greenLight = days >= settings.daysBeforeGreenLight && brand.pipelineStatus === "ROUTINE_ENGAGEMENT";
@@ -44,8 +68,15 @@ export default async function BrandDetailPage({ params }: { params: { id: string
       ? `${autoActionLabel ?? "Action prévue"} — ${new Date(brand.nextActionDate).toLocaleDateString("fr-FR")}`
       : (autoActionLabel ?? "Aucune prévue");
 
+  const projects = client?.projects ?? [];
+  const revenue = projects.filter(isProjectPaid).reduce((sum, p) => sum + (p.quoteAmount ?? 0), 0);
+
   return (
     <div className="flex flex-col gap-6">
+      <Link href={back.href} className="w-fit text-sm font-semibold text-accent hover:underline">
+        {back.label}
+      </Link>
+
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div
@@ -68,6 +99,48 @@ export default async function BrandDetailPage({ params }: { params: { id: string
         )}
       </header>
 
+      {/* Projets prioritaires en haut de page dès qu'il y en a */}
+      {client && projects.length > 0 && (
+        <div className="rounded-3xl bg-white p-6 shadow-soft">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 font-sans text-base font-extrabold text-ink">
+              <span>📁</span> Projets
+              <span className="rounded-full bg-cta/30 px-2.5 py-0.5 text-xs font-semibold text-ink">
+                CA généré {formatRevenue(revenue)}
+              </span>
+            </h2>
+            <Link href={`/marques/${brand.id}/notes`} className="text-sm font-semibold text-accent hover:underline">
+              📋 Notes d&apos;appel découverte
+            </Link>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {projects.map((project) => (
+              <Link
+                key={project.id}
+                href={`/clients/${client.id}/projects/${project.id}`}
+                className="flex items-center justify-between rounded-xl bg-soft px-4 py-3 transition hover:bg-accent-light/30"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-ink">{serviceTypeLabel[project.serviceType]}</p>
+                  <p className="text-xs font-light text-ink/50">{project.currentStep}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {project.quoteAmount != null && (
+                    <span className="text-xs font-semibold text-ink/60">{formatRevenue(project.quoteAmount)}</span>
+                  )}
+                  {isProjectDone(project) && <span className="text-xs font-semibold text-accent">✅ Terminé</span>}
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-4">
+            <NewProjectButton clientId={client.id} />
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-4 gap-6">
         <InfoTile
           icon="📅"
@@ -79,8 +152,14 @@ export default async function BrandDetailPage({ params }: { params: { id: string
         <InfoTile icon="⏰" label="Prochaine action" value={nextActionLabel} accent="#8B5CF6" />
         <InfoTile
           icon="💰"
-          label="Revenu potentiel"
-          value={brand.potentialRevenue != null ? formatRevenue(brand.potentialRevenue) : "Non renseigné"}
+          label={client && projects.length > 0 ? "CA généré" : "Revenu potentiel"}
+          value={
+            client && projects.length > 0
+              ? formatRevenue(revenue)
+              : brand.potentialRevenue != null
+                ? formatRevenue(brand.potentialRevenue)
+                : "Non renseigné"
+          }
           accent="#CCFF00"
         />
       </div>

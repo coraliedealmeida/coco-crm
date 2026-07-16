@@ -203,6 +203,7 @@ function DraggableCard({
       className={`cursor-grab ${isDragging ? "rotate-1 opacity-80" : ""}`}
     >
       <BrandCard
+        from="pipeline"
         brand={{
           ...brand,
           engagementDays: showsEngagementDays(brand.pipelineStatus, days, greenLightThreshold) ? days : null,

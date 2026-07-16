@@ -64,7 +64,7 @@ export default function MarquesTable({ rows }: { rows: Row[] }) {
           {sorted.map((b) => (
             <tr key={b.id} className="border-t border-soft hover:bg-soft/50">
               <td className="px-5 py-3">
-                <Link href={`/marques/${b.id}`} className="font-semibold text-ink hover:underline">
+                <Link href={`/marques/${b.id}?from=prospects`} className="font-semibold text-ink hover:underline">
                   {b.name}
                 </Link>
               </td>
