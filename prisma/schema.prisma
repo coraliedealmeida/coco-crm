@@ -94,6 +94,8 @@ model Settings {
   daysBeforeRelance2   Int     @default(15)
   daysBeforeDevisRelance1 Int  @default(15)
   daysBeforeDevisRelance2 Int  @default(15)
+  daysBeforeFactureRelance1 Int @default(15)
+  daysBeforeFactureRelance2 Int @default(15)
   emailNotifications   Boolean @default(false)
 }
 
@@ -119,27 +121,20 @@ model Client {
   projects  Project[]
 }
 
-enum ProjectPaymentStatus {
-  EN_ATTENTE_ACOMPTE
-  ACOMPTE_RECU
-  A_FACTURER
-  FACTURE_ENVOYEE
-  PAYE
-}
-
 model Project {
-  id                    String               @id @default(cuid())
+  id                    String    @id @default(cuid())
   clientId              String
-  client                Client               @relation(fields: [clientId], references: [id])
+  client                Client    @relation(fields: [clientId], references: [id])
   serviceType           ServiceType
   currentStep           String
-  revisionCount         Int                  @default(0)
+  revisionCount         Int       @default(0)
   startDate             DateTime?
   estimatedDeliveryDate DateTime?
   quoteAmount           Float?
-  paymentStatus         ProjectPaymentStatus @default(EN_ATTENTE_ACOMPTE)
+  invoicedAt            DateTime?
+  paidAt                DateTime?
   notes                 String?
-  createdAt             DateTime             @default(now())
+  createdAt             DateTime  @default(now())
   invoices              Invoice[]
 }
 

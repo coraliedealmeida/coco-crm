@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { platformLabel } from "@/lib/pipeline";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isProjectPaid, paymentStatusLabel } from "@/lib/projects";
+import { isProjectDone, isProjectPaid } from "@/lib/projects";
 import HistoryPanel from "@/components/HistoryPanel";
 import NewProjectButton from "@/components/NewProjectButton";
 
@@ -27,14 +27,14 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
   if (!client) notFound();
 
   const revenue = client.projects.filter(isProjectPaid).reduce((sum, p) => sum + (p.quoteAmount ?? 0), 0);
-  const inProgress = client.projects.filter((p) => p.currentStep !== "Terminé" && p.currentStep !== "Payé");
-  const done = client.projects.filter((p) => p.currentStep === "Terminé" || p.currentStep === "Payé");
+  const inProgress = client.projects.filter((p) => !isProjectDone(p));
+  const done = client.projects.filter(isProjectDone);
 
   return (
     <div className="flex flex-col gap-6">
       <header>
         <Link href="/clients" className="text-sm font-semibold text-accent hover:underline">
-          ← Retour aux clients
+          ← Retour aux projets
         </Link>
         <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">{client.brand.name}</h1>
         <p className="font-light text-ink/60">{platformLabel[client.brand.platform]}</p>
@@ -72,7 +72,6 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
                     <p className="text-sm font-semibold text-ink">{serviceTypeLabel[project.serviceType]}</p>
                     <p className="text-xs font-light text-ink/50">{project.currentStep}</p>
                   </div>
-                  <span className="text-xs font-light text-ink/50">{paymentStatusLabel[project.paymentStatus]}</span>
                 </Link>
               ))}
               {client.projects.length === 0 && (

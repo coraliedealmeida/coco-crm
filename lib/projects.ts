@@ -1,25 +1,83 @@
-import { ProjectPaymentStatus } from "@prisma/client";
+import { countBusinessDays } from "@/lib/business-days";
 
-export const paymentStatusLabel: Record<ProjectPaymentStatus, string> = {
-  EN_ATTENTE_ACOMPTE: "En attente d'acompte",
-  ACOMPTE_RECU: "Acompte reçu",
-  A_FACTURER: "À facturer",
-  FACTURE_ENVOYEE: "Facture envoyée",
-  PAYE: "Payé",
-};
+// Étapes communes à toutes les prestations (cf. lib/serviceTypes.ts) qui bornent les 3
+// colonnes macro du Kanban Projets. Seul le milieu ("En cours") varie selon le type.
+export const ONBOARDING_STEPS = ["Devis signé", "Attente acompte"];
+export const OFFBOARDING_STEPS = ["Facture à faire", "Facture envoyée", "Attente avis", "Terminé"];
 
-export const paymentStatusOptions: { value: ProjectPaymentStatus; label: string }[] = (
-  Object.keys(paymentStatusLabel) as ProjectPaymentStatus[]
-).map((value) => ({ value, label: paymentStatusLabel[value] }));
+export type ProjectMacroGroupId = "ONBOARDING" | "EN_COURS" | "OFFBOARDING";
 
-type ProjectLike = { currentStep: string; paymentStatus: ProjectPaymentStatus };
+export const projectMacroGroups: { id: ProjectMacroGroupId; label: string; color: string }[] = [
+  { id: "ONBOARDING", label: "Onboarding", color: "#C4B5FD" },
+  { id: "EN_COURS", label: "En cours", color: "#8B5CF6" },
+  { id: "OFFBOARDING", label: "Offboarding", color: "#CCFF00" },
+];
+
+export function macroGroupForStep(step: string): ProjectMacroGroupId {
+  if (ONBOARDING_STEPS.includes(step)) return "ONBOARDING";
+  if (OFFBOARDING_STEPS.includes(step)) return "OFFBOARDING";
+  return "EN_COURS";
+}
+
+/** Première étape de chaque colonne macro pour un projet donné (utilisé par le glisser-déposer). */
+export function firstStepOfMacroGroup(steps: string[], group: ProjectMacroGroupId): string {
+  return steps.find((s) => macroGroupForStep(s) === group) ?? steps[0];
+}
+
+type ProjectLike = { currentStep: string; paidAt: Date | null };
 
 export function isProjectDone(project: ProjectLike): boolean {
-  return project.currentStep === "Terminé" || project.currentStep === "Payé";
+  return project.currentStep === "Terminé";
 }
 
 export function isProjectPaid(project: ProjectLike): boolean {
-  return project.paymentStatus === "PAYE";
+  return project.paidAt != null;
+}
+
+/**
+ * Calcule invoicedAt/paidAt à poser suite à un changement d'étape : "Facture envoyée" marque
+ * l'envoi de la facture, "Attente avis" marque le paiement reçu (elle n'intervient qu'une fois
+ * la facture soldée). Ne fait qu'avancer ces dates, jamais les effacer si l'étape recule.
+ */
+export function computeInvoiceDates(
+  steps: string[],
+  newStep: string,
+  current: { invoicedAt: Date | null; paidAt: Date | null }
+): { invoicedAt?: Date; paidAt?: Date } {
+  const newIndex = steps.indexOf(newStep);
+  const invoicedIndex = steps.indexOf("Facture envoyée");
+  const paidIndex = steps.indexOf("Attente avis");
+
+  const result: { invoicedAt?: Date; paidAt?: Date } = {};
+  const now = new Date();
+
+  if (!current.invoicedAt && invoicedIndex !== -1 && newIndex >= invoicedIndex) {
+    result.invoicedAt = now;
+  }
+  if (!current.paidAt && paidIndex !== -1 && newIndex >= paidIndex) {
+    result.paidAt = now;
+  }
+  return result;
+}
+
+type InvoiceRelanceSettings = { daysBeforeFactureRelance1: number; daysBeforeFactureRelance2: number };
+
+/**
+ * Une facture envoyée et toujours impayée déclenche une relance après X jours ouvrés (relance 1),
+ * puis à nouveau après Y jours ouvrés supplémentaires (relance 2) — même logique que les
+ * relances devis existantes (lib/statusEffects.ts), mais calculée à la volée (pas de statut
+ * ni de date stockée séparément : invoicedAt/paidAt suffisent).
+ */
+export function factureRelanceDue(
+  project: { invoicedAt: Date | null; paidAt: Date | null },
+  settings: InvoiceRelanceSettings,
+  now: Date = new Date()
+): 1 | 2 | null {
+  if (!project.invoicedAt || project.paidAt) return null;
+  const elapsed = countBusinessDays(project.invoicedAt, now);
+  if (elapsed >= settings.daysBeforeFactureRelance1 + settings.daysBeforeFactureRelance2) return 2;
+  if (elapsed >= settings.daysBeforeFactureRelance1) return 1;
+  return null;
 }
 
 /** Compteur visuel 1/3 — 2/3 — 3/3 pour l'Accompagnement mensuel, basé sur la date de début saisie. */

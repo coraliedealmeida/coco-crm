@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ProjectPaymentStatus, ServiceType } from "@prisma/client";
-import { paymentStatusOptions } from "@/lib/projects";
+import { ServiceType } from "@prisma/client";
 
 type Project = {
   id: string;
@@ -14,7 +13,8 @@ type Project = {
   startDate: string | null;
   estimatedDeliveryDate: string | null;
   quoteAmount: number | null;
-  paymentStatus: ProjectPaymentStatus;
+  invoicedAt: string | null;
+  paidAt: string | null;
   notes: string;
 };
 
@@ -135,19 +135,14 @@ export default function ProjectForm({ initial, steps }: { initial: Project; step
               />
             </Field>
 
-            <Field label="Statut de paiement">
-              <select
-                value={project.paymentStatus}
-                onChange={(e) => update({ paymentStatus: e.target.value as ProjectPaymentStatus })}
-                className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
-              >
-                {paymentStatusOptions.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            {(project.invoicedAt || project.paidAt) && (
+              <div className="flex flex-col gap-1 text-sm font-light text-ink/60">
+                {project.invoicedAt && (
+                  <p>Facture envoyée le {new Date(project.invoicedAt).toLocaleDateString("fr-FR")}</p>
+                )}
+                {project.paidAt && <p>Payée le {new Date(project.paidAt).toLocaleDateString("fr-FR")}</p>}
+              </div>
+            )}
           </div>
         </div>
       </div>

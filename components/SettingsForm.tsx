@@ -9,6 +9,8 @@ type Settings = {
   daysBeforeRelance2: number;
   daysBeforeDevisRelance1: number;
   daysBeforeDevisRelance2: number;
+  daysBeforeFactureRelance1: number;
+  daysBeforeFactureRelance2: number;
   emailNotifications: boolean;
 };
 
@@ -58,6 +60,16 @@ export default function SettingsForm({ initial }: { initial: Settings }) {
         label="Délai relance devis 2 (jours ouvrés)"
         value={settings.daysBeforeDevisRelance2}
         onChange={(v) => setSettings({ ...settings, daysBeforeDevisRelance2: v })}
+      />
+      <NumberField
+        label="Délai relance facture 1 (jours ouvrés)"
+        value={settings.daysBeforeFactureRelance1}
+        onChange={(v) => setSettings({ ...settings, daysBeforeFactureRelance1: v })}
+      />
+      <NumberField
+        label="Délai relance facture 2 (jours ouvrés)"
+        value={settings.daysBeforeFactureRelance2}
+        onChange={(v) => setSettings({ ...settings, daysBeforeFactureRelance2: v })}
       />
 
       <Toggle

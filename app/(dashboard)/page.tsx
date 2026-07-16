@@ -1,13 +1,43 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { statusLabel } from "@/lib/pipeline";
+import { serviceTypeLabel } from "@/lib/serviceTypes";
+import { isProjectDone, factureRelanceDue } from "@/lib/projects";
 import DashboardSection from "@/components/DashboardSection";
 import BrandCard from "@/components/BrandCard";
 
 export const dynamic = "force-dynamic";
 
+function formatRevenue(amount: number): string {
+  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
+    amount
+  );
+}
+
+function ProjectRow({
+  project,
+  statusContent,
+}: {
+  project: { id: string; clientId: string; brandName: string; serviceType: keyof typeof serviceTypeLabel };
+  statusContent: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={`/clients/${project.clientId}/projects/${project.id}`}
+      className="flex items-center justify-between rounded-xl bg-soft px-4 py-3 transition hover:bg-accent-light/30"
+    >
+      <div>
+        <p className="text-sm font-semibold text-ink">{project.brandName}</p>
+        <p className="text-xs font-light text-ink/50">{serviceTypeLabel[project.serviceType]}</p>
+      </div>
+      {statusContent}
+    </Link>
+  );
+}
+
 export default async function DashboardPage() {
-  const [brands, settings, dueReminders] = await Promise.all([
+  const [brands, settings, dueReminders, projects] = await Promise.all([
     prisma.brand.findMany({ where: { archivedAt: null } }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
     prisma.reminder.findMany({
@@ -15,6 +45,7 @@ export default async function DashboardPage() {
       include: { brand: true },
       orderBy: { date: "asc" },
     }),
+    prisma.project.findMany({ include: { client: { include: { brand: true } } } }),
   ]);
 
   const now = new Date();
@@ -32,6 +63,10 @@ export default async function DashboardPage() {
       b.nextActionDate &&
       b.nextActionDate <= now
   );
+
+  const projectsEnCours = projects.filter((p) => !isProjectDone(p));
+  const aFacturer = projects.filter((p) => p.currentStep === "Facture à faire");
+  const facturesEnAttente = projects.filter((p) => p.invoicedAt && !p.paidAt);
 
   return (
     <div className="flex flex-col gap-8">
@@ -114,11 +149,73 @@ export default async function DashboardPage() {
       </section>
 
       <section>
-        <h2 className="mb-4 font-sans text-lg font-extrabold text-ink/40">Suivi projets (Phase 2)</h2>
-        <div className="grid grid-cols-3 gap-6 opacity-60">
-          <DashboardSection title="Projets en cours" icon="📁" accent="#9CA3AF" isEmpty emptyLabel="Disponible en Phase 2." />
-          <DashboardSection title="À facturer" icon="🧾" accent="#9CA3AF" isEmpty emptyLabel="Disponible en Phase 2." />
-          <DashboardSection title="Factures en attente" icon="⏳" accent="#9CA3AF" isEmpty emptyLabel="Disponible en Phase 2." />
+        <h2 className="mb-4 font-sans text-lg font-extrabold text-ink">Suivi projets</h2>
+        <div className="grid grid-cols-3 gap-6">
+          <DashboardSection
+            title="Projets en cours"
+            icon="📁"
+            accent="#8B5CF6"
+            count={projectsEnCours.length}
+            isEmpty={projectsEnCours.length === 0}
+            emptyLabel="Aucun projet en cours."
+          >
+            {projectsEnCours.map((p) => (
+              <ProjectRow
+                key={p.id}
+                project={{ id: p.id, clientId: p.clientId, brandName: p.client.brand.name, serviceType: p.serviceType }}
+                statusContent={<span className="text-xs font-semibold text-ink/60">{p.currentStep}</span>}
+              />
+            ))}
+          </DashboardSection>
+
+          <DashboardSection
+            title="À facturer"
+            icon="🧾"
+            accent="#FBBF24"
+            count={aFacturer.length}
+            isEmpty={aFacturer.length === 0}
+            emptyLabel="Rien à facturer pour le moment."
+          >
+            {aFacturer.map((p) => (
+              <ProjectRow
+                key={p.id}
+                project={{ id: p.id, clientId: p.clientId, brandName: p.client.brand.name, serviceType: p.serviceType }}
+                statusContent={
+                  p.quoteAmount != null ? (
+                    <span className="text-xs font-semibold text-ink/60">{formatRevenue(p.quoteAmount)}</span>
+                  ) : null
+                }
+              />
+            ))}
+          </DashboardSection>
+
+          <DashboardSection
+            title="Factures en attente"
+            icon="⏳"
+            accent="#FB923C"
+            count={facturesEnAttente.length}
+            isEmpty={facturesEnAttente.length === 0}
+            emptyLabel="Aucune facture en attente de paiement."
+          >
+            {facturesEnAttente.map((p) => {
+              const relance = factureRelanceDue(p, settings, now);
+              return (
+                <ProjectRow
+                  key={p.id}
+                  project={{ id: p.id, clientId: p.clientId, brandName: p.client.brand.name, serviceType: p.serviceType }}
+                  statusContent={
+                    relance ? (
+                      <span className="text-xs font-semibold text-red-500">📮 Relance {relance}</span>
+                    ) : (
+                      <span className="text-xs font-light text-ink/40">
+                        {p.invoicedAt && new Date(p.invoicedAt).toLocaleDateString("fr-FR")}
+                      </span>
+                    )
+                  }
+                />
+              );
+            })}
+          </DashboardSection>
         </div>
       </section>
     </div>

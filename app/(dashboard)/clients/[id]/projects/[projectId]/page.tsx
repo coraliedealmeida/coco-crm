@@ -34,7 +34,8 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
           startDate: project.startDate ? project.startDate.toISOString() : null,
           estimatedDeliveryDate: project.estimatedDeliveryDate ? project.estimatedDeliveryDate.toISOString() : null,
           quoteAmount: project.quoteAmount,
-          paymentStatus: project.paymentStatus,
+          invoicedAt: project.invoicedAt ? project.invoicedAt.toISOString() : null,
+          paidAt: project.paidAt ? project.paidAt.toISOString() : null,
           notes: project.notes ?? "",
         }}
         steps={projectSteps[project.serviceType]}

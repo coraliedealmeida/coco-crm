@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isProjectPaid } from "@/lib/projects";
+import StatCard from "@/components/StatCard";
+import ProjectsKanbanBoard from "@/components/ProjectsKanbanBoard";
+import { isProjectDone } from "@/lib/projects";
 
 export const dynamic = "force-dynamic";
 
@@ -11,50 +12,69 @@ function formatRevenue(amount: number): string {
   );
 }
 
-export default async function ClientsPage() {
-  const clients = await prisma.client.findMany({
-    include: { brand: true, projects: true },
-    orderBy: { createdAt: "desc" },
-  });
+function isInMonth(date: Date | null, now: Date): boolean {
+  return !!date && date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+}
+
+export default async function ProjectsPage() {
+  const [projects, settings] = await Promise.all([
+    prisma.project.findMany({ include: { client: { include: { brand: true } } }, orderBy: { createdAt: "desc" } }),
+    prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+  ]);
+
+  const now = new Date();
+  const projectsEnCours = projects.filter((p) => !isProjectDone(p)).length;
+  const totalFactureCeMois = projects
+    .filter((p) => isInMonth(p.invoicedAt, now))
+    .reduce((sum, p) => sum + (p.quoteAmount ?? 0), 0);
+  const totalEncaisseCeMois = projects
+    .filter((p) => isInMonth(p.paidAt, now))
+    .reduce((sum, p) => sum + (p.quoteAmount ?? 0), 0);
+
+  const serialized = projects.map((p) => ({
+    id: p.id,
+    clientId: p.clientId,
+    brandName: p.client.brand.name,
+    serviceType: p.serviceType,
+    currentStep: p.currentStep,
+    quoteAmount: p.quoteAmount,
+    revisionCount: p.revisionCount,
+    estimatedDeliveryDate: p.estimatedDeliveryDate ? p.estimatedDeliveryDate.toISOString() : null,
+    invoicedAt: p.invoicedAt ? p.invoicedAt.toISOString() : null,
+    paidAt: p.paidAt ? p.paidAt.toISOString() : null,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="font-sans text-3xl font-extrabold text-ink">Projets</h1>
-        <p className="font-light text-ink/60">Marques passées en devis accepté, avec le suivi de leurs projets.</p>
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="font-sans text-3xl font-extrabold text-ink">Projets</h1>
+          <p className="font-light text-ink/60">Glisse-dépose les projets entre les statuts.</p>
+        </div>
+        <Link href="/clients/liste" className="text-sm font-semibold text-accent hover:underline">
+          Voir la liste des clients →
+        </Link>
       </header>
 
-      {clients.length === 0 ? (
+      <div className="grid grid-cols-3 gap-4">
+        <StatCard label="Projets en cours" value={String(projectsEnCours)} accent="#8B5CF6" />
+        <StatCard label="Total facturé ce mois" value={formatRevenue(totalFactureCeMois)} accent="#FB923C" />
+        <StatCard label="Total encaissé ce mois" value={formatRevenue(totalEncaisseCeMois)} accent="#CCFF00" />
+      </div>
+
+      {projects.length === 0 ? (
         <p className="rounded-3xl bg-white p-6 text-sm font-light text-ink/50 shadow-soft">
-          Aucun client pour l&apos;instant. Un client est créé automatiquement dès qu&apos;une marque passe au statut
-          &quot;Devis accepté&quot; dans le Pipeline.
+          Aucun projet pour l&apos;instant. Un projet est créé automatiquement par prestation cochée dans les notes
+          d&apos;appel découverte, dès qu&apos;une marque passe au statut &quot;Devis accepté&quot; dans le Pipeline.
         </p>
       ) : (
-        <div className="flex flex-col gap-3">
-          {clients.map((client) => {
-            const revenue = client.projects.filter(isProjectPaid).reduce((sum, p) => sum + (p.quoteAmount ?? 0), 0);
-            const inProgress = client.projects.filter((p) => p.currentStep !== "Terminé" && p.currentStep !== "Payé");
-            return (
-              <Link
-                key={client.id}
-                href={`/clients/${client.id}`}
-                className="flex items-center justify-between rounded-3xl bg-white p-6 shadow-soft transition hover:shadow-softer"
-              >
-                <div>
-                  <p className="font-sans text-lg font-extrabold text-ink">{client.brand.name}</p>
-                  <p className="mt-1 text-sm font-light text-ink/50">
-                    {inProgress.length > 0
-                      ? `${inProgress.length} projet(s) en cours : ${inProgress
-                          .map((p) => serviceTypeLabel[p.serviceType])
-                          .join(", ")}`
-                      : "Aucun projet en cours"}
-                  </p>
-                </div>
-                <p className="font-sans text-lg font-extrabold text-accent">{formatRevenue(revenue)}</p>
-              </Link>
-            );
-          })}
-        </div>
+        <ProjectsKanbanBoard
+          projects={serialized}
+          factureRelanceSettings={{
+            daysBeforeFactureRelance1: settings.daysBeforeFactureRelance1,
+            daysBeforeFactureRelance2: settings.daysBeforeFactureRelance2,
+          }}
+        />
       )}
     </div>
   );
