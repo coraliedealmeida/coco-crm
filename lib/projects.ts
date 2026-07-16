@@ -1,4 +1,6 @@
+import { ServiceType } from "@prisma/client";
 import { countBusinessDays } from "@/lib/business-days";
+import { projectSteps } from "@/lib/serviceTypes";
 
 // Étapes communes à toutes les prestations (cf. lib/serviceTypes.ts) qui bornent les 3
 // colonnes macro du Kanban Projets. Seul le milieu ("En cours") varie selon le type.
@@ -17,6 +19,34 @@ export function macroGroupForStep(step: string): ProjectMacroGroupId {
   if (ONBOARDING_STEPS.includes(step)) return "ONBOARDING";
   if (OFFBOARDING_STEPS.includes(step)) return "OFFBOARDING";
   return "EN_COURS";
+}
+
+/** Liste ordonnée des étapes d'un projet : ses statuts personnalisés si définis, sinon le modèle du type. */
+export function resolveSteps(serviceType: ServiceType, steps: string[]): string[] {
+  return steps.length > 0 ? steps : projectSteps[serviceType];
+}
+
+/**
+ * Insère un statut personnalisé dans la liste d'un projet, à la fin de la zone "En cours"
+ * (juste avant la première étape d'Offboarding) — l'emplacement naturel pour une révision
+ * supplémentaire. Matérialise la liste depuis le modèle si le projet n'en avait pas encore.
+ */
+export function insertCustomStep(serviceType: ServiceType, steps: string[], label: string): string[] {
+  const base = resolveSteps(serviceType, steps);
+  const firstOffboardingIndex = base.findIndex((s) => OFFBOARDING_STEPS.includes(s));
+  const insertAt = firstOffboardingIndex === -1 ? base.length : firstOffboardingIndex;
+  return [...base.slice(0, insertAt), label, ...base.slice(insertAt)];
+}
+
+/** Retire un statut de la liste d'un projet (utilisé pour supprimer un statut personnalisé). */
+export function removeStep(serviceType: ServiceType, steps: string[], label: string): string[] {
+  const base = resolveSteps(serviceType, steps);
+  return base.filter((s) => s !== label);
+}
+
+/** Statuts par défaut du type de prestation (permet de distinguer les statuts personnalisés ajoutés). */
+export function isCustomStep(serviceType: ServiceType, step: string): boolean {
+  return !projectSteps[serviceType].includes(step);
 }
 
 /** Première étape de chaque colonne macro pour un projet donné (utilisé par le glisser-déposer). */

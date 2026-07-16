@@ -122,20 +122,33 @@ model Client {
 }
 
 model Project {
-  id                    String    @id @default(cuid())
+  id                    String        @id @default(cuid())
   clientId              String
-  client                Client    @relation(fields: [clientId], references: [id])
+  client                Client        @relation(fields: [clientId], references: [id])
   serviceType           ServiceType
   currentStep           String
-  revisionCount         Int       @default(0)
+  // Étapes propres au projet (statuts personnalisés). Vide = modèle par défaut du type
+  // de prestation (lib/serviceTypes.ts). Non vide = liste ordonnée complète pour ce projet.
+  steps                 String[]      @default([])
   startDate             DateTime?
   estimatedDeliveryDate DateTime?
   quoteAmount           Float?
   invoicedAt            DateTime?
   paidAt                DateTime?
   notes                 String?
-  createdAt             DateTime  @default(now())
+  createdAt             DateTime      @default(now())
   invoices              Invoice[]
+  trackingNotes         ProjectNote[]
+}
+
+// Note de suivi datée, propre à un projet (même principe que le Suivi de la fiche prospect).
+model ProjectNote {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  date      DateTime
+  content   String
+  createdAt DateTime @default(now())
 }
 
 model Invoice {

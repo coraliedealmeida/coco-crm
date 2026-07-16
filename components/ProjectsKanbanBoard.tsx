@@ -11,15 +11,22 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { projectSteps } from "@/lib/serviceTypes";
-import { projectMacroGroups, macroGroupForStep, firstStepOfMacroGroup, factureRelanceDue } from "@/lib/projects";
+import {
+  projectMacroGroups,
+  macroGroupForStep,
+  firstStepOfMacroGroup,
+  factureRelanceDue,
+  resolveSteps,
+} from "@/lib/projects";
 import ProjectCard, { ProjectCardData } from "@/components/ProjectCard";
+
+type BoardProject = ProjectCardData & { steps: string[]; invoicedAt: string | null; paidAt: string | null };
 
 export default function ProjectsKanbanBoard({
   projects: initialProjects,
   factureRelanceSettings,
 }: {
-  projects: (ProjectCardData & { invoicedAt: string | null; paidAt: string | null })[];
+  projects: BoardProject[];
   factureRelanceSettings: { daysBeforeFactureRelance1: number; daysBeforeFactureRelance2: number };
 }) {
   const [projects, setProjects] = useState(initialProjects);
@@ -48,7 +55,7 @@ export default function ProjectsKanbanBoard({
     const currentGroup = macroGroupForStep(project.currentStep);
     if (currentGroup === targetGroupId) return;
 
-    const steps = projectSteps[project.serviceType];
+    const steps = resolveSteps(project.serviceType, project.steps);
     const nextStep = firstStepOfMacroGroup(steps, targetGroupId as (typeof projectMacroGroups)[number]["id"]);
     await updateStep(projectId, nextStep);
   }
@@ -80,7 +87,7 @@ function Column({
   onStepChange,
 }: {
   group: { id: string; label: string; color: string };
-  projects: (ProjectCardData & { invoicedAt: string | null; paidAt: string | null })[];
+  projects: BoardProject[];
   factureRelanceSettings: { daysBeforeFactureRelance1: number; daysBeforeFactureRelance2: number };
   onStepChange: (projectId: string, step: string) => void;
 }) {
@@ -120,12 +127,12 @@ function DraggableCard({
   factureRelanceSettings,
   onStepChange,
 }: {
-  project: ProjectCardData & { invoicedAt: string | null; paidAt: string | null };
+  project: BoardProject;
   factureRelanceSettings: { daysBeforeFactureRelance1: number; daysBeforeFactureRelance2: number };
   onStepChange: (projectId: string, step: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: project.id });
-  const steps = projectSteps[project.serviceType];
+  const steps = resolveSteps(project.serviceType, project.steps);
 
   const relance = factureRelanceDue(
     {

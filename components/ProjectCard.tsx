@@ -9,7 +9,6 @@ export type ProjectCardData = {
   serviceType: keyof typeof serviceTypeLabel;
   currentStep: string;
   quoteAmount: number | null;
-  revisionCount: number;
   estimatedDeliveryDate: string | null;
 };
 
@@ -38,7 +37,10 @@ export default function ProjectCard({
           {initials(project.brandName)}
         </div>
         <div className="flex-1 truncate">
-          <Link href={`/clients/${project.clientId}`} className="block truncate text-sm font-extrabold text-ink hover:underline">
+          <Link
+            href={`/clients/${project.clientId}/projects/${project.id}`}
+            className="block truncate text-sm font-extrabold text-ink hover:underline"
+          >
             {project.brandName}
           </Link>
           <p className="truncate text-xs font-light text-ink/50">{serviceTypeLabel[project.serviceType]}</p>
@@ -52,11 +54,6 @@ export default function ProjectCard({
         {project.quoteAmount != null && (
           <span className="rounded-full bg-cta/30 px-2.5 py-1 text-xs font-semibold text-ink">
             💰 {formatRevenue(project.quoteAmount)}
-          </span>
-        )}
-        {project.revisionCount > 0 && (
-          <span className="rounded-full bg-soft px-2.5 py-1 text-xs font-semibold text-ink/70">
-            {project.revisionCount} révision(s)
           </span>
         )}
         {project.estimatedDeliveryDate && (

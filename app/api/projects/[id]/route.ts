@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { projectSteps } from "@/lib/serviceTypes";
-import { computeInvoiceDates } from "@/lib/projects";
+import { computeInvoiceDates, resolveSteps } from "@/lib/projects";
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   const body = await request.json();
@@ -10,7 +9,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   for (const key of ["currentStep", "notes"]) {
     if (key in body) data[key] = body[key];
   }
-  if ("revisionCount" in body) data.revisionCount = Number(body.revisionCount);
+  if ("steps" in body && Array.isArray(body.steps)) data.steps = body.steps;
   if ("quoteAmount" in body) data.quoteAmount = body.quoteAmount != null ? Number(body.quoteAmount) : null;
   if ("startDate" in body) data.startDate = body.startDate ? new Date(body.startDate) : null;
   if ("estimatedDeliveryDate" in body) {
@@ -20,7 +19,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   if (typeof body.currentStep === "string") {
     const existing = await prisma.project.findUnique({ where: { id: params.id } });
     if (existing) {
-      const stamps = computeInvoiceDates(projectSteps[existing.serviceType], body.currentStep, {
+      const steps = resolveSteps(existing.serviceType, existing.steps);
+      const stamps = computeInvoiceDates(steps, body.currentStep, {
         invoicedAt: existing.invoicedAt,
         paidAt: existing.paidAt,
       });
