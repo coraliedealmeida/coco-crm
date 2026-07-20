@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ServiceType } from "@prisma/client";
 import { serviceTypeOptions } from "@/lib/serviceTypes";
 import { GROUP_ORDER, groupFor } from "@/lib/serviceGroups";
+import { formatRevenue as formatPrice } from "@/lib/format";
 
 type ServiceOption = {
   id: string;
@@ -82,12 +83,6 @@ const emptyNotes: NotesData = {
   selectedBundleIds: [],
   loyaltyDiscount: false,
 };
-
-function formatPrice(amount: number): string {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
-    amount
-  );
-}
 
 export default function DiscoveryNotesForm({
   brandId,

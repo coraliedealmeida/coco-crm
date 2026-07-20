@@ -2,16 +2,11 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import KanbanBoard from "@/components/KanbanBoard";
 import StatCard from "@/components/StatCard";
+import { formatRevenue } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 const devisInProgressStatuses = ["DEVIS_ENVOYE", "RELANCE_DEVIS_1", "RELANCE_DEVIS_2", "DEVIS_ACCEPTE", "DEVIS_REFUSE"];
-
-function formatRevenue(amount: number): string {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
-    amount
-  );
-}
 
 export default async function PipelinePage() {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);

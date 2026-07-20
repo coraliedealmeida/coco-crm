@@ -2,14 +2,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
 import { isProjectDone, paidTotal } from "@/lib/projects";
+import { formatRevenue } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-
-function formatRevenue(amount: number): string {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
-    amount
-  );
-}
 
 export default async function ClientsListPage() {
   const clients = await prisma.client.findMany({

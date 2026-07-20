@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { GROUP_ORDER, groupFor } from "@/lib/serviceGroups";
+import { formatRevenue as formatPrice } from "@/lib/format";
 
 type PriceType = "FIXED" | "HOURLY" | "MONTHLY";
 
@@ -28,12 +29,6 @@ type BundleRow = {
 
 const priceTypeLabel: Record<PriceType, string> = { FIXED: "Fixe", HOURLY: "Horaire", MONTHLY: "Mensuel" };
 const priceUnit: Record<PriceType, string> = { FIXED: "", HOURLY: "/h", MONTHLY: "/mois" };
-
-function formatPrice(amount: number): string {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
-    amount
-  );
-}
 
 const emptyNewService = { name: "", category: GROUP_ORDER[0], price: "", priceType: "FIXED" as PriceType, content: "" };
 

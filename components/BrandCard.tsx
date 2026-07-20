@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { avatarColor, initials, platformBadge } from "@/lib/pipeline";
+import { formatRevenue } from "@/lib/format";
 
 export type BrandCardData = {
   id: string;
@@ -12,12 +13,6 @@ export type BrandCardData = {
   paymentStatus?: string | null;
   serviceType?: string | null;
 };
-
-function formatRevenue(amount: number): string {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
-    amount
-  );
-}
 
 /**
  * Carte marque/projet unifiée, utilisée dans le Pipeline, le Dashboard, et

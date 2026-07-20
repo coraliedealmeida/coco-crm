@@ -3,17 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { invoicedTotal, paidTotal, remainingToInvoice } from "@/lib/projects";
+import { formatRevenue } from "@/lib/format";
 
 type Invoice = { id: string; label: string; amount: number; sentAt: string | null; paidAt: string | null };
 
 function toDateInputValue(iso: string | null): string {
   return iso ? new Date(iso).toISOString().slice(0, 10) : "";
-}
-
-function formatRevenue(amount: number): string {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
-    amount
-  );
 }
 
 export default function InvoicesPanel({

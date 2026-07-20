@@ -10,14 +10,9 @@ import BrandActions from "@/components/BrandActions";
 import HistoryPanel from "@/components/HistoryPanel";
 import RemindersPanel from "@/components/RemindersPanel";
 import NewProjectButton from "@/components/NewProjectButton";
+import { formatRevenue } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-
-function formatRevenue(amount: number): string {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
-    amount
-  );
-}
 
 const backLinks: Record<string, { href: string; label: string }> = {
   pipeline: { href: "/pipeline", label: "← Retour au Pipeline" },

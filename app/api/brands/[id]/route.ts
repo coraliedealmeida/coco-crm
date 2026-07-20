@@ -15,6 +15,24 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   return NextResponse.json(brand);
 }
 
+export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
+  const existingClient = await prisma.client.findUnique({ where: { brandId: params.id } });
+  if (existingClient) {
+    return NextResponse.json(
+      { error: "Cette marque a un client et des projets associés : elle ne peut pas être supprimée." },
+      { status: 409 }
+    );
+  }
+
+  await prisma.$transaction([
+    prisma.reminder.deleteMany({ where: { brandId: params.id } }),
+    prisma.contactHistoryEntry.deleteMany({ where: { brandId: params.id } }),
+    prisma.brand.delete({ where: { id: params.id } }),
+  ]);
+
+  return NextResponse.json({ ok: true });
+}
+
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   const body = await request.json();
 

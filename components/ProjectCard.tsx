@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
 import { avatarColor, initials } from "@/lib/pipeline";
+import { formatRevenue } from "@/lib/format";
 
 export type ProjectCardData = {
   id: string;
@@ -12,12 +13,6 @@ export type ProjectCardData = {
   quoteAmount: number | null;
   estimatedDeliveryDate: string | null;
 };
-
-function formatRevenue(amount: number): string {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
-    amount
-  );
-}
 
 export default function ProjectCard({
   project,

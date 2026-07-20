@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { PipelineStatus } from "@prisma/client";
 import DatePicker from "@/components/DatePicker";
 import CreatableSelect from "@/components/CreatableSelect";
-import { pipelineColumns } from "@/lib/pipeline";
 
 type Brand = {
   id?: string;
@@ -34,16 +32,14 @@ const emptyBrand: Brand = {
   potentialRevenue: null,
 };
 
-// Statuts de départ possibles quand on n'engage pas de routine (les plus courants).
-const START_STATUSES: PipelineStatus[] = ["PREMIER_DM", "EN_DISCUSSION", "APPEL_PREVU", "DEVIS_A_FAIRE"];
+type Path = "routine" | "contact";
 
 export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id?: string } }) {
   const router = useRouter();
   const [brand, setBrand] = useState<Brand>({ ...emptyBrand, ...initial });
   const [sectors, setSectors] = useState<string[]>([]);
   const [sources, setSources] = useState<string[]>([]);
-  const [withRoutine, setWithRoutine] = useState(true);
-  const [startStatus, setStartStatus] = useState<PipelineStatus>("PREMIER_DM");
+  const [path, setPath] = useState<Path>("routine");
   const [saving, setSaving] = useState(false);
 
   const isNew = !initial?.id;
@@ -64,7 +60,14 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
     const method = initial?.id ? "PATCH" : "POST";
     const url = initial?.id ? `/api/brands/${initial.id}` : "/api/brands";
     const payload = isNew
-      ? { ...brand, pipelineStatus: withRoutine ? "ROUTINE_ENGAGEMENT" : startStatus }
+      ? path === "routine"
+        ? { ...brand, source: "", pipelineStatus: "ROUTINE_ENGAGEMENT" }
+        : {
+            ...brand,
+            platform: "BOTH" as const,
+            engagementStartDate: new Date().toISOString(),
+            pipelineStatus: "EN_DISCUSSION",
+          }
       : brand;
 
     const res = await fetch(url, {
@@ -84,6 +87,15 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
 
   return (
     <form onSubmit={handleSubmit} className="flex max-w-xl flex-col gap-5">
+      <Field label="Nom de la marque">
+        <input
+          required
+          value={brand.name}
+          onChange={(e) => setBrand({ ...brand, name: e.target.value })}
+          className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
+        />
+      </Field>
+
       <Field label="Emoji de la marque">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-soft text-xl">
@@ -99,67 +111,6 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
         <p className="mt-1.5 text-xs font-light text-ink/40">
           Sur Mac : Cmd + Ctrl + Espace ouvre le clavier emoji. Laisse vide pour garder les initiales.
         </p>
-      </Field>
-
-      <Field label="Nom de la marque">
-        <input
-          required
-          value={brand.name}
-          onChange={(e) => setBrand({ ...brand, name: e.target.value })}
-          className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
-        />
-      </Field>
-
-      {isNew && (
-        <div className="rounded-2xl bg-soft/60 p-4">
-          <label className="flex items-center justify-between gap-3">
-            <span className="text-sm font-semibold text-ink">Démarrer une routine d&apos;engagement</span>
-            <button
-              type="button"
-              onClick={() => setWithRoutine((v) => !v)}
-              className={`h-6 w-11 shrink-0 rounded-full transition ${withRoutine ? "bg-accent" : "bg-ink/20"}`}
-            >
-              <span
-                className={`block h-5 w-5 translate-x-0.5 rounded-full bg-white transition ${
-                  withRoutine ? "translate-x-5" : ""
-                }`}
-              />
-            </button>
-          </label>
-          <p className="mt-1.5 text-xs font-light text-ink/50">
-            {withRoutine
-              ? "Tu vas chercher cette marque : précise la plateforme que tu cibles."
-              : "Cette marque t'a déjà contactée : précise la plateforme de contact et le statut de départ."}
-          </p>
-          {!withRoutine && (
-            <div className="mt-3">
-              <label className="mb-2 block text-sm font-semibold text-ink">Statut de départ</label>
-              <select
-                value={startStatus}
-                onChange={(e) => setStartStatus(e.target.value as PipelineStatus)}
-                className="w-full rounded-xl border border-accent-light bg-white px-4 py-3 text-sm text-ink outline-none focus:border-accent"
-              >
-                {START_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {pipelineColumns.find((c) => c.status === s)?.label ?? s}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-      )}
-
-      <Field label={isNew && !withRoutine ? "Plateforme de contact" : "Plateforme cible"}>
-        <select
-          value={brand.platform}
-          onChange={(e) => setBrand({ ...brand, platform: e.target.value as Brand["platform"] })}
-          className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
-        >
-          <option value="LINKEDIN">LinkedIn</option>
-          <option value="INSTAGRAM">Instagram</option>
-          <option value="BOTH">Les deux</option>
-        </select>
       </Field>
 
       <Field label="Secteur">
@@ -179,30 +130,6 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
         />
       </Field>
 
-      <Field label="Source">
-        <CreatableSelect
-          label="Source"
-          options={sources}
-          value={brand.source}
-          onChange={(v) => setBrand({ ...brand, source: v })}
-          onCreate={async (v) => {
-            await fetch("/api/options/sources", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ label: v }),
-            });
-            setSources((s) => [...s, v]);
-          }}
-        />
-      </Field>
-
-      <Field label="Date de début d'engagement">
-        <DatePicker
-          value={brand.engagementStartDate ? new Date(brand.engagementStartDate) : null}
-          onChange={(d) => setBrand({ ...brand, engagementStartDate: d ? d.toISOString() : null })}
-        />
-      </Field>
-
       <Field label="Interlocuteur (nom)">
         <input
           value={brand.contactName}
@@ -218,6 +145,113 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
           className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
         />
       </Field>
+
+      {isNew ? (
+        <div className="rounded-2xl bg-soft/60 p-4">
+          <div className="flex gap-1 rounded-xl bg-white p-1">
+            <button
+              type="button"
+              onClick={() => setPath("routine")}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                path === "routine" ? "bg-accent text-white" : "text-ink/60 hover:bg-soft"
+              }`}
+            >
+              Routine d&apos;engagement
+            </button>
+            <button
+              type="button"
+              onClick={() => setPath("contact")}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                path === "contact" ? "bg-accent text-white" : "text-ink/60 hover:bg-soft"
+              }`}
+            >
+              Prise de contact
+            </button>
+          </div>
+
+          {path === "routine" ? (
+            <div className="mt-4 flex flex-col gap-4">
+              <Field label="Plateforme cible">
+                <select
+                  value={brand.platform}
+                  onChange={(e) => setBrand({ ...brand, platform: e.target.value as Brand["platform"] })}
+                  className="w-full rounded-xl border border-accent-light bg-white px-4 py-3 text-sm text-ink outline-none focus:border-accent"
+                >
+                  <option value="LINKEDIN">LinkedIn</option>
+                  <option value="INSTAGRAM">Instagram</option>
+                  <option value="BOTH">Les deux</option>
+                </select>
+              </Field>
+              <Field label="Date de début de la routine d'engagement">
+                <DatePicker
+                  value={brand.engagementStartDate ? new Date(brand.engagementStartDate) : null}
+                  onChange={(d) => setBrand({ ...brand, engagementStartDate: d ? d.toISOString() : null })}
+                />
+              </Field>
+            </div>
+          ) : (
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-light text-ink/50">
+                La marque t&apos;a contactée, ou tu l&apos;as contactée hors réseaux sociaux.
+              </p>
+              <Field label="Source">
+                <CreatableSelect
+                  label="Source"
+                  options={sources}
+                  value={brand.source}
+                  onChange={(v) => setBrand({ ...brand, source: v })}
+                  onCreate={async (v) => {
+                    await fetch("/api/options/sources", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ label: v }),
+                    });
+                    setSources((s) => [...s, v]);
+                  }}
+                />
+              </Field>
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          <Field label="Plateforme cible">
+            <select
+              value={brand.platform}
+              onChange={(e) => setBrand({ ...brand, platform: e.target.value as Brand["platform"] })}
+              className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
+            >
+              <option value="LINKEDIN">LinkedIn</option>
+              <option value="INSTAGRAM">Instagram</option>
+              <option value="BOTH">Les deux</option>
+            </select>
+          </Field>
+
+          <Field label="Source">
+            <CreatableSelect
+              label="Source"
+              options={sources}
+              value={brand.source}
+              onChange={(v) => setBrand({ ...brand, source: v })}
+              onCreate={async (v) => {
+                await fetch("/api/options/sources", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ label: v }),
+                });
+                setSources((s) => [...s, v]);
+              }}
+            />
+          </Field>
+
+          <Field label="Date de début d'engagement">
+            <DatePicker
+              value={brand.engagementStartDate ? new Date(brand.engagementStartDate) : null}
+              onChange={(d) => setBrand({ ...brand, engagementStartDate: d ? d.toISOString() : null })}
+            />
+          </Field>
+        </>
+      )}
 
       <Field label="Notes">
         <textarea

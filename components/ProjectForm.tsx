@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ServiceType } from "@prisma/client";
 import { resolveSteps, insertCustomStep, removeStep, isCustomStep } from "@/lib/projects";
 import InvoicesPanel from "@/components/InvoicesPanel";
+import { formatRevenue } from "@/lib/format";
 
 type Invoice = { id: string; label: string; amount: number; sentAt: string | null; paidAt: string | null };
 
@@ -23,12 +24,6 @@ type Project = {
 
 function toDateInputValue(iso: string | null): string {
   return iso ? new Date(iso).toISOString().slice(0, 10) : "";
-}
-
-function formatRevenue(amount: number): string {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
-    amount
-  );
 }
 
 export default function ProjectForm({ initial, suiviSlot }: { initial: Project; suiviSlot: React.ReactNode }) {

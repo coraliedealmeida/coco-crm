@@ -3,14 +3,9 @@ import { prisma } from "@/lib/prisma";
 import StatCard from "@/components/StatCard";
 import ProjectsKanbanBoard from "@/components/ProjectsKanbanBoard";
 import { isProjectDone, invoicedInMonth, paidInMonth, factureRelanceDue } from "@/lib/projects";
+import { formatRevenue } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-
-function formatRevenue(amount: number): string {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
-    amount
-  );
-}
 
 export default async function ProjectsPage() {
   const [projects, settings] = await Promise.all([

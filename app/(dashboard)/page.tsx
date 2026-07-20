@@ -6,14 +6,9 @@ import { serviceTypeLabel } from "@/lib/serviceTypes";
 import { isProjectDone } from "@/lib/projects";
 import DashboardSection from "@/components/DashboardSection";
 import BrandCard from "@/components/BrandCard";
+import { formatRevenue } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-
-function formatRevenue(amount: number): string {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(
-    amount
-  );
-}
 
 function ProjectRow({
   project,
