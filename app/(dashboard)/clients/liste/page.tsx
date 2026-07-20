@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isProjectDone, isProjectPaid } from "@/lib/projects";
+import { isProjectDone, paidAmount } from "@/lib/projects";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +35,7 @@ export default async function ClientsListPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {clients.map((client) => {
-            const revenue = client.projects.filter(isProjectPaid).reduce((sum, p) => sum + (p.quoteAmount ?? 0), 0);
+            const revenue = client.projects.reduce((sum, p) => sum + paidAmount(p), 0);
             const inProgress = client.projects.filter((p) => !isProjectDone(p));
             return (
               <Link

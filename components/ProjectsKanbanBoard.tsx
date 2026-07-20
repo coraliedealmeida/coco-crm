@@ -11,24 +11,12 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import {
-  projectMacroGroups,
-  macroGroupForStep,
-  firstStepOfMacroGroup,
-  factureRelanceDue,
-  resolveSteps,
-} from "@/lib/projects";
+import { projectMacroGroups, macroGroupForStep, firstStepOfMacroGroup, resolveSteps } from "@/lib/projects";
 import ProjectCard, { ProjectCardData } from "@/components/ProjectCard";
 
-type BoardProject = ProjectCardData & { steps: string[]; invoicedAt: string | null; paidAt: string | null };
+type BoardProject = ProjectCardData & { steps: string[]; relance: 1 | 2 | null };
 
-export default function ProjectsKanbanBoard({
-  projects: initialProjects,
-  factureRelanceSettings,
-}: {
-  projects: BoardProject[];
-  factureRelanceSettings: { daysBeforeFactureRelance1: number; daysBeforeFactureRelance2: number };
-}) {
+export default function ProjectsKanbanBoard({ projects: initialProjects }: { projects: BoardProject[] }) {
   const [projects, setProjects] = useState(initialProjects);
   const router = useRouter();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -65,15 +53,7 @@ export default function ProjectsKanbanBoard({
       <div className="flex gap-4 overflow-x-auto pb-4">
         {projectMacroGroups.map((group) => {
           const groupProjects = projects.filter((p) => macroGroupForStep(p.currentStep) === group.id);
-          return (
-            <Column
-              key={group.id}
-              group={group}
-              projects={groupProjects}
-              factureRelanceSettings={factureRelanceSettings}
-              onStepChange={updateStep}
-            />
-          );
+          return <Column key={group.id} group={group} projects={groupProjects} onStepChange={updateStep} />;
         })}
       </div>
     </DndContext>
@@ -83,12 +63,10 @@ export default function ProjectsKanbanBoard({
 function Column({
   group,
   projects,
-  factureRelanceSettings,
   onStepChange,
 }: {
   group: { id: string; label: string; color: string };
   projects: BoardProject[];
-  factureRelanceSettings: { daysBeforeFactureRelance1: number; daysBeforeFactureRelance2: number };
   onStepChange: (projectId: string, step: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: group.id });
@@ -109,12 +87,7 @@ function Column({
       </div>
       <div className="flex flex-col gap-2.5">
         {projects.map((p) => (
-          <DraggableCard
-            key={p.id}
-            project={p}
-            factureRelanceSettings={factureRelanceSettings}
-            onStepChange={onStepChange}
-          />
+          <DraggableCard key={p.id} project={p} onStepChange={onStepChange} />
         ))}
         {projects.length === 0 && <p className="px-1 text-xs font-light text-ink/30">⠿ Glisser ici</p>}
       </div>
@@ -124,23 +97,13 @@ function Column({
 
 function DraggableCard({
   project,
-  factureRelanceSettings,
   onStepChange,
 }: {
   project: BoardProject;
-  factureRelanceSettings: { daysBeforeFactureRelance1: number; daysBeforeFactureRelance2: number };
   onStepChange: (projectId: string, step: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: project.id });
   const steps = resolveSteps(project.serviceType, project.steps);
-
-  const relance = factureRelanceDue(
-    {
-      invoicedAt: project.invoicedAt ? new Date(project.invoicedAt) : null,
-      paidAt: project.paidAt ? new Date(project.paidAt) : null,
-    },
-    factureRelanceSettings
-  );
 
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
@@ -157,9 +120,9 @@ function DraggableCard({
       <ProjectCard
         project={project}
         badge={
-          relance && (
+          project.relance && (
             <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-600">
-              📮 Relance {relance}
+              📮 Relance {project.relance}
             </span>
           )
         }

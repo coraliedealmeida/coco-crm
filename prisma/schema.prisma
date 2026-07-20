@@ -34,6 +34,7 @@ enum PipelineStatus {
 model Brand {
   id                  String         @id @default(cuid())
   name                String
+  emoji               String?
   platform            Platform
   sector              String
   source              String
@@ -130,9 +131,14 @@ model Project {
   // Étapes propres au projet (statuts personnalisés). Vide = modèle par défaut du type
   // de prestation (lib/serviceTypes.ts). Non vide = liste ordonnée complète pour ce projet.
   steps                 String[]      @default([])
+  signedAt              DateTime?
   startDate             DateTime?
   estimatedDeliveryDate DateTime?
   quoteAmount           Float?
+  // Montant d'acompte : null = 30% du devis calculé automatiquement ; sinon valeur saisie.
+  depositAmount         Float?
+  depositInvoicedAt     DateTime?
+  depositPaidAt         DateTime?
   invoicedAt            DateTime?
   paidAt                DateTime?
   notes                 String?

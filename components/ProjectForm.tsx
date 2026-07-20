@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ServiceType } from "@prisma/client";
-import { resolveSteps, insertCustomStep, removeStep, isCustomStep } from "@/lib/projects";
+import { resolveSteps, insertCustomStep, removeStep, isCustomStep, depositAmount } from "@/lib/projects";
 
 type Project = {
   id: string;
@@ -11,12 +11,15 @@ type Project = {
   serviceType: ServiceType;
   currentStep: string;
   steps: string[];
+  signedAt: string | null;
   startDate: string | null;
   estimatedDeliveryDate: string | null;
   quoteAmount: number | null;
+  depositAmount: number | null;
+  depositInvoicedAt: string | null;
+  depositPaidAt: string | null;
   invoicedAt: string | null;
   paidAt: string | null;
-  notes: string;
 };
 
 function toDateInputValue(iso: string | null): string {
@@ -29,13 +32,15 @@ function formatRevenue(amount: number): string {
   );
 }
 
-export default function ProjectForm({ initial }: { initial: Project }) {
+export default function ProjectForm({ initial, suiviSlot }: { initial: Project; suiviSlot: React.ReactNode }) {
   const router = useRouter();
   const [project, setProject] = useState(initial);
   const [newStep, setNewStep] = useState("");
+  const [addingStep, setAddingStep] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const steps = resolveSteps(project.serviceType, project.steps);
+  const autoDeposit = depositAmount({ quoteAmount: project.quoteAmount, depositAmount: null });
 
   async function update(data: Partial<Project>) {
     setProject((prev) => ({ ...prev, ...data }));
@@ -47,11 +52,16 @@ export default function ProjectForm({ initial }: { initial: Project }) {
     router.refresh();
   }
 
+  function updateDate(key: keyof Project, value: string) {
+    update({ [key]: value ? new Date(value).toISOString() : null } as Partial<Project>);
+  }
+
   async function handleAddStep() {
     const label = newStep.trim();
     if (!label || steps.includes(label)) return;
     const nextSteps = insertCustomStep(project.serviceType, project.steps, label);
     setNewStep("");
+    setAddingStep(false);
     await update({ steps: nextSteps });
   }
 
@@ -71,7 +81,7 @@ export default function ProjectForm({ initial }: { initial: Project }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Bandeau d'en-tête : données clés du projet */}
+      {/* Données clés du projet */}
       <div className="grid grid-cols-3 gap-4">
         <HeaderTile label="Statut en cours" value={project.currentStep} accent="#8B5CF6" />
         <HeaderTile
@@ -90,13 +100,13 @@ export default function ProjectForm({ initial }: { initial: Project }) {
         />
       </div>
 
+      {/* Étapes */}
       <div className="rounded-3xl bg-white p-6 shadow-soft">
         <h2 className="mb-4 font-sans text-base font-extrabold text-ink">Étapes</h2>
         <div className="flex flex-wrap gap-2">
           {steps.map((step) => {
             const currentIndex = steps.indexOf(project.currentStep);
-            const stepIndex = steps.indexOf(step);
-            const reached = stepIndex <= currentIndex;
+            const reached = steps.indexOf(step) <= currentIndex;
             const custom = isCustomStep(project.serviceType, step);
             return (
               <span key={step} className="group relative inline-flex items-center">
@@ -126,47 +136,50 @@ export default function ProjectForm({ initial }: { initial: Project }) {
           })}
         </div>
 
-        <div className="mt-4 flex gap-2 border-t border-soft pt-4">
-          <input
-            value={newStep}
-            onChange={(e) => setNewStep(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAddStep()}
-            placeholder="Ajouter un statut personnalisé (ex : Révision 2)"
-            className="flex-1 rounded-xl border border-accent-light bg-soft px-4 py-2.5 text-sm text-ink outline-none focus:border-accent"
-          />
+        {addingStep ? (
+          <div className="mt-3 flex gap-2">
+            <input
+              autoFocus
+              value={newStep}
+              onChange={(e) => setNewStep(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAddStep()}
+              placeholder="Nom du statut (ex : Révision 3)"
+              className="flex-1 rounded-xl border border-accent-light bg-soft px-4 py-2.5 text-sm text-ink outline-none focus:border-accent"
+            />
+            <button
+              onClick={handleAddStep}
+              className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+            >
+              Ajouter
+            </button>
+            <button onClick={() => setAddingStep(false)} className="px-3 py-2.5 text-sm text-ink/50 hover:text-ink">
+              Annuler
+            </button>
+          </div>
+        ) : (
           <button
-            onClick={handleAddStep}
-            className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+            onClick={() => setAddingStep(true)}
+            className="mt-3 text-sm font-semibold text-accent hover:underline"
           >
-            Ajouter
+            + Ajouter un statut
           </button>
-        </div>
+        )}
       </div>
 
+      {/* Suivi du projet */}
+      {suiviSlot}
+
+      {/* Informations + Facturation en bas de page */}
       <div className="grid grid-cols-2 gap-6">
         <div className="rounded-3xl bg-white p-6 shadow-soft">
           <h2 className="mb-4 font-sans text-base font-extrabold text-ink">Informations</h2>
           <div className="flex flex-col gap-4">
             <Field label="Date de début">
-              <input
-                type="date"
-                value={toDateInputValue(project.startDate)}
-                onChange={(e) => update({ startDate: e.target.value ? new Date(e.target.value).toISOString() : null })}
-                className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
-              />
+              <DateInput value={project.startDate} onChange={(v) => updateDate("startDate", v)} />
             </Field>
-
             <Field label="Date de livraison estimée">
-              <input
-                type="date"
-                value={toDateInputValue(project.estimatedDeliveryDate)}
-                onChange={(e) =>
-                  update({ estimatedDeliveryDate: e.target.value ? new Date(e.target.value).toISOString() : null })
-                }
-                className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
-              />
+              <DateInput value={project.estimatedDeliveryDate} onChange={(v) => updateDate("estimatedDeliveryDate", v)} />
             </Field>
-
             {project.serviceType === "ACCOMPAGNEMENT_MENSUEL" && <MonthlyCycle startDate={project.startDate} />}
           </div>
         </div>
@@ -174,6 +187,9 @@ export default function ProjectForm({ initial }: { initial: Project }) {
         <div className="rounded-3xl bg-white p-6 shadow-soft">
           <h2 className="mb-4 font-sans text-base font-extrabold text-ink">Facturation</h2>
           <div className="flex flex-col gap-4">
+            <Field label="Date de signature du devis">
+              <DateInput value={project.signedAt} onChange={(v) => updateDate("signedAt", v)} />
+            </Field>
             <Field label="Montant du devis HT">
               <input
                 type="number"
@@ -182,27 +198,35 @@ export default function ProjectForm({ initial }: { initial: Project }) {
                 className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
               />
             </Field>
+            <Field label="Montant de l'acompte HT">
+              <input
+                type="number"
+                value={project.depositAmount ?? ""}
+                onChange={(e) => update({ depositAmount: e.target.value ? Number(e.target.value) : null })}
+                placeholder={`30% par défaut = ${formatRevenue(autoDeposit)}`}
+                className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
+              />
+            </Field>
 
-            {(project.invoicedAt || project.paidAt) && (
-              <div className="flex flex-col gap-1 text-sm font-light text-ink/60">
-                {project.invoicedAt && (
-                  <p>Facture envoyée le {new Date(project.invoicedAt).toLocaleDateString("fr-FR")}</p>
-                )}
-                {project.paidAt && <p>Payée le {new Date(project.paidAt).toLocaleDateString("fr-FR")}</p>}
+            <div className="border-t border-soft pt-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">Dates de facturation (ajustables)</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Acompte facturé le">
+                  <DateInput value={project.depositInvoicedAt} onChange={(v) => updateDate("depositInvoicedAt", v)} />
+                </Field>
+                <Field label="Acompte encaissé le">
+                  <DateInput value={project.depositPaidAt} onChange={(v) => updateDate("depositPaidAt", v)} />
+                </Field>
+                <Field label="Solde facturé le">
+                  <DateInput value={project.invoicedAt} onChange={(v) => updateDate("invoicedAt", v)} />
+                </Field>
+                <Field label="Solde encaissé le">
+                  <DateInput value={project.paidAt} onChange={(v) => updateDate("paidAt", v)} />
+                </Field>
               </div>
-            )}
+            </div>
           </div>
         </div>
-      </div>
-
-      <div className="rounded-3xl bg-white p-6 shadow-soft">
-        <h2 className="mb-4 font-sans text-base font-extrabold text-ink">Notes générales</h2>
-        <textarea
-          value={project.notes}
-          onChange={(e) => update({ notes: e.target.value })}
-          rows={4}
-          className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
-        />
       </div>
 
       <button
@@ -213,6 +237,17 @@ export default function ProjectForm({ initial }: { initial: Project }) {
         Supprimer ce projet
       </button>
     </div>
+  );
+}
+
+function DateInput({ value, onChange }: { value: string | null; onChange: (v: string) => void }) {
+  return (
+    <input
+      type="date"
+      value={toDateInputValue(value)}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
+    />
   );
 }
 

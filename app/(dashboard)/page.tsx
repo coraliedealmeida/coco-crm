@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { statusLabel } from "@/lib/pipeline";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isProjectDone, factureRelanceDue } from "@/lib/projects";
+import { isProjectDone, factureRelanceDue, pendingInvoice } from "@/lib/projects";
 import DashboardSection from "@/components/DashboardSection";
 import BrandCard from "@/components/BrandCard";
 
@@ -66,7 +66,7 @@ export default async function DashboardPage() {
 
   const projectsEnCours = projects.filter((p) => !isProjectDone(p));
   const aFacturer = projects.filter((p) => p.currentStep === "Facture à faire");
-  const facturesEnAttente = projects.filter((p) => p.invoicedAt && !p.paidAt);
+  const facturesEnAttente = projects.filter((p) => pendingInvoice(p) !== null);
 
   return (
     <div className="flex flex-col gap-8">
@@ -199,18 +199,18 @@ export default async function DashboardPage() {
           >
             {facturesEnAttente.map((p) => {
               const relance = factureRelanceDue(p, settings, now);
+              const pending = pendingInvoice(p)!;
               return (
                 <ProjectRow
                   key={p.id}
                   project={{ id: p.id, clientId: p.clientId, brandName: p.client.brand.name, serviceType: p.serviceType }}
                   statusContent={
-                    relance ? (
-                      <span className="text-xs font-semibold text-red-500">📮 Relance {relance}</span>
-                    ) : (
-                      <span className="text-xs font-light text-ink/40">
-                        {p.invoicedAt && new Date(p.invoicedAt).toLocaleDateString("fr-FR")}
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-soft px-2 py-0.5 text-[11px] font-semibold text-ink/60">
+                        {pending.kind === "acompte" ? "Acompte" : "Solde"} {formatRevenue(pending.amount)}
                       </span>
-                    )
+                      {relance && <span className="text-xs font-semibold text-red-500">📮 Relance {relance}</span>}
+                    </div>
                   }
                 />
               );

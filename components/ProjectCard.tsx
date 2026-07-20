@@ -6,6 +6,7 @@ export type ProjectCardData = {
   id: string;
   clientId: string;
   brandName: string;
+  brandEmoji: string | null;
   serviceType: keyof typeof serviceTypeLabel;
   currentStep: string;
   quoteAmount: number | null;
@@ -30,12 +31,18 @@ export default function ProjectCard({
   return (
     <div className="rounded-2xl bg-white p-4 shadow-md transition hover:shadow-lg">
       <div className="mb-3 flex items-center gap-3">
-        <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white"
-          style={{ backgroundColor: avatarColor(project.brandName) }}
-        >
-          {initials(project.brandName)}
-        </div>
+        {project.brandEmoji ? (
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-soft text-lg">
+            {project.brandEmoji}
+          </div>
+        ) : (
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white"
+            style={{ backgroundColor: avatarColor(project.brandName) }}
+          >
+            {initials(project.brandName)}
+          </div>
+        )}
         <div className="flex-1 truncate">
           <Link
             href={`/clients/${project.clientId}/projects/${project.id}`}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import StatCard from "@/components/StatCard";
 import ProjectsKanbanBoard from "@/components/ProjectsKanbanBoard";
-import { isProjectDone } from "@/lib/projects";
+import { isProjectDone, invoicedInMonth, paidInMonth, factureRelanceDue } from "@/lib/projects";
 
 export const dynamic = "force-dynamic";
 
@@ -12,36 +12,34 @@ function formatRevenue(amount: number): string {
   );
 }
 
-function isInMonth(date: Date | null, now: Date): boolean {
-  return !!date && date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
-}
-
 export default async function ProjectsPage() {
   const [projects, settings] = await Promise.all([
-    prisma.project.findMany({ include: { client: { include: { brand: true } } }, orderBy: { createdAt: "desc" } }),
+    prisma.project.findMany({ include: { client: { include: { brand: true } } } }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
   ]);
 
+  // Ordre le plus récent d'abord, sur la date de signature (permet l'antidatage), sinon la création.
+  projects.sort(
+    (a, b) =>
+      (b.signedAt ?? b.createdAt).getTime() - (a.signedAt ?? a.createdAt).getTime()
+  );
+
   const now = new Date();
   const projectsEnCours = projects.filter((p) => !isProjectDone(p)).length;
-  const totalFactureCeMois = projects
-    .filter((p) => isInMonth(p.invoicedAt, now))
-    .reduce((sum, p) => sum + (p.quoteAmount ?? 0), 0);
-  const totalEncaisseCeMois = projects
-    .filter((p) => isInMonth(p.paidAt, now))
-    .reduce((sum, p) => sum + (p.quoteAmount ?? 0), 0);
+  const totalFactureCeMois = projects.reduce((sum, p) => sum + invoicedInMonth(p, now), 0);
+  const totalEncaisseCeMois = projects.reduce((sum, p) => sum + paidInMonth(p, now), 0);
 
   const serialized = projects.map((p) => ({
     id: p.id,
     clientId: p.clientId,
     brandName: p.client.brand.name,
+    brandEmoji: p.client.brand.emoji,
     serviceType: p.serviceType,
     currentStep: p.currentStep,
     steps: p.steps,
     quoteAmount: p.quoteAmount,
     estimatedDeliveryDate: p.estimatedDeliveryDate ? p.estimatedDeliveryDate.toISOString() : null,
-    invoicedAt: p.invoicedAt ? p.invoicedAt.toISOString() : null,
-    paidAt: p.paidAt ? p.paidAt.toISOString() : null,
+    relance: factureRelanceDue(p, settings, now),
   }));
 
   return (
@@ -68,13 +66,7 @@ export default async function ProjectsPage() {
           d&apos;appel découverte, dès qu&apos;une marque passe au statut &quot;Devis accepté&quot; dans le Pipeline.
         </p>
       ) : (
-        <ProjectsKanbanBoard
-          projects={serialized}
-          factureRelanceSettings={{
-            daysBeforeFactureRelance1: settings.daysBeforeFactureRelance1,
-            daysBeforeFactureRelance2: settings.daysBeforeFactureRelance2,
-          }}
-        />
+        <ProjectsKanbanBoard projects={serialized} />
       )}
     </div>
   );

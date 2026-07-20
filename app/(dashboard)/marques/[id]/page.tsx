@@ -2,9 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
-import { platformLabel, avatarColor, initials, statusLabel, nextAutomaticActionLabel } from "@/lib/pipeline";
+import { avatarColor, initials, statusLabel, nextAutomaticActionLabel } from "@/lib/pipeline";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isProjectDone, isProjectPaid } from "@/lib/projects";
+import { isProjectDone, paidAmount } from "@/lib/projects";
 import BrandForm from "@/components/BrandForm";
 import BrandActions from "@/components/BrandActions";
 import HistoryPanel from "@/components/HistoryPanel";
@@ -69,7 +69,8 @@ export default async function BrandDetailPage({
       : (autoActionLabel ?? "Aucune prévue");
 
   const projects = client?.projects ?? [];
-  const revenue = projects.filter(isProjectPaid).reduce((sum, p) => sum + (p.quoteAmount ?? 0), 0);
+  const revenue = projects.reduce((sum, p) => sum + paidAmount(p), 0);
+  const hasProjects = !!client && projects.length > 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -79,18 +80,19 @@ export default async function BrandDetailPage({
 
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-extrabold text-white"
-            style={{ backgroundColor: avatarColor(brand.name) }}
-          >
-            {initials(brand.name)}
-          </div>
-          <div>
-            <h1 className="font-sans text-4xl font-extrabold tracking-tight text-ink">{brand.name}</h1>
-            <p className="font-light text-ink/50">
-              {platformLabel[brand.platform]} · {days} jours ouvrés d&apos;engagement
-            </p>
-          </div>
+          {brand.emoji ? (
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-soft text-2xl">
+              {brand.emoji}
+            </div>
+          ) : (
+            <div
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-extrabold text-white"
+              style={{ backgroundColor: avatarColor(brand.name) }}
+            >
+              {initials(brand.name)}
+            </div>
+          )}
+          <h1 className="font-sans text-4xl font-extrabold tracking-tight text-ink">{brand.name}</h1>
         </div>
         {greenLight && (
           <span className="rounded-full bg-cta px-4 py-2 text-sm font-semibold text-ink shadow-soft">
@@ -99,15 +101,35 @@ export default async function BrandDetailPage({
         )}
       </header>
 
-      {/* Projets prioritaires en haut de page dès qu'il y en a */}
+      <div className="grid grid-cols-4 gap-6">
+        <InfoTile
+          icon="📅"
+          label="Premier contact"
+          value={new Date(firstContactDate).toLocaleDateString("fr-FR")}
+          accent="#C4B5FD"
+        />
+        <InfoTile icon="🎯" label="Statut actuel" value={statusLabel(brand.pipelineStatus)} accent="#60A5FA" />
+        <InfoTile icon="⏰" label="Prochaine action" value={nextActionLabel} accent="#8B5CF6" />
+        <InfoTile
+          icon="💰"
+          label={hasProjects ? "CA généré" : "Revenu potentiel"}
+          value={
+            hasProjects
+              ? formatRevenue(revenue)
+              : brand.potentialRevenue != null
+                ? formatRevenue(brand.potentialRevenue)
+                : "Non renseigné"
+          }
+          accent="#CCFF00"
+        />
+      </div>
+
+      {/* Projets : sous les données dès qu'il y en a */}
       {client && projects.length > 0 && (
         <div className="rounded-3xl bg-white p-6 shadow-soft">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="flex items-center gap-2 font-sans text-base font-extrabold text-ink">
               <span>📁</span> Projets
-              <span className="rounded-full bg-cta/30 px-2.5 py-0.5 text-xs font-semibold text-ink">
-                CA généré {formatRevenue(revenue)}
-              </span>
             </h2>
             <Link href={`/marques/${brand.id}/notes`} className="text-sm font-semibold text-accent hover:underline">
               📋 Notes d&apos;appel découverte
@@ -141,29 +163,6 @@ export default async function BrandDetailPage({
         </div>
       )}
 
-      <div className="grid grid-cols-4 gap-6">
-        <InfoTile
-          icon="📅"
-          label="Premier contact"
-          value={new Date(firstContactDate).toLocaleDateString("fr-FR")}
-          accent="#C4B5FD"
-        />
-        <InfoTile icon="🎯" label="Statut actuel" value={statusLabel(brand.pipelineStatus)} accent="#60A5FA" />
-        <InfoTile icon="⏰" label="Prochaine action" value={nextActionLabel} accent="#8B5CF6" />
-        <InfoTile
-          icon="💰"
-          label={client && projects.length > 0 ? "CA généré" : "Revenu potentiel"}
-          value={
-            client && projects.length > 0
-              ? formatRevenue(revenue)
-              : brand.potentialRevenue != null
-                ? formatRevenue(brand.potentialRevenue)
-                : "Non renseigné"
-          }
-          accent="#CCFF00"
-        />
-      </div>
-
       <div className="grid grid-cols-2 gap-6">
         <div className="flex flex-col gap-6">
           <div className="rounded-3xl bg-white p-6 shadow-soft">
@@ -174,6 +173,7 @@ export default async function BrandDetailPage({
               initial={{
                 id: brand.id,
                 name: brand.name,
+                emoji: brand.emoji,
                 platform: brand.platform,
                 sector: brand.sector,
                 source: brand.source,
