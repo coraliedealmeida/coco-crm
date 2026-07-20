@@ -9,6 +9,7 @@ export default function NewProjectButton({ clientId }: { clientId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [serviceType, setServiceType] = useState<ServiceType>(serviceTypeOptions[0].value);
+  const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function handleCreate() {
@@ -16,7 +17,7 @@ export default function NewProjectButton({ clientId }: { clientId: string }) {
     const res = await fetch(`/api/clients/${clientId}/projects`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ serviceType }),
+      body: JSON.stringify({ serviceType, name }),
     });
     const created = await res.json();
     setSaving(false);
@@ -48,6 +49,12 @@ export default function NewProjectButton({ clientId }: { clientId: string }) {
           </option>
         ))}
       </select>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Nom du projet (optionnel, ex : École - Juin)"
+        className="min-w-[14rem] flex-1 rounded-xl border border-accent-light bg-white px-4 py-3 text-sm text-ink outline-none focus:border-accent"
+      />
       <button
         onClick={handleCreate}
         disabled={saving}

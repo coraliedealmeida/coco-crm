@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
+import { projectLabel } from "@/lib/projects";
 import ProjectForm from "@/components/ProjectForm";
 import ProjectNotesPanel from "@/components/ProjectNotesPanel";
 
@@ -44,8 +45,11 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
         >
           ← Retour à {project.client.brand.name}
         </Link>
-        <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">{serviceTypeLabel[project.serviceType]}</h1>
-        <p className="font-light text-ink/60">{project.client.brand.name}</p>
+        <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">{projectLabel(project)}</h1>
+        <p className="font-light text-ink/60">
+          {project.client.brand.name}
+          {project.name && ` · ${serviceTypeLabel[project.serviceType]}`}
+        </p>
       </header>
 
       <ProjectForm
@@ -54,6 +58,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
           id: project.id,
           clientId: project.clientId,
           serviceType: project.serviceType,
+          name: project.name,
           currentStep: project.currentStep,
           steps: project.steps,
           signedAt: project.signedAt ? project.signedAt.toISOString() : null,

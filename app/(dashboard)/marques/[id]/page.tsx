@@ -3,8 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { avatarColor, initials, statusLabel, nextAutomaticActionLabel } from "@/lib/pipeline";
-import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isProjectDone, paidTotal } from "@/lib/projects";
+import { isProjectDone, paidTotal, projectLabel } from "@/lib/projects";
 import BrandForm from "@/components/BrandForm";
 import BrandActions from "@/components/BrandActions";
 import HistoryPanel from "@/components/HistoryPanel";
@@ -141,7 +140,7 @@ export default async function BrandDetailPage({
                 className="flex items-center justify-between rounded-xl bg-soft px-4 py-3 transition hover:bg-accent-light/30"
               >
                 <div>
-                  <p className="text-sm font-semibold text-ink">{serviceTypeLabel[project.serviceType]}</p>
+                  <p className="text-sm font-semibold text-ink">{projectLabel(project)}</p>
                   <p className="text-xs font-light text-ink/50">{project.currentStep}</p>
                 </div>
                 <div className="flex items-center gap-3">

@@ -13,6 +13,7 @@ type Project = {
   id: string;
   clientId: string;
   serviceType: ServiceType;
+  name: string | null;
   currentStep: string;
   steps: string[];
   signedAt: string | null;
@@ -167,6 +168,15 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
         <div className="rounded-3xl bg-white p-6 shadow-soft">
           <h2 className="mb-4 font-sans text-base font-extrabold text-ink">Informations</h2>
           <div className="flex flex-col gap-4">
+            <Field label="Nom du projet (optionnel)">
+              <input
+                value={project.name ?? ""}
+                onChange={(e) => setProject((prev) => ({ ...prev, name: e.target.value }))}
+                onBlur={() => update({ name: project.name })}
+                placeholder="Ex : École - Juin"
+                className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
+              />
+            </Field>
             <Field label="Date de début">
               <DateInput value={project.startDate} onChange={(v) => updateDate("startDate", v)} />
             </Field>

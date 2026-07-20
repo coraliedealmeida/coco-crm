@@ -1,6 +1,11 @@
 import { ServiceType } from "@prisma/client";
 import { countBusinessDays } from "@/lib/business-days";
-import { projectSteps } from "@/lib/serviceTypes";
+import { projectSteps, serviceTypeLabel } from "@/lib/serviceTypes";
+
+/** Libellé affiché pour un projet : son nom libre s'il en a un, sinon le type de prestation. */
+export function projectLabel(project: { name: string | null; serviceType: ServiceType }): string {
+  return project.name || serviceTypeLabel[project.serviceType];
+}
 
 // Étapes communes à toutes les prestations (cf. lib/serviceTypes.ts) qui bornent les 3
 // colonnes macro du Kanban Projets. Seul le milieu ("En cours") varie selon le type.

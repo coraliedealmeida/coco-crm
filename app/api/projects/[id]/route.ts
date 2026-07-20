@@ -10,6 +10,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   for (const key of ["currentStep", "notes"]) {
     if (key in body) data[key] = body[key];
   }
+  if ("name" in body) data.name = body.name?.trim() || null;
   if ("steps" in body && Array.isArray(body.steps)) data.steps = body.steps;
   if ("quoteAmount" in body) data.quoteAmount = body.quoteAmount != null ? Number(body.quoteAmount) : null;
   for (const key of DATE_FIELDS) {

@@ -2,13 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { platformLabel, statusLabel, statusColor } from "@/lib/pipeline";
+import { statusLabel, statusColor } from "@/lib/pipeline";
 import type { PipelineStatus } from "@prisma/client";
 
 type Row = {
   id: string;
   name: string;
-  platform: "LINKEDIN" | "INSTAGRAM" | "BOTH";
   pipelineStatus: PipelineStatus;
   nextActionDate: string | null;
 };
@@ -50,7 +49,6 @@ export default function MarquesTable({ rows }: { rows: Row[] }) {
         <thead className="bg-soft text-ink/60">
           <tr>
             <SortableHeader label="Marque" active={sortKey === "name"} dir={sortDir} onClick={() => toggleSort("name")} />
-            <th className="px-5 py-3 font-semibold">Plateforme</th>
             <th className="px-5 py-3 font-semibold">Statut</th>
             <SortableHeader
               label="Prochaine action"
@@ -68,7 +66,6 @@ export default function MarquesTable({ rows }: { rows: Row[] }) {
                   {b.name}
                 </Link>
               </td>
-              <td className="px-5 py-3 text-ink/70">{platformLabel[b.platform]}</td>
               <td className="px-5 py-3">
                 <span
                   className="rounded-full px-2.5 py-1 text-xs font-semibold"
@@ -84,7 +81,7 @@ export default function MarquesTable({ rows }: { rows: Row[] }) {
           ))}
           {sorted.length === 0 && (
             <tr>
-              <td colSpan={4} className="px-5 py-6 text-center text-ink/50">
+              <td colSpan={3} className="px-5 py-6 text-center text-ink/50">
                 Aucune marque pour le moment.
               </td>
             </tr>

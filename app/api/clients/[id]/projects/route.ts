@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { projectSteps } from "@/lib/serviceTypes";
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
-  const { serviceType } = (await request.json()) as { serviceType: ServiceType };
+  const { serviceType, name } = (await request.json()) as { serviceType: ServiceType; name?: string };
   if (!serviceType || !(serviceType in projectSteps)) {
     return NextResponse.json({ error: "Type de prestation invalide." }, { status: 400 });
   }
@@ -13,6 +13,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     data: {
       clientId: params.id,
       serviceType,
+      name: name?.trim() || null,
       currentStep: projectSteps[serviceType][0],
     },
   });

@@ -137,6 +137,10 @@ model Project {
   clientId              String
   client                Client        @relation(fields: [clientId], references: [id])
   serviceType           ServiceType
+  // Nom libre (optionnel) : utile pour distinguer les occurrences d'un projet récurrent
+  // (ex : "École - Juin", "École - Juillet") ou un abonnement. Sans nom, l'app retombe sur
+  // le libellé du type de prestation.
+  name                  String?
   currentStep           String
   // Étapes propres au projet (statuts personnalisés). Vide = modèle par défaut du type
   // de prestation (lib/serviceTypes.ts). Non vide = liste ordonnée complète pour ce projet.

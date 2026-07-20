@@ -30,6 +30,7 @@ export default async function ProjectsPage() {
     brandName: p.client.brand.name,
     brandEmoji: p.client.brand.emoji,
     serviceType: p.serviceType,
+    name: p.name,
     currentStep: p.currentStep,
     steps: p.steps,
     quoteAmount: p.quoteAmount,
@@ -44,14 +45,9 @@ export default async function ProjectsPage() {
           <h1 className="font-sans text-3xl font-extrabold text-ink">Projets</h1>
           <p className="font-light text-ink/60">Glisse-dépose les projets entre les statuts.</p>
         </div>
-        <div className="flex items-center gap-4">
-          <Link href="/clients/new" className="text-sm font-semibold text-accent hover:underline">
-            + Nouveau client
-          </Link>
-          <Link href="/clients/liste" className="text-sm font-semibold text-accent hover:underline">
-            Voir la liste des clients →
-          </Link>
-        </div>
+        <Link href="/clients/liste" className="text-sm font-semibold text-accent hover:underline">
+          Voir la liste des clients →
+        </Link>
       </header>
 
       <div className="grid grid-cols-3 gap-4">

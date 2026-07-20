@@ -10,7 +10,6 @@ export default async function MarquesPage() {
   const rows = brands.map((b) => ({
     id: b.id,
     name: b.name,
-    platform: b.platform,
     pipelineStatus: b.pipelineStatus,
     nextActionDate: b.nextActionDate?.toISOString() ?? null,
   }));

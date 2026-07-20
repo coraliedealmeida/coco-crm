@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
 import { avatarColor, initials } from "@/lib/pipeline";
+import { projectLabel } from "@/lib/projects";
 import { formatRevenue } from "@/lib/format";
 
 export type ProjectCardData = {
@@ -9,6 +10,7 @@ export type ProjectCardData = {
   brandName: string;
   brandEmoji: string | null;
   serviceType: keyof typeof serviceTypeLabel;
+  name: string | null;
   currentStep: string;
   quoteAmount: number | null;
   estimatedDeliveryDate: string | null;
@@ -45,7 +47,7 @@ export default function ProjectCard({
           >
             {project.brandName}
           </Link>
-          <p className="truncate text-xs font-light text-ink/50">{serviceTypeLabel[project.serviceType]}</p>
+          <p className="truncate text-xs font-light text-ink/50">{projectLabel(project)}</p>
         </div>
         {badge}
       </div>

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { statusLabel } from "@/lib/pipeline";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isProjectDone } from "@/lib/projects";
+import { isProjectDone, projectLabel } from "@/lib/projects";
 import DashboardSection from "@/components/DashboardSection";
 import BrandCard from "@/components/BrandCard";
 import { formatRevenue } from "@/lib/format";
@@ -14,7 +14,14 @@ function ProjectRow({
   project,
   statusContent,
 }: {
-  project: { id: string; clientId: string; brandName: string; brandEmoji: string | null; serviceType: keyof typeof serviceTypeLabel };
+  project: {
+    id: string;
+    clientId: string;
+    brandName: string;
+    brandEmoji: string | null;
+    serviceType: keyof typeof serviceTypeLabel;
+    name: string | null;
+  };
   statusContent: React.ReactNode;
 }) {
   return (
@@ -26,7 +33,7 @@ function ProjectRow({
         {project.brandEmoji && <span className="text-base">{project.brandEmoji}</span>}
         <div>
           <p className="text-sm font-semibold text-ink">{project.brandName}</p>
-          <p className="text-xs font-light text-ink/50">{serviceTypeLabel[project.serviceType]}</p>
+          <p className="text-xs font-light text-ink/50">{projectLabel(project)}</p>
         </div>
       </div>
       {statusContent}
@@ -174,6 +181,7 @@ export default async function DashboardPage() {
                   brandName: p.client.brand.name,
                   brandEmoji: p.client.brand.emoji,
                   serviceType: p.serviceType,
+                  name: p.name,
                 }}
                 statusContent={<span className="text-xs font-semibold text-ink/60">{p.currentStep}</span>}
               />
@@ -197,6 +205,7 @@ export default async function DashboardPage() {
                   brandName: p.client.brand.name,
                   brandEmoji: p.client.brand.emoji,
                   serviceType: p.serviceType,
+                  name: p.name,
                 }}
                 statusContent={
                   p.quoteAmount != null ? (
@@ -232,6 +241,7 @@ export default async function DashboardPage() {
                     brandName: invoice.project.client.brand.name,
                     brandEmoji: invoice.project.client.brand.emoji,
                     serviceType: invoice.project.serviceType,
+                    name: invoice.project.name,
                   }}
                   statusContent={
                     <div className="flex items-center gap-2">
