@@ -41,6 +41,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     "name",
     "emoji",
     "platform",
+    "acquisitionPath",
     "sector",
     "source",
     "notes",

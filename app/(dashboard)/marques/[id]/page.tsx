@@ -170,6 +170,7 @@ export default async function BrandDetailPage({
                 name: brand.name,
                 emoji: brand.emoji,
                 platform: brand.platform,
+                acquisitionPath: brand.acquisitionPath,
                 sector: brand.sector,
                 source: brand.source,
                 notes: brand.notes ?? "",

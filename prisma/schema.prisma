@@ -14,6 +14,15 @@ enum Platform {
   BOTH
 }
 
+// Parcours choisi à la création (cf. formulaire Nouvelle marque) : détermine si la fiche
+// affiche "Plateforme cible" (routine) ou "Source" (prise de contact hors RS). Null = marque
+// créée avant cette distinction, ou les deux infos ont été renseignées depuis : la fiche
+// affiche alors les deux champs.
+enum AcquisitionPath {
+  ROUTINE
+  CONTACT
+}
+
 enum PipelineStatus {
   ROUTINE_ENGAGEMENT
   PREMIER_DM
@@ -36,6 +45,7 @@ model Brand {
   name                String
   emoji               String?
   platform            Platform
+  acquisitionPath     AcquisitionPath?
   sector              String
   source              String
   notes               String?

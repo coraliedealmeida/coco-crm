@@ -5,11 +5,14 @@ import { useRouter } from "next/navigation";
 import DatePicker from "@/components/DatePicker";
 import CreatableSelect from "@/components/CreatableSelect";
 
+type Path = "routine" | "contact";
+
 type Brand = {
   id?: string;
   name: string;
   emoji: string | null;
   platform: "LINKEDIN" | "INSTAGRAM" | "BOTH";
+  acquisitionPath: "ROUTINE" | "CONTACT" | null;
   sector: string;
   source: string;
   notes: string;
@@ -23,6 +26,7 @@ const emptyBrand: Brand = {
   name: "",
   emoji: null,
   platform: "LINKEDIN",
+  acquisitionPath: null,
   sector: "",
   source: "",
   notes: "",
@@ -31,8 +35,6 @@ const emptyBrand: Brand = {
   contactRole: "",
   potentialRevenue: null,
 };
-
-type Path = "routine" | "contact";
 
 export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id?: string } }) {
   const router = useRouter();
@@ -61,10 +63,11 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
     const url = initial?.id ? `/api/brands/${initial.id}` : "/api/brands";
     const payload = isNew
       ? path === "routine"
-        ? { ...brand, source: "", pipelineStatus: "ROUTINE_ENGAGEMENT" }
+        ? { ...brand, source: "", acquisitionPath: "ROUTINE" as const, pipelineStatus: "ROUTINE_ENGAGEMENT" }
         : {
             ...brand,
             platform: "BOTH" as const,
+            acquisitionPath: "CONTACT" as const,
             engagementStartDate: new Date().toISOString(),
             pipelineStatus: "EN_DISCUSSION",
           }
@@ -215,41 +218,65 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
         </div>
       ) : (
         <>
-          <Field label="Plateforme cible">
-            <select
-              value={brand.platform}
-              onChange={(e) => setBrand({ ...brand, platform: e.target.value as Brand["platform"] })}
-              className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
+          {brand.acquisitionPath !== "CONTACT" && (
+            <>
+              <Field label="Plateforme cible">
+                <select
+                  value={brand.platform}
+                  onChange={(e) => setBrand({ ...brand, platform: e.target.value as Brand["platform"] })}
+                  className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
+                >
+                  <option value="LINKEDIN">LinkedIn</option>
+                  <option value="INSTAGRAM">Instagram</option>
+                  <option value="BOTH">Les deux</option>
+                </select>
+              </Field>
+              <Field label="Date de début d'engagement">
+                <DatePicker
+                  value={brand.engagementStartDate ? new Date(brand.engagementStartDate) : null}
+                  onChange={(d) => setBrand({ ...brand, engagementStartDate: d ? d.toISOString() : null })}
+                />
+              </Field>
+            </>
+          )}
+
+          {brand.acquisitionPath !== "ROUTINE" && (
+            <Field label="Source">
+              <CreatableSelect
+                label="Source"
+                options={sources}
+                value={brand.source}
+                onChange={(v) => setBrand({ ...brand, source: v })}
+                onCreate={async (v) => {
+                  await fetch("/api/options/sources", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ label: v }),
+                  });
+                  setSources((s) => [...s, v]);
+                }}
+              />
+            </Field>
+          )}
+
+          {brand.acquisitionPath === "ROUTINE" && (
+            <button
+              type="button"
+              onClick={() => setBrand({ ...brand, acquisitionPath: null })}
+              className="w-fit text-sm font-semibold text-accent hover:underline"
             >
-              <option value="LINKEDIN">LinkedIn</option>
-              <option value="INSTAGRAM">Instagram</option>
-              <option value="BOTH">Les deux</option>
-            </select>
-          </Field>
-
-          <Field label="Source">
-            <CreatableSelect
-              label="Source"
-              options={sources}
-              value={brand.source}
-              onChange={(v) => setBrand({ ...brand, source: v })}
-              onCreate={async (v) => {
-                await fetch("/api/options/sources", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ label: v }),
-                });
-                setSources((s) => [...s, v]);
-              }}
-            />
-          </Field>
-
-          <Field label="Date de début d'engagement">
-            <DatePicker
-              value={brand.engagementStartDate ? new Date(brand.engagementStartDate) : null}
-              onChange={(d) => setBrand({ ...brand, engagementStartDate: d ? d.toISOString() : null })}
-            />
-          </Field>
+              + Ajouter une source
+            </button>
+          )}
+          {brand.acquisitionPath === "CONTACT" && (
+            <button
+              type="button"
+              onClick={() => setBrand({ ...brand, acquisitionPath: null })}
+              className="w-fit text-sm font-semibold text-accent hover:underline"
+            >
+              + Ajouter une plateforme cible
+            </button>
+          )}
         </>
       )}
 

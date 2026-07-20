@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
       name: body.name,
       emoji: body.emoji || null,
       platform: body.platform,
+      acquisitionPath: body.acquisitionPath ?? null,
       sector: body.sector,
       source: body.source,
       notes: body.notes || null,
