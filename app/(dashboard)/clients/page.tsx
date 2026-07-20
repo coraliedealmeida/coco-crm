@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import StatCard from "@/components/StatCard";
 import ProjectsKanbanBoard from "@/components/ProjectsKanbanBoard";
-import { isProjectDone, invoicedInMonth, paidInMonth, factureRelanceDue } from "@/lib/projects";
+import { isProjectActive, invoicedInMonth, paidInMonth, factureRelanceDue } from "@/lib/projects";
 import { formatRevenue } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ export default async function ProjectsPage() {
   );
 
   const now = new Date();
-  const projectsEnCours = projects.filter((p) => !isProjectDone(p)).length;
+  const projectsEnCours = projects.filter(isProjectActive).length;
   const totalFactureCeMois = projects.reduce((sum, p) => sum + invoicedInMonth(p.invoices, now), 0);
   const totalEncaisseCeMois = projects.reduce((sum, p) => sum + paidInMonth(p.invoices, now), 0);
 

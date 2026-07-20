@@ -12,7 +12,9 @@ export default async function PipelinePage() {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   const [brands, settings, appelsGroups] = await Promise.all([
-    prisma.brand.findMany({ orderBy: { updatedAt: "desc" } }),
+    // Les clients créés directement (bouton "+ Nouveau client", import) n'ont jamais fait de
+    // prospection : ils n'ont rien à faire dans le Pipeline, même une fois "Devis accepté".
+    prisma.brand.findMany({ where: { acquisitionPath: { not: "DIRECT" } }, orderBy: { updatedAt: "desc" } }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
     prisma.contactHistoryEntry.groupBy({
       by: ["brandId"],
@@ -33,6 +35,7 @@ export default async function PipelinePage() {
     name: b.name,
     emoji: b.emoji,
     platform: b.platform,
+    acquisitionPath: b.acquisitionPath,
     pipelineStatus: b.pipelineStatus,
     lastContactDate: b.lastContactDate?.toISOString() ?? null,
     nextActionDate: b.nextActionDate?.toISOString() ?? null,

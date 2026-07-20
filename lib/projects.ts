@@ -74,6 +74,15 @@ export function isProjectDone(project: { currentStep: string }): boolean {
   return project.currentStep === "Terminé";
 }
 
+/**
+ * "Projets en cours" au sens des stats/dashboards : Onboarding + En cours uniquement.
+ * Un projet en Offboarding (Facture à faire/envoyée, Attente avis) n'est plus vraiment
+ * "en cours" même s'il n'est pas encore marqué Terminé — il attend juste sa facturation.
+ */
+export function isProjectActive(project: { currentStep: string }): boolean {
+  return macroGroupForStep(project.currentStep) !== "OFFBOARDING";
+}
+
 // ---- Facturation : liste libre de factures par projet ----
 // Aucun montant/date n'est jamais déduit ou pré-rempli automatiquement : le nombre de
 // factures (acompte + solde, ou 3x/4x...) et leurs dates sont entièrement saisis à la main,

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { isProjectDone, paidTotal } from "@/lib/projects";
+import { isProjectActive, paidTotal } from "@/lib/projects";
 import ClientsTable from "@/components/ClientsTable";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ export default async function ClientsListPage() {
       name: client.brand.name,
       emoji: client.brand.emoji,
       revenue: client.projects.reduce((sum, p) => sum + paidTotal(p.invoices), 0),
-      activeProjectCount: client.projects.filter((p) => !isProjectDone(p)).length,
+      activeProjectCount: client.projects.filter(isProjectActive).length,
       lastProjectDate: lastProjectDate ? lastProjectDate.toISOString() : null,
     };
   });

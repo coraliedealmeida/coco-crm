@@ -258,34 +258,6 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
               />
             </Field>
           )}
-
-          {brand.acquisitionPath === "ROUTINE" && (
-            <button
-              type="button"
-              onClick={() => setBrand({ ...brand, acquisitionPath: null })}
-              className="w-fit text-sm font-semibold text-accent hover:underline"
-            >
-              + Ajouter une source
-            </button>
-          )}
-          {brand.acquisitionPath === "CONTACT" && (
-            <button
-              type="button"
-              onClick={() => setBrand({ ...brand, acquisitionPath: null })}
-              className="w-fit text-sm font-semibold text-accent hover:underline"
-            >
-              + Ajouter une plateforme cible
-            </button>
-          )}
-          {brand.acquisitionPath === "DIRECT" && (
-            <button
-              type="button"
-              onClick={() => setBrand({ ...brand, acquisitionPath: null })}
-              className="w-fit text-sm font-semibold text-accent hover:underline"
-            >
-              + Ajouter une plateforme cible / source
-            </button>
-          )}
         </>
       )}
 

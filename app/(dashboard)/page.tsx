@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { statusLabel } from "@/lib/pipeline";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isProjectDone, projectLabel } from "@/lib/projects";
+import { isProjectActive, projectLabel } from "@/lib/projects";
 import DashboardSection from "@/components/DashboardSection";
 import BrandCard from "@/components/BrandCard";
 import { formatRevenue } from "@/lib/format";
@@ -74,7 +74,7 @@ export default async function DashboardPage() {
       b.nextActionDate <= now
   );
 
-  const projectsEnCours = projects.filter((p) => !isProjectDone(p));
+  const projectsEnCours = projects.filter(isProjectActive);
   const aFacturer = projects.filter((p) => p.currentStep === "Facture à faire");
 
   return (

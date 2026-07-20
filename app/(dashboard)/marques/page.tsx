@@ -5,7 +5,11 @@ import MarquesTable from "@/components/MarquesTable";
 export const dynamic = "force-dynamic";
 
 export default async function MarquesPage() {
-  const brands = await prisma.brand.findMany({ orderBy: { createdAt: "desc" } });
+  // Les clients créés directement (sans prospection) n'apparaissent pas dans la liste des prospects.
+  const brands = await prisma.brand.findMany({
+    where: { acquisitionPath: { not: "DIRECT" } },
+    orderBy: { createdAt: "desc" },
+  });
 
   const rows = brands.map((b) => ({
     id: b.id,

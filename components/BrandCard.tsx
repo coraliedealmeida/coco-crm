@@ -7,6 +7,7 @@ export type BrandCardData = {
   name: string;
   emoji?: string | null;
   platform: "LINKEDIN" | "INSTAGRAM" | "BOTH";
+  acquisitionPath?: "ROUTINE" | "CONTACT" | "DIRECT" | null;
   potentialRevenue?: number | null;
   engagementDays?: number | null;
   /** Phase 2 — n'affiche rien tant que ces données n'existent pas. */
@@ -33,6 +34,7 @@ export default function BrandCard({
   from?: string;
 }) {
   const badge = platformBadge[brand.platform];
+  const showPlatformBadge = brand.acquisitionPath !== "CONTACT" && brand.acquisitionPath !== "DIRECT";
   const href = from ? `/marques/${brand.id}?from=${from}` : `/marques/${brand.id}`;
 
   return (
@@ -56,12 +58,14 @@ export default function BrandCard({
         >
           {brand.name}
         </Link>
-        <span
-          className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
-          style={{ backgroundColor: badge.bg, color: badge.text }}
-        >
-          {badge.icon}
-        </span>
+        {showPlatformBadge && (
+          <span
+            className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+            style={{ backgroundColor: badge.bg, color: badge.text }}
+          >
+            {badge.icon}
+          </span>
+        )}
       </div>
 
       <div className="mb-2.5">{statusContent}</div>

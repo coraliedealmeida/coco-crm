@@ -27,6 +27,7 @@ type Brand = {
   name: string;
   emoji: string | null;
   platform: "LINKEDIN" | "INSTAGRAM" | "BOTH";
+  acquisitionPath: "ROUTINE" | "CONTACT" | "DIRECT" | null;
   pipelineStatus: PipelineStatus;
   lastContactDate: string | null;
   nextActionDate: string | null;
