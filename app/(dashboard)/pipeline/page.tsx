@@ -18,7 +18,11 @@ export default async function PipelinePage() {
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
     prisma.contactHistoryEntry.groupBy({
       by: ["brandId"],
-      where: { type: "Appel découverte", date: { gte: thirtyDaysAgo } },
+      where: {
+        type: "Appel découverte",
+        date: { gte: thirtyDaysAgo },
+        brand: { acquisitionPath: { not: "DIRECT" } },
+      },
     }),
   ]);
 
