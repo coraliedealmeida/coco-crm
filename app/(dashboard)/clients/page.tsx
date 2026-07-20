@@ -14,7 +14,7 @@ function formatRevenue(amount: number): string {
 
 export default async function ProjectsPage() {
   const [projects, settings] = await Promise.all([
-    prisma.project.findMany({ include: { client: { include: { brand: true } } } }),
+    prisma.project.findMany({ include: { client: { include: { brand: true } }, invoices: true } }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
   ]);
 
@@ -26,8 +26,8 @@ export default async function ProjectsPage() {
 
   const now = new Date();
   const projectsEnCours = projects.filter((p) => !isProjectDone(p)).length;
-  const totalFactureCeMois = projects.reduce((sum, p) => sum + invoicedInMonth(p, now), 0);
-  const totalEncaisseCeMois = projects.reduce((sum, p) => sum + paidInMonth(p, now), 0);
+  const totalFactureCeMois = projects.reduce((sum, p) => sum + invoicedInMonth(p.invoices, now), 0);
+  const totalEncaisseCeMois = projects.reduce((sum, p) => sum + paidInMonth(p.invoices, now), 0);
 
   const serialized = projects.map((p) => ({
     id: p.id,
@@ -39,7 +39,7 @@ export default async function ProjectsPage() {
     steps: p.steps,
     quoteAmount: p.quoteAmount,
     estimatedDeliveryDate: p.estimatedDeliveryDate ? p.estimatedDeliveryDate.toISOString() : null,
-    relance: factureRelanceDue(p, settings, now),
+    relance: factureRelanceDue(p.invoices, settings, now),
   }));
 
   return (

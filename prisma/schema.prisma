@@ -135,12 +135,6 @@ model Project {
   startDate             DateTime?
   estimatedDeliveryDate DateTime?
   quoteAmount           Float?
-  // Montant d'acompte : null = 30% du devis calculé automatiquement ; sinon valeur saisie.
-  depositAmount         Float?
-  depositInvoicedAt     DateTime?
-  depositPaidAt         DateTime?
-  invoicedAt            DateTime?
-  paidAt                DateTime?
   notes                 String?
   createdAt             DateTime      @default(now())
   invoices              Invoice[]
@@ -157,14 +151,17 @@ model ProjectNote {
   createdAt DateTime @default(now())
 }
 
+// Facture libre par projet (acompte, solde, paiement en 3x/4x...) : nombre et montants
+// laissés entièrement à la main, aucune date n'est jamais pré-remplie automatiquement.
 model Invoice {
   id        String    @id @default(cuid())
   projectId String
-  project   Project   @relation(fields: [projectId], references: [id])
-  status    String
-  amount    Float?
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  label     String
+  amount    Float
   sentAt    DateTime?
   paidAt    DateTime?
+  createdAt DateTime  @default(now())
 }
 
 enum PriceType {

@@ -68,18 +68,17 @@ export function macroGroupForStatus(status: PipelineStatus): MacroGroup {
   return macroGroups.find((g) => g.statuses.includes(status)) ?? macroGroups[0];
 }
 
-const terminalStatuses: PipelineStatus[] = ["DEVIS_ACCEPTE", "GHOSTE", "DEVIS_REFUSE", "ARCHIVE"];
-
 /** Statuts qui comptent comme "archivés" : on enregistre archivedAt et on les exclut des calculs actifs. */
 export const archivingStatuses: PipelineStatus[] = ["ARCHIVE", "DEVIS_REFUSE"];
 
 /**
- * Le compteur de jours d'engagement n'a plus de sens une fois le devis signé
- * (ou la marque ghostée/archivée), ni une fois le seuil du feu vert dépassé
- * (l'info a rempli son rôle de signal, elle devient juste du bruit après).
+ * Le compteur de jours d'engagement n'a de sens que pendant la routine d'engagement
+ * elle-même (une marque créée sans routine, ou passée à l'étape suivante, n'a plus
+ * de compteur à afficher), et seulement jusqu'au seuil du feu vert (au-delà, l'info a
+ * rempli son rôle de signal et devient juste du bruit).
  */
 export function showsEngagementDays(status: PipelineStatus, days: number, greenLightThreshold: number): boolean {
-  return !terminalStatuses.includes(status) && days <= greenLightThreshold;
+  return status === "ROUTINE_ENGAGEMENT" && days <= greenLightThreshold;
 }
 
 const nextAutomaticAction: Partial<Record<PipelineStatus, string>> = {

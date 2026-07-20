@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isProjectDone, paidAmount } from "@/lib/projects";
+import { isProjectDone, paidTotal } from "@/lib/projects";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ function formatRevenue(amount: number): string {
 
 export default async function ClientsListPage() {
   const clients = await prisma.client.findMany({
-    include: { brand: true, projects: true },
+    include: { brand: true, projects: { include: { invoices: true } } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -35,7 +35,7 @@ export default async function ClientsListPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {clients.map((client) => {
-            const revenue = client.projects.reduce((sum, p) => sum + paidAmount(p), 0);
+            const revenue = client.projects.reduce((sum, p) => sum + paidTotal(p.invoices), 0);
             const inProgress = client.projects.filter((p) => !isProjectDone(p));
             return (
               <Link

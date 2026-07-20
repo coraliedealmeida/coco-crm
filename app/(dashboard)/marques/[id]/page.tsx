@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { avatarColor, initials, statusLabel, nextAutomaticActionLabel } from "@/lib/pipeline";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isProjectDone, paidAmount } from "@/lib/projects";
+import { isProjectDone, paidTotal } from "@/lib/projects";
 import BrandForm from "@/components/BrandForm";
 import BrandActions from "@/components/BrandActions";
 import HistoryPanel from "@/components/HistoryPanel";
@@ -45,7 +45,7 @@ export default async function BrandDetailPage({
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
     prisma.client.findUnique({
       where: { brandId: params.id },
-      include: { projects: { orderBy: { createdAt: "desc" } } },
+      include: { projects: { orderBy: { createdAt: "desc" }, include: { invoices: true } } },
     }),
   ]);
 
@@ -69,7 +69,7 @@ export default async function BrandDetailPage({
       : (autoActionLabel ?? "Aucune prévue");
 
   const projects = client?.projects ?? [];
-  const revenue = projects.reduce((sum, p) => sum + paidAmount(p), 0);
+  const revenue = projects.reduce((sum, p) => sum + paidTotal(p.invoices), 0);
   const hasProjects = !!client && projects.length > 0;
 
   return (

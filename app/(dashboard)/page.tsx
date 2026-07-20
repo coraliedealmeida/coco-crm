@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { statusLabel } from "@/lib/pipeline";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isProjectDone, factureRelanceDue, pendingInvoice } from "@/lib/projects";
+import { isProjectDone } from "@/lib/projects";
 import DashboardSection from "@/components/DashboardSection";
 import BrandCard from "@/components/BrandCard";
 
@@ -19,7 +19,7 @@ function ProjectRow({
   project,
   statusContent,
 }: {
-  project: { id: string; clientId: string; brandName: string; serviceType: keyof typeof serviceTypeLabel };
+  project: { id: string; clientId: string; brandName: string; brandEmoji: string | null; serviceType: keyof typeof serviceTypeLabel };
   statusContent: React.ReactNode;
 }) {
   return (
@@ -27,9 +27,12 @@ function ProjectRow({
       href={`/clients/${project.clientId}/projects/${project.id}`}
       className="flex items-center justify-between rounded-xl bg-soft px-4 py-3 transition hover:bg-accent-light/30"
     >
-      <div>
-        <p className="text-sm font-semibold text-ink">{project.brandName}</p>
-        <p className="text-xs font-light text-ink/50">{serviceTypeLabel[project.serviceType]}</p>
+      <div className="flex items-center gap-2">
+        {project.brandEmoji && <span className="text-base">{project.brandEmoji}</span>}
+        <div>
+          <p className="text-sm font-semibold text-ink">{project.brandName}</p>
+          <p className="text-xs font-light text-ink/50">{serviceTypeLabel[project.serviceType]}</p>
+        </div>
       </div>
       {statusContent}
     </Link>
@@ -37,7 +40,7 @@ function ProjectRow({
 }
 
 export default async function DashboardPage() {
-  const [brands, settings, dueReminders, projects] = await Promise.all([
+  const [brands, settings, dueReminders, projects, pendingInvoices] = await Promise.all([
     prisma.brand.findMany({ where: { archivedAt: null } }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
     prisma.reminder.findMany({
@@ -46,6 +49,11 @@ export default async function DashboardPage() {
       orderBy: { date: "asc" },
     }),
     prisma.project.findMany({ include: { client: { include: { brand: true } } } }),
+    prisma.invoice.findMany({
+      where: { sentAt: { not: null }, paidAt: null },
+      include: { project: { include: { client: { include: { brand: true } } } } },
+      orderBy: { sentAt: "asc" },
+    }),
   ]);
 
   const now = new Date();
@@ -66,7 +74,6 @@ export default async function DashboardPage() {
 
   const projectsEnCours = projects.filter((p) => !isProjectDone(p));
   const aFacturer = projects.filter((p) => p.currentStep === "Facture à faire");
-  const facturesEnAttente = projects.filter((p) => pendingInvoice(p) !== null);
 
   return (
     <div className="flex flex-col gap-8">
@@ -90,6 +97,7 @@ export default async function DashboardPage() {
           >
             {routineBrands.map((b) => (
               <BrandCard
+                from="dashboard"
                 key={b.id}
                 brand={{ ...b, engagementDays: b.days, potentialRevenue: b.potentialRevenue }}
                 statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
@@ -107,6 +115,7 @@ export default async function DashboardPage() {
           >
             {greenLightBrands.map((b) => (
               <BrandCard
+                from="dashboard"
                 key={b.id}
                 brand={{ ...b, engagementDays: b.days, potentialRevenue: b.potentialRevenue }}
                 statusContent={<span className="text-xs font-semibold text-accent">🟢 Prête pour le premier DM</span>}
@@ -124,6 +133,7 @@ export default async function DashboardPage() {
           >
             {relanceBrands.map((b) => (
               <BrandCard
+                from="dashboard"
                 key={`relance-${b.id}`}
                 brand={{
                   ...b,
@@ -135,6 +145,7 @@ export default async function DashboardPage() {
             ))}
             {dueReminders.map((r) => (
               <BrandCard
+                from="dashboard"
                 key={`reminder-${r.id}`}
                 brand={{
                   ...r.brand,
@@ -162,7 +173,13 @@ export default async function DashboardPage() {
             {projectsEnCours.map((p) => (
               <ProjectRow
                 key={p.id}
-                project={{ id: p.id, clientId: p.clientId, brandName: p.client.brand.name, serviceType: p.serviceType }}
+                project={{
+                  id: p.id,
+                  clientId: p.clientId,
+                  brandName: p.client.brand.name,
+                  brandEmoji: p.client.brand.emoji,
+                  serviceType: p.serviceType,
+                }}
                 statusContent={<span className="text-xs font-semibold text-ink/60">{p.currentStep}</span>}
               />
             ))}
@@ -179,7 +196,13 @@ export default async function DashboardPage() {
             {aFacturer.map((p) => (
               <ProjectRow
                 key={p.id}
-                project={{ id: p.id, clientId: p.clientId, brandName: p.client.brand.name, serviceType: p.serviceType }}
+                project={{
+                  id: p.id,
+                  clientId: p.clientId,
+                  brandName: p.client.brand.name,
+                  brandEmoji: p.client.brand.emoji,
+                  serviceType: p.serviceType,
+                }}
                 statusContent={
                   p.quoteAmount != null ? (
                     <span className="text-xs font-semibold text-ink/60">{formatRevenue(p.quoteAmount)}</span>
@@ -193,21 +216,32 @@ export default async function DashboardPage() {
             title="Factures en attente"
             icon="⏳"
             accent="#FB923C"
-            count={facturesEnAttente.length}
-            isEmpty={facturesEnAttente.length === 0}
+            count={pendingInvoices.length}
+            isEmpty={pendingInvoices.length === 0}
             emptyLabel="Aucune facture en attente de paiement."
           >
-            {facturesEnAttente.map((p) => {
-              const relance = factureRelanceDue(p, settings, now);
-              const pending = pendingInvoice(p)!;
+            {pendingInvoices.map((invoice) => {
+              const elapsed = countBusinessDays(invoice.sentAt!, now);
+              const relance =
+                elapsed >= settings.daysBeforeFactureRelance1 + settings.daysBeforeFactureRelance2
+                  ? 2
+                  : elapsed >= settings.daysBeforeFactureRelance1
+                    ? 1
+                    : null;
               return (
                 <ProjectRow
-                  key={p.id}
-                  project={{ id: p.id, clientId: p.clientId, brandName: p.client.brand.name, serviceType: p.serviceType }}
+                  key={invoice.id}
+                  project={{
+                    id: invoice.project.id,
+                    clientId: invoice.project.clientId,
+                    brandName: invoice.project.client.brand.name,
+                    brandEmoji: invoice.project.client.brand.emoji,
+                    serviceType: invoice.project.serviceType,
+                  }}
                   statusContent={
                     <div className="flex items-center gap-2">
                       <span className="rounded-full bg-soft px-2 py-0.5 text-[11px] font-semibold text-ink/60">
-                        {pending.kind === "acompte" ? "Acompte" : "Solde"} {formatRevenue(pending.amount)}
+                        {invoice.label} {formatRevenue(invoice.amount)}
                       </span>
                       {relance && <span className="text-xs font-semibold text-red-500">📮 Relance {relance}</span>}
                     </div>

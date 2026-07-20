@@ -13,6 +13,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
     include: {
       client: { include: { brand: true } },
       trackingNotes: { orderBy: { date: "desc" } },
+      invoices: { orderBy: { createdAt: "asc" } },
     },
   });
 
@@ -59,11 +60,13 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
           startDate: project.startDate ? project.startDate.toISOString() : null,
           estimatedDeliveryDate: project.estimatedDeliveryDate ? project.estimatedDeliveryDate.toISOString() : null,
           quoteAmount: project.quoteAmount,
-          depositAmount: project.depositAmount,
-          depositInvoicedAt: project.depositInvoicedAt ? project.depositInvoicedAt.toISOString() : null,
-          depositPaidAt: project.depositPaidAt ? project.depositPaidAt.toISOString() : null,
-          invoicedAt: project.invoicedAt ? project.invoicedAt.toISOString() : null,
-          paidAt: project.paidAt ? project.paidAt.toISOString() : null,
+          invoices: project.invoices.map((i) => ({
+            id: i.id,
+            label: i.label,
+            amount: i.amount,
+            sentAt: i.sentAt ? i.sentAt.toISOString() : null,
+            paidAt: i.paidAt ? i.paidAt.toISOString() : null,
+          })),
         }}
       />
     </div>

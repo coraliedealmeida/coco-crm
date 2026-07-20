@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ServiceType } from "@prisma/client";
-import { resolveSteps, insertCustomStep, removeStep, isCustomStep, depositAmount } from "@/lib/projects";
+import { resolveSteps, insertCustomStep, removeStep, isCustomStep } from "@/lib/projects";
+import InvoicesPanel from "@/components/InvoicesPanel";
+
+type Invoice = { id: string; label: string; amount: number; sentAt: string | null; paidAt: string | null };
 
 type Project = {
   id: string;
@@ -15,11 +18,7 @@ type Project = {
   startDate: string | null;
   estimatedDeliveryDate: string | null;
   quoteAmount: number | null;
-  depositAmount: number | null;
-  depositInvoicedAt: string | null;
-  depositPaidAt: string | null;
-  invoicedAt: string | null;
-  paidAt: string | null;
+  invoices: Invoice[];
 };
 
 function toDateInputValue(iso: string | null): string {
@@ -40,7 +39,6 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
   const [deleting, setDeleting] = useState(false);
 
   const steps = resolveSteps(project.serviceType, project.steps);
-  const autoDeposit = depositAmount({ quoteAmount: project.quoteAmount, depositAmount: null });
 
   async function update(data: Partial<Project>) {
     setProject((prev) => ({ ...prev, ...data }));
@@ -198,32 +196,12 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
                 className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
               />
             </Field>
-            <Field label="Montant de l'acompte HT">
-              <input
-                type="number"
-                value={project.depositAmount ?? ""}
-                onChange={(e) => update({ depositAmount: e.target.value ? Number(e.target.value) : null })}
-                placeholder={`30% par défaut = ${formatRevenue(autoDeposit)}`}
-                className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
-              />
-            </Field>
 
             <div className="border-t border-soft pt-3">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">Dates de facturation (ajustables)</p>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Acompte facturé le">
-                  <DateInput value={project.depositInvoicedAt} onChange={(v) => updateDate("depositInvoicedAt", v)} />
-                </Field>
-                <Field label="Acompte encaissé le">
-                  <DateInput value={project.depositPaidAt} onChange={(v) => updateDate("depositPaidAt", v)} />
-                </Field>
-                <Field label="Solde facturé le">
-                  <DateInput value={project.invoicedAt} onChange={(v) => updateDate("invoicedAt", v)} />
-                </Field>
-                <Field label="Solde encaissé le">
-                  <DateInput value={project.paidAt} onChange={(v) => updateDate("paidAt", v)} />
-                </Field>
-              </div>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink/40">
+                Factures (acompte, solde, paiement en plusieurs fois...)
+              </p>
+              <InvoicesPanel projectId={project.id} quoteAmount={project.quoteAmount} invoices={project.invoices} />
             </div>
           </div>
         </div>

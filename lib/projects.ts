@@ -54,107 +54,68 @@ export function firstStepOfMacroGroup(steps: string[], group: ProjectMacroGroupI
   return steps.find((s) => macroGroupForStep(s) === group) ?? steps[0];
 }
 
-export const ATTENTE_ACOMPTE = "Attente acompte";
-export const DEPOSIT_RATE = 0.3;
-
 export function isProjectDone(project: { currentStep: string }): boolean {
   return project.currentStep === "Terminé";
 }
 
-// ---- Facturation acompte / solde ----
-// Modèle "dérivé des étapes" : l'acompte (30% par défaut, modifiable) est facturé à l'étape
-// "Attente acompte" et encaissé dès qu'on la dépasse ; le solde (le reste) est facturé à
-// "Facture envoyée" et encaissé à "Attente avis". Aucune facture séparée à saisir.
+// ---- Facturation : liste libre de factures par projet ----
+// Aucun montant/date n'est jamais déduit ou pré-rempli automatiquement : le nombre de
+// factures (acompte + solde, ou 3x/4x...) et leurs dates sont entièrement saisis à la main,
+// pour s'adapter à n'importe quel échéancier de paiement.
 
-type AmountLike = { quoteAmount: number | null; depositAmount: number | null };
-type InvoiceDatesLike = {
-  depositInvoicedAt: Date | null;
-  depositPaidAt: Date | null;
-  invoicedAt: Date | null;
-  paidAt: Date | null;
-};
+type InvoiceLike = { amount: number; sentAt: Date | null; paidAt: Date | null };
 
-export function depositAmount(p: AmountLike): number {
-  if (p.depositAmount != null) return p.depositAmount;
-  return Math.round((p.quoteAmount ?? 0) * DEPOSIT_RATE);
+/** Montant déjà facturé (factures envoyées, payées ou non) sur ce projet. */
+export function invoicedTotal(invoices: InvoiceLike[]): number {
+  return invoices.filter((i) => i.sentAt).reduce((sum, i) => sum + i.amount, 0);
 }
 
-export function soldeAmount(p: AmountLike): number {
-  return (p.quoteAmount ?? 0) - depositAmount(p);
+/** Montant réellement encaissé sur ce projet. Alimente le CA généré. */
+export function paidTotal(invoices: InvoiceLike[]): number {
+  return invoices.filter((i) => i.paidAt).reduce((sum, i) => sum + i.amount, 0);
 }
 
-/** Facture actuellement en attente de paiement pour ce projet (acompte ou solde), le cas échéant. */
-export function pendingInvoice(
-  p: AmountLike & InvoiceDatesLike
-): { kind: "acompte" | "solde"; amount: number; sentAt: Date } | null {
-  if (p.depositInvoicedAt && !p.depositPaidAt) {
-    return { kind: "acompte", amount: depositAmount(p), sentAt: p.depositInvoicedAt };
-  }
-  if (p.invoicedAt && !p.paidAt) {
-    return { kind: "solde", amount: soldeAmount(p), sentAt: p.invoicedAt };
-  }
-  return null;
+/** Reste à facturer par rapport au montant du devis (peut être négatif si sur-facturé). */
+export function remainingToInvoice(quoteAmount: number | null, invoices: InvoiceLike[]): number {
+  return (quoteAmount ?? 0) - invoicedTotal(invoices);
 }
 
-/** Montant réellement encaissé sur ce projet (acompte payé + solde payé). Alimente le CA généré. */
-export function paidAmount(p: AmountLike & InvoiceDatesLike): number {
-  return (p.depositPaidAt ? depositAmount(p) : 0) + (p.paidAt ? soldeAmount(p) : 0);
+/** Factures envoyées et toujours impayées, les plus anciennes d'abord. */
+export function pendingInvoices(invoices: InvoiceLike[]): InvoiceLike[] {
+  return invoices
+    .filter((i) => i.sentAt && !i.paidAt)
+    .sort((a, b) => a.sentAt!.getTime() - b.sentAt!.getTime());
 }
 
 function inMonth(date: Date | null, now: Date): boolean {
   return !!date && date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
 }
 
-/** Montant facturé (acompte + solde) sur le mois courant. */
-export function invoicedInMonth(p: AmountLike & InvoiceDatesLike, now: Date = new Date()): number {
-  return (inMonth(p.depositInvoicedAt, now) ? depositAmount(p) : 0) + (inMonth(p.invoicedAt, now) ? soldeAmount(p) : 0);
+/** Montant facturé sur le mois courant, toutes factures confondues. */
+export function invoicedInMonth(invoices: InvoiceLike[], now: Date = new Date()): number {
+  return invoices.filter((i) => inMonth(i.sentAt, now)).reduce((sum, i) => sum + i.amount, 0);
 }
 
-/** Montant encaissé (acompte + solde) sur le mois courant. */
-export function paidInMonth(p: AmountLike & InvoiceDatesLike, now: Date = new Date()): number {
-  return (inMonth(p.depositPaidAt, now) ? depositAmount(p) : 0) + (inMonth(p.paidAt, now) ? soldeAmount(p) : 0);
-}
-
-/**
- * Calcule les dates d'acompte/solde à poser suite à un changement d'étape. Ne fait qu'avancer
- * ces dates (jamais les effacer si l'étape recule) — les valeurs déjà saisies (antidatage) sont
- * préservées.
- */
-export function computeInvoiceDates(
-  steps: string[],
-  newStep: string,
-  current: InvoiceDatesLike
-): Partial<Record<keyof InvoiceDatesLike, Date>> {
-  const newIndex = steps.indexOf(newStep);
-  const acompteIndex = steps.indexOf(ATTENTE_ACOMPTE);
-  const invoicedIndex = steps.indexOf("Facture envoyée");
-  const paidIndex = steps.indexOf("Attente avis");
-
-  const result: Partial<Record<keyof InvoiceDatesLike, Date>> = {};
-  const now = new Date();
-
-  if (!current.depositInvoicedAt && acompteIndex !== -1 && newIndex >= acompteIndex) result.depositInvoicedAt = now;
-  if (!current.depositPaidAt && acompteIndex !== -1 && newIndex > acompteIndex) result.depositPaidAt = now;
-  if (!current.invoicedAt && invoicedIndex !== -1 && newIndex >= invoicedIndex) result.invoicedAt = now;
-  if (!current.paidAt && paidIndex !== -1 && newIndex >= paidIndex) result.paidAt = now;
-  return result;
+/** Montant encaissé sur le mois courant, toutes factures confondues. */
+export function paidInMonth(invoices: InvoiceLike[], now: Date = new Date()): number {
+  return invoices.filter((i) => inMonth(i.paidAt, now)).reduce((sum, i) => sum + i.amount, 0);
 }
 
 type InvoiceRelanceSettings = { daysBeforeFactureRelance1: number; daysBeforeFactureRelance2: number };
 
 /**
- * Une facture (acompte ou solde) envoyée et toujours impayée déclenche une relance après X jours
- * (relance 1), puis à nouveau après Y jours supplémentaires (relance 2) — même logique que les
- * relances devis, calculée à la volée depuis la date d'envoi de la facture en attente.
+ * La plus ancienne facture envoyée et toujours impayée déclenche une relance après X jours
+ * (relance 1), puis à nouveau après Y jours supplémentaires (relance 2) — même logique que
+ * les relances devis, calculée à la volée depuis sa date d'envoi.
  */
 export function factureRelanceDue(
-  project: AmountLike & InvoiceDatesLike,
+  invoices: InvoiceLike[],
   settings: InvoiceRelanceSettings,
   now: Date = new Date()
 ): 1 | 2 | null {
-  const pending = pendingInvoice(project);
-  if (!pending) return null;
-  const elapsed = countBusinessDays(pending.sentAt, now);
+  const [oldest] = pendingInvoices(invoices);
+  if (!oldest?.sentAt) return null;
+  const elapsed = countBusinessDays(oldest.sentAt, now);
   if (elapsed >= settings.daysBeforeFactureRelance1 + settings.daysBeforeFactureRelance2) return 2;
   if (elapsed >= settings.daysBeforeFactureRelance1) return 1;
   return null;

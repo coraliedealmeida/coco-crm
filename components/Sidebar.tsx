@@ -22,7 +22,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="flex h-screen w-64 flex-col justify-between border-r border-soft bg-white px-5 py-7">
+    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col justify-between overflow-y-auto border-r border-soft bg-white px-5 py-7">
       <div>
         <Link href="/" className="mb-10 flex items-center px-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
