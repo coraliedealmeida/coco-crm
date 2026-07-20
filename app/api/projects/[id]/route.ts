@@ -17,6 +17,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     if (key in body) data[key] = body[key] ? new Date(body[key]) : null;
   }
 
+  // Date de complétion posée automatiquement à l'arrivée sur "Terminé", effacée si le projet
+  // en ressort — alimente la vue annuelle des projets archivés.
+  if ("currentStep" in body) {
+    data.completedAt = body.currentStep === "Terminé" ? new Date() : null;
+  }
+
   const project = await prisma.project.update({ where: { id: params.id }, data });
   return NextResponse.json(project);
 }

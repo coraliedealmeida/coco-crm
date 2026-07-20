@@ -150,6 +150,9 @@ model Project {
   estimatedDeliveryDate DateTime?
   quoteAmount           Float?
   notes                 String?
+  // Posée automatiquement quand currentStep passe à "Terminé" (et effacée si le projet en
+  // ressort) — alimente la vue annuelle des projets archivés (lib/projects.ts).
+  completedAt           DateTime?
   createdAt             DateTime      @default(now())
   invoices              Invoice[]
   trackingNotes         ProjectNote[]

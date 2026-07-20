@@ -11,15 +11,20 @@ export default async function ClientsListPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const rows = clients.map((client) => ({
-    id: client.id,
-    brandId: client.brand.id,
-    name: client.brand.name,
-    emoji: client.brand.emoji,
-    sector: client.brand.sector,
-    revenue: client.projects.reduce((sum, p) => sum + paidTotal(p.invoices), 0),
-    activeProjectCount: client.projects.filter((p) => !isProjectDone(p)).length,
-  }));
+  const rows = clients.map((client) => {
+    const projectDates = client.projects.map((p) => p.signedAt ?? p.createdAt);
+    const lastProjectDate = projectDates.length > 0 ? new Date(Math.max(...projectDates.map((d) => d.getTime()))) : null;
+
+    return {
+      id: client.id,
+      brandId: client.brand.id,
+      name: client.brand.name,
+      emoji: client.brand.emoji,
+      revenue: client.projects.reduce((sum, p) => sum + paidTotal(p.invoices), 0),
+      activeProjectCount: client.projects.filter((p) => !isProjectDone(p)).length,
+      lastProjectDate: lastProjectDate ? lastProjectDate.toISOString() : null,
+    };
+  });
 
   return (
     <div className="flex flex-col gap-6">

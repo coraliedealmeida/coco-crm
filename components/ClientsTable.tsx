@@ -9,12 +9,12 @@ export type ClientRow = {
   brandId: string;
   name: string;
   emoji: string | null;
-  sector: string;
   revenue: number;
   activeProjectCount: number;
+  lastProjectDate: string | null;
 };
 
-type SortKey = "name" | "sector" | "revenue" | "activeProjectCount";
+type SortKey = "name" | "activeProjectCount" | "lastProjectDate" | "revenue";
 
 export default function ClientsTable({ rows }: { rows: ClientRow[] }) {
   const [sortKey, setSortKey] = useState<SortKey>("name");
@@ -25,7 +25,7 @@ export default function ClientsTable({ rows }: { rows: ClientRow[] }) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
-      setSortDir(key === "name" || key === "sector" ? "asc" : "desc");
+      setSortDir(key === "name" ? "asc" : "desc");
     }
   }
 
@@ -34,8 +34,11 @@ export default function ClientsTable({ rows }: { rows: ClientRow[] }) {
     copy.sort((a, b) => {
       let result = 0;
       if (sortKey === "name") result = a.name.localeCompare(b.name, "fr");
-      else if (sortKey === "sector") result = a.sector.localeCompare(b.sector, "fr");
-      else result = a[sortKey] - b[sortKey];
+      else if (sortKey === "lastProjectDate") {
+        const aTime = a.lastProjectDate ? new Date(a.lastProjectDate).getTime() : -Infinity;
+        const bTime = b.lastProjectDate ? new Date(b.lastProjectDate).getTime() : -Infinity;
+        result = aTime - bTime;
+      } else result = a[sortKey] - b[sortKey];
       return sortDir === "asc" ? result : -result;
     });
     return copy;
@@ -48,22 +51,22 @@ export default function ClientsTable({ rows }: { rows: ClientRow[] }) {
           <tr>
             <SortableHeader label="Client" active={sortKey === "name"} dir={sortDir} onClick={() => toggleSort("name")} />
             <SortableHeader
-              label="Secteur"
-              active={sortKey === "sector"}
+              label="Projets en cours"
+              active={sortKey === "activeProjectCount"}
               dir={sortDir}
-              onClick={() => toggleSort("sector")}
+              onClick={() => toggleSort("activeProjectCount")}
+            />
+            <SortableHeader
+              label="Date du dernier projet"
+              active={sortKey === "lastProjectDate"}
+              dir={sortDir}
+              onClick={() => toggleSort("lastProjectDate")}
             />
             <SortableHeader
               label="CA généré"
               active={sortKey === "revenue"}
               dir={sortDir}
               onClick={() => toggleSort("revenue")}
-            />
-            <SortableHeader
-              label="Projets en cours"
-              active={sortKey === "activeProjectCount"}
-              dir={sortDir}
-              onClick={() => toggleSort("activeProjectCount")}
             />
           </tr>
         </thead>
@@ -79,8 +82,6 @@ export default function ClientsTable({ rows }: { rows: ClientRow[] }) {
                   {c.name}
                 </Link>
               </td>
-              <td className="px-5 py-3 text-ink/70">{c.sector || "—"}</td>
-              <td className="px-5 py-3 font-semibold text-ink">{formatRevenue(c.revenue)}</td>
               <td className="px-5 py-3 text-ink/70">
                 {c.activeProjectCount > 0 ? (
                   <span className="rounded-full bg-accent-light/40 px-2.5 py-1 text-xs font-semibold text-accent">
@@ -90,6 +91,10 @@ export default function ClientsTable({ rows }: { rows: ClientRow[] }) {
                   "—"
                 )}
               </td>
+              <td className="px-5 py-3 text-ink/70">
+                {c.lastProjectDate ? new Date(c.lastProjectDate).toLocaleDateString("fr-FR") : "—"}
+              </td>
+              <td className="px-5 py-3 font-semibold text-ink">{formatRevenue(c.revenue)}</td>
             </tr>
           ))}
           {sorted.length === 0 && (

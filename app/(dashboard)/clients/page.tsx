@@ -45,9 +45,14 @@ export default async function ProjectsPage() {
           <h1 className="font-sans text-3xl font-extrabold text-ink">Projets</h1>
           <p className="font-light text-ink/60">Glisse-dépose les projets entre les statuts.</p>
         </div>
-        <Link href="/clients/liste" className="text-sm font-semibold text-accent hover:underline">
-          Voir la liste des clients →
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/clients/annee" className="text-sm font-semibold text-accent hover:underline">
+            Vue annuelle des projets →
+          </Link>
+          <Link href="/clients/liste" className="text-sm font-semibold text-accent hover:underline">
+            Voir la liste des clients →
+          </Link>
+        </div>
       </header>
 
       <div className="grid grid-cols-3 gap-4">
