@@ -1,34 +1,24 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { isProjectDone, paidTotal, projectLabel, macroGroupForStep, projectMacroGroups } from "@/lib/projects";
-import ClientsGrid from "@/components/ClientsGrid";
+import { isProjectDone, paidTotal } from "@/lib/projects";
+import ClientsTable from "@/components/ClientsTable";
 
 export const dynamic = "force-dynamic";
 
-function macroColor(step: string): string {
-  return projectMacroGroups.find((g) => g.id === macroGroupForStep(step))?.color ?? "#9CA3AF";
-}
-
 export default async function ClientsListPage() {
   const clients = await prisma.client.findMany({
-    include: { brand: true, projects: { include: { invoices: true }, orderBy: { createdAt: "desc" } } },
+    include: { brand: true, projects: { include: { invoices: true } } },
     orderBy: { createdAt: "desc" },
   });
 
-  const serialized = clients.map((client) => ({
+  const rows = clients.map((client) => ({
     id: client.id,
     brandId: client.brand.id,
     name: client.brand.name,
     emoji: client.brand.emoji,
+    sector: client.brand.sector,
     revenue: client.projects.reduce((sum, p) => sum + paidTotal(p.invoices), 0),
-    projects: client.projects
-      .filter((p) => !isProjectDone(p))
-      .map((p) => ({
-        id: p.id,
-        label: projectLabel(p),
-        currentStep: p.currentStep,
-        color: macroColor(p.currentStep),
-      })),
+    activeProjectCount: client.projects.filter((p) => !isProjectDone(p)).length,
   }));
 
   return (
@@ -45,14 +35,7 @@ export default async function ClientsListPage() {
         </Link>
       </header>
 
-      {serialized.length === 0 ? (
-        <p className="rounded-3xl bg-white p-6 text-sm font-light text-ink/50 shadow-soft">
-          Aucun client pour l&apos;instant. Un client est créé automatiquement dès qu&apos;une marque passe au statut
-          &quot;Devis accepté&quot; dans le Pipeline, ou directement via &quot;+ Nouveau client&quot;.
-        </p>
-      ) : (
-        <ClientsGrid clients={serialized} />
-      )}
+      <ClientsTable rows={rows} />
     </div>
   );
 }
