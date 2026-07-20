@@ -44,7 +44,10 @@ function ProjectRow({
 export default async function DashboardPage() {
   const [brands, settings, dueReminders, projects, pendingInvoices] = await Promise.all([
     // Les clients créés directement (sans prospection) ne doivent alimenter aucun bloc prospection.
-    prisma.brand.findMany({ where: { archivedAt: null, acquisitionPath: { not: "DIRECT" } } }),
+    // { not: "DIRECT" } exclurait aussi les marques sans acquisitionPath renseigné (NULL) — OR explicite.
+    prisma.brand.findMany({
+      where: { archivedAt: null, OR: [{ acquisitionPath: null }, { acquisitionPath: { not: "DIRECT" } }] },
+    }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
     prisma.reminder.findMany({
       where: { completed: false, date: { lte: new Date() }, brand: { archivedAt: null } },

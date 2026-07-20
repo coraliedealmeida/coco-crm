@@ -6,8 +6,9 @@ export const dynamic = "force-dynamic";
 
 export default async function MarquesPage() {
   // Les clients créés directement (sans prospection) n'apparaissent pas dans la liste des prospects.
+  // { not: "DIRECT" } exclurait aussi les marques sans acquisitionPath renseigné (NULL) — OR explicite.
   const brands = await prisma.brand.findMany({
-    where: { acquisitionPath: { not: "DIRECT" } },
+    where: { OR: [{ acquisitionPath: null }, { acquisitionPath: { not: "DIRECT" } }] },
     orderBy: { createdAt: "desc" },
   });
 

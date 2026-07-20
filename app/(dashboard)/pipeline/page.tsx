@@ -14,19 +14,24 @@ export default async function PipelinePage() {
   const [brands, settings, appelsGroups] = await Promise.all([
     // Les clients créés directement (bouton "+ Nouveau client", import) n'ont jamais fait de
     // prospection : ils n'ont rien à faire dans le Pipeline, même une fois "Devis accepté".
-    prisma.brand.findMany({ where: { acquisitionPath: { not: "DIRECT" } }, orderBy: { updatedAt: "desc" } }),
+    // { not: "DIRECT" } exclurait aussi silencieusement les marques sans acquisitionPath
+    // renseigné (NULL) — d'où le OR explicite pour les garder.
+    prisma.brand.findMany({
+      where: { OR: [{ acquisitionPath: null }, { acquisitionPath: { not: "DIRECT" } }] },
+      orderBy: { updatedAt: "desc" },
+    }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+    // Prisma ne supporte pas un filtre sur une relation à l'intérieur de groupBy (where.brand
+    // est silencieusement ignoré et peut vider le résultat) : on filtre donc côté code, après
+    // coup, en comparant aux marques déjà chargées (qui excluent les clients "création directe").
     prisma.contactHistoryEntry.groupBy({
       by: ["brandId"],
-      where: {
-        type: "Appel découverte",
-        date: { gte: thirtyDaysAgo },
-        brand: { acquisitionPath: { not: "DIRECT" } },
-      },
+      where: { type: "Appel découverte", date: { gte: thirtyDaysAgo } },
     }),
   ]);
 
-  const appelsCount = appelsGroups.length;
+  const brandIds = new Set(brands.map((b) => b.id));
+  const appelsCount = appelsGroups.filter((g) => brandIds.has(g.brandId)).length;
 
   const potentialRevenue = brands
     .filter((b) => !b.archivedAt)
