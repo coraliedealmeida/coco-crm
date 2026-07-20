@@ -20,6 +20,7 @@ type Project = {
   startDate: string | null;
   estimatedDeliveryDate: string | null;
   quoteAmount: number | null;
+  completedAt: string | null;
   invoices: Invoice[];
 };
 
@@ -183,6 +184,13 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
             <Field label="Date de livraison estimée">
               <DateInput value={project.estimatedDeliveryDate} onChange={(v) => updateDate("estimatedDeliveryDate", v)} />
             </Field>
+            <Field label="Date de fin (si terminé)">
+              <DateInput value={project.completedAt} onChange={(v) => updateDate("completedAt", v)} />
+            </Field>
+            <p className="text-xs font-light text-ink/40">
+              Posée automatiquement au passage à &quot;Terminé&quot; — modifie-la ici pour antidater un projet
+              (utile pour reprendre un historique).
+            </p>
             {project.serviceType === "ACCOMPAGNEMENT_MENSUEL" && <MonthlyCycle startDate={project.startDate} />}
           </div>
         </div>

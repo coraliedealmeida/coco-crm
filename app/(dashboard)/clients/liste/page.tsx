@@ -35,9 +35,17 @@ export default async function ClientsListPage() {
           </Link>
           <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">Clients</h1>
         </div>
-        <Link href="/clients/new" className="text-sm font-semibold text-accent hover:underline">
-          + Nouveau client
-        </Link>
+        <div className="flex flex-col items-end gap-2">
+          <Link
+            href="/clients/new"
+            className="rounded-xl bg-cta px-5 py-3 font-semibold text-ink transition hover:opacity-90"
+          >
+            + Nouveau client
+          </Link>
+          <Link href="/clients/annee" className="text-xs font-light text-ink/40 hover:text-accent hover:underline">
+            Vue annuelle des projets terminés →
+          </Link>
+        </div>
       </header>
 
       <ClientsTable rows={rows} />

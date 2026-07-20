@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const DATE_FIELDS = ["signedAt", "startDate", "estimatedDeliveryDate"] as const;
+const DATE_FIELDS = ["signedAt", "startDate", "estimatedDeliveryDate", "completedAt"] as const;
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   const body = await request.json();
@@ -17,9 +17,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     if (key in body) data[key] = body[key] ? new Date(body[key]) : null;
   }
 
-  // Date de complétion posée automatiquement à l'arrivée sur "Terminé", effacée si le projet
-  // en ressort — alimente la vue annuelle des projets archivés.
-  if ("currentStep" in body) {
+  // Date de complétion posée automatiquement à l'arrivée sur "Terminé" (et effacée si le
+  // projet en ressort), sauf si elle est explicitement fournie dans la requête (antidatage
+  // manuel depuis la fiche projet, qui garde alors la priorité).
+  if ("currentStep" in body && !("completedAt" in body)) {
     data.completedAt = body.currentStep === "Terminé" ? new Date() : null;
   }
 

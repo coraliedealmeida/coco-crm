@@ -65,6 +65,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
           startDate: project.startDate ? project.startDate.toISOString() : null,
           estimatedDeliveryDate: project.estimatedDeliveryDate ? project.estimatedDeliveryDate.toISOString() : null,
           quoteAmount: project.quoteAmount,
+          completedAt: project.completedAt ? project.completedAt.toISOString() : null,
           invoices: project.invoices.map((i) => ({
             id: i.id,
             label: i.label,
