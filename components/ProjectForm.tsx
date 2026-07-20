@@ -32,6 +32,7 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
   const router = useRouter();
   const [project, setProject] = useState(initial);
   const [newStep, setNewStep] = useState("");
+  const [afterStep, setAfterStep] = useState<string | null>(null);
   const [addingStep, setAddingStep] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -54,8 +55,9 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
   async function handleAddStep() {
     const label = newStep.trim();
     if (!label || steps.includes(label)) return;
-    const nextSteps = insertCustomStep(project.serviceType, project.steps, label);
+    const nextSteps = insertCustomStep(project.serviceType, project.steps, label, afterStep ?? undefined);
     setNewStep("");
+    setAfterStep(null);
     setAddingStep(false);
     await update({ steps: nextSteps });
   }
@@ -132,15 +134,26 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
         </div>
 
         {addingStep ? (
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             <input
               autoFocus
               value={newStep}
               onChange={(e) => setNewStep(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddStep()}
               placeholder="Nom du statut (ex : Révision 3)"
-              className="flex-1 rounded-xl border border-accent-light bg-soft px-4 py-2.5 text-sm text-ink outline-none focus:border-accent"
+              className="min-w-[10rem] flex-1 rounded-xl border border-accent-light bg-soft px-4 py-2.5 text-sm text-ink outline-none focus:border-accent"
             />
+            <select
+              value={afterStep ?? steps[steps.length - 1]}
+              onChange={(e) => setAfterStep(e.target.value)}
+              className="rounded-xl border border-accent-light bg-soft px-3 py-2.5 text-sm text-ink outline-none focus:border-accent"
+            >
+              {steps.map((step) => (
+                <option key={step} value={step}>
+                  Après « {step} »
+                </option>
+              ))}
+            </select>
             <button
               onClick={handleAddStep}
               className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
@@ -153,7 +166,13 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
           </div>
         ) : (
           <button
-            onClick={() => setAddingStep(true)}
+            onClick={() => {
+              const firstOffboardingIndex = steps.findIndex((s) =>
+                ["Facture à faire", "Facture envoyée", "Attente avis", "Terminé"].includes(s)
+              );
+              setAfterStep(steps[Math.max(0, firstOffboardingIndex - 1)]);
+              setAddingStep(true);
+            }}
             className="mt-3 text-sm font-semibold text-accent hover:underline"
           >
             + Ajouter un statut

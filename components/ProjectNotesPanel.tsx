@@ -31,6 +31,16 @@ export default function ProjectNotesPanel({ projectId, notes }: { projectId: str
 
   return (
     <div className="flex flex-col gap-3">
+      {notes.length === 0 ? (
+        <p className="text-sm font-light text-ink/40">Aucune note de suivi.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {notes.map((note) => (
+            <NoteRow key={note.id} note={note} />
+          ))}
+        </div>
+      )}
+
       <div className="flex flex-col gap-2 rounded-2xl bg-soft/60 p-4">
         <div className="flex gap-2">
           <input
@@ -55,16 +65,6 @@ export default function ProjectNotesPanel({ projectId, notes }: { projectId: str
           {adding ? "Ajout..." : "Ajouter"}
         </button>
       </div>
-
-      {notes.length === 0 ? (
-        <p className="text-sm font-light text-ink/40">Aucune note de suivi.</p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {notes.map((note) => (
-            <NoteRow key={note.id} note={note} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

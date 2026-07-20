@@ -3,12 +3,13 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { avatarColor, initials, statusLabel, nextAutomaticActionLabel } from "@/lib/pipeline";
-import { isProjectDone, paidTotal, projectLabel } from "@/lib/projects";
+import { paidTotal } from "@/lib/projects";
 import BrandForm from "@/components/BrandForm";
 import BrandActions from "@/components/BrandActions";
 import HistoryPanel from "@/components/HistoryPanel";
 import RemindersPanel from "@/components/RemindersPanel";
 import NewProjectButton from "@/components/NewProjectButton";
+import ClientProjectsCard from "@/components/ClientProjectsCard";
 import { formatRevenue } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -120,43 +121,20 @@ export default async function BrandDetailPage({
 
       {/* Projets : sous les données dès qu'il y a un client (même sans projet encore) */}
       {client && (
-        <div className="rounded-3xl bg-white p-6 shadow-soft">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 font-sans text-base font-extrabold text-ink">
-              <span>📁</span> Projets
-            </h2>
-            <Link href={`/marques/${brand.id}/notes`} className="text-sm font-semibold text-accent hover:underline">
-              📋 Notes d&apos;appel découverte
-            </Link>
-          </div>
-
-          {projects.length === 0 && <p className="mb-4 text-sm font-light text-ink/40">Aucun projet pour l&apos;instant.</p>}
-
-          <div className="flex flex-col gap-2">
-            {projects.map((project) => (
-              <Link
-                key={project.id}
-                href={`/clients/${client.id}/projects/${project.id}`}
-                className="flex items-center justify-between rounded-xl bg-soft px-4 py-3 transition hover:bg-accent-light/30"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-ink">{projectLabel(project)}</p>
-                  <p className="text-xs font-light text-ink/50">{project.currentStep}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  {project.quoteAmount != null && (
-                    <span className="text-xs font-semibold text-ink/60">{formatRevenue(project.quoteAmount)}</span>
-                  )}
-                  {isProjectDone(project) && <span className="text-xs font-semibold text-accent">✅ Terminé</span>}
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          <div className="mt-4">
-            <NewProjectButton clientId={client.id} />
-          </div>
-        </div>
+        <ClientProjectsCard
+          clientId={client.id}
+          brandId={brand.id}
+          projects={projects.map((p) => ({
+            id: p.id,
+            name: p.name,
+            serviceType: p.serviceType,
+            currentStep: p.currentStep,
+            quoteAmount: p.quoteAmount,
+            signedAt: p.signedAt ? p.signedAt.toISOString() : null,
+            createdAt: p.createdAt.toISOString(),
+          }))}
+          newProjectSlot={<NewProjectButton clientId={client.id} />}
+        />
       )}
 
       <div className="grid grid-cols-2 gap-6">

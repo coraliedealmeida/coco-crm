@@ -45,7 +45,7 @@ export default function NewClientForm() {
         ...client,
         platform: "BOTH",
         source: "",
-        acquisitionPath: null,
+        acquisitionPath: "DIRECT",
         engagementStartDate: new Date().toISOString(),
         pipelineStatus: "DEVIS_ACCEPTE",
       }),

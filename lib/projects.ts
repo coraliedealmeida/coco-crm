@@ -36,10 +36,21 @@ export function resolveSteps(serviceType: ServiceType, steps: string[]): string[
  * (juste avant la première étape d'Offboarding) — l'emplacement naturel pour une révision
  * supplémentaire. Matérialise la liste depuis le modèle si le projet n'en avait pas encore.
  */
-export function insertCustomStep(serviceType: ServiceType, steps: string[], label: string): string[] {
+export function insertCustomStep(
+  serviceType: ServiceType,
+  steps: string[],
+  label: string,
+  afterStep?: string
+): string[] {
   const base = resolveSteps(serviceType, steps);
-  const firstOffboardingIndex = base.findIndex((s) => OFFBOARDING_STEPS.includes(s));
-  const insertAt = firstOffboardingIndex === -1 ? base.length : firstOffboardingIndex;
+  let insertAt: number;
+  if (afterStep) {
+    const afterIndex = base.indexOf(afterStep);
+    insertAt = afterIndex === -1 ? base.length : afterIndex + 1;
+  } else {
+    const firstOffboardingIndex = base.findIndex((s) => OFFBOARDING_STEPS.includes(s));
+    insertAt = firstOffboardingIndex === -1 ? base.length : firstOffboardingIndex;
+  }
   return [...base.slice(0, insertAt), label, ...base.slice(insertAt)];
 }
 

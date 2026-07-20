@@ -12,7 +12,7 @@ type Brand = {
   name: string;
   emoji: string | null;
   platform: "LINKEDIN" | "INSTAGRAM" | "BOTH";
-  acquisitionPath: "ROUTINE" | "CONTACT" | null;
+  acquisitionPath: "ROUTINE" | "CONTACT" | "DIRECT" | null;
   sector: string;
   source: string;
   notes: string;
@@ -218,7 +218,7 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
         </div>
       ) : (
         <>
-          {brand.acquisitionPath !== "CONTACT" && (
+          {brand.acquisitionPath !== "CONTACT" && brand.acquisitionPath !== "DIRECT" && (
             <>
               <Field label="Plateforme cible">
                 <select
@@ -240,7 +240,7 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
             </>
           )}
 
-          {brand.acquisitionPath !== "ROUTINE" && (
+          {brand.acquisitionPath !== "ROUTINE" && brand.acquisitionPath !== "DIRECT" && (
             <Field label="Source">
               <CreatableSelect
                 label="Source"
@@ -275,6 +275,15 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
               className="w-fit text-sm font-semibold text-accent hover:underline"
             >
               + Ajouter une plateforme cible
+            </button>
+          )}
+          {brand.acquisitionPath === "DIRECT" && (
+            <button
+              type="button"
+              onClick={() => setBrand({ ...brand, acquisitionPath: null })}
+              className="w-fit text-sm font-semibold text-accent hover:underline"
+            >
+              + Ajouter une plateforme cible / source
             </button>
           )}
         </>

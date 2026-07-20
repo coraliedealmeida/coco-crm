@@ -21,6 +21,9 @@ enum Platform {
 enum AcquisitionPath {
   ROUTINE
   CONTACT
+  // Client créé directement (bouton "+ Nouveau client" ou import), sans passage par le Pipeline :
+  // ni plateforme ni date d'engagement n'ont de sens ici, la fiche les masque par défaut.
+  DIRECT
 }
 
 enum PipelineStatus {
