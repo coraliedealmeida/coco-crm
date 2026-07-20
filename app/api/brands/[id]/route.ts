@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PipelineStatus, ServiceType } from "@prisma/client";
+import { PipelineStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { archivingStatuses, statusLabel } from "@/lib/pipeline";
 import { computeNextActionDate, statusActionType } from "@/lib/statusEffects";
-import { projectSteps } from "@/lib/serviceTypes";
+import { ensureClientAndProjects } from "@/lib/clientTransition";
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const brand = await prisma.brand.findUnique({
@@ -15,20 +15,36 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   return NextResponse.json(brand);
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
-  const existingClient = await prisma.client.findUnique({ where: { brandId: params.id } });
-  if (existingClient) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  const force = request.nextUrl.searchParams.get("force") === "true";
+
+  const client = await prisma.client.findUnique({
+    where: { brandId: params.id },
+    include: { projects: { include: { invoices: true } } },
+  });
+
+  if (client && !force) {
     return NextResponse.json(
-      { error: "Cette marque a un client et des projets associés : elle ne peut pas être supprimée." },
+      {
+        error: "Cette marque a un client associé.",
+        hasClient: true,
+        projectCount: client.projects.length,
+        invoiceCount: client.projects.reduce((sum, p) => sum + p.invoices.length, 0),
+      },
       { status: 409 }
     );
   }
 
-  await prisma.$transaction([
-    prisma.reminder.deleteMany({ where: { brandId: params.id } }),
-    prisma.contactHistoryEntry.deleteMany({ where: { brandId: params.id } }),
-    prisma.brand.delete({ where: { id: params.id } }),
-  ]);
+  await prisma.$transaction(async (tx) => {
+    if (client) {
+      // Les factures et notes de suivi de chaque projet partent en cascade (onDelete: Cascade).
+      await tx.project.deleteMany({ where: { clientId: client.id } });
+      await tx.client.delete({ where: { id: client.id } });
+    }
+    await tx.reminder.deleteMany({ where: { brandId: params.id } });
+    await tx.contactHistoryEntry.deleteMany({ where: { brandId: params.id } });
+    await tx.brand.delete({ where: { id: params.id } });
+  });
 
   return NextResponse.json({ ok: true });
 }
@@ -91,46 +107,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 
   if (body.pipelineStatus === "DEVIS_ACCEPTE") {
-    await createClientAndProjectsIfNeeded(brand.id, brand.discoveryNotes, brand.potentialRevenue);
+    await ensureClientAndProjects(brand.id, brand.discoveryNotes, brand.potentialRevenue);
   }
 
   return NextResponse.json(brand);
-}
-
-/**
- * Transition prospect → client : à la première fois qu'une marque passe en "Devis accepté",
- * on crée le Client et un Project par type de prestation coché en Section 3 des notes
- * d'appel découverte (chaque type a son propre workflow d'étapes, cf. lib/serviceTypes.ts).
- * Le montant du devis n'est pas réparti automatiquement entre les projets (pas de mapping
- * fiable prestation ↔ ligne de facturation) : il est posé sur le premier projet, à ajuster
- * manuellement ensuite depuis la fiche projet.
- */
-async function createClientAndProjectsIfNeeded(
-  brandId: string,
-  discoveryNotes: unknown,
-  potentialRevenue: number | null
-) {
-  const existingClient = await prisma.client.findUnique({ where: { brandId } });
-  if (existingClient) return;
-
-  const notes = (discoveryNotes as { serviceTypes?: ServiceType[] } | null) ?? null;
-  const serviceTypes = Array.isArray(notes?.serviceTypes) ? notes!.serviceTypes : [];
-  if (serviceTypes.length === 0) return;
-
-  // Transaction : soit le client et tous ses projets sont créés ensemble, soit rien ne l'est
-  // (évite un client orphelin sans projet si une des créations échoue en cours de route).
-  await prisma.$transaction(async (tx) => {
-    const client = await tx.client.create({ data: { brandId } });
-
-    for (const [index, serviceType] of serviceTypes.entries()) {
-      await tx.project.create({
-        data: {
-          clientId: client.id,
-          serviceType,
-          currentStep: projectSteps[serviceType][0],
-          quoteAmount: index === 0 ? potentialRevenue : null,
-        },
-      });
-    }
-  });
 }

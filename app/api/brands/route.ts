@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PipelineStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { computeNextActionDate } from "@/lib/statusEffects";
+import { ensureClientAndProjects } from "@/lib/clientTransition";
 
 export async function GET() {
   const brands = await prisma.brand.findMany({
@@ -56,6 +57,10 @@ export async function POST(request: NextRequest) {
       type: pipelineStatus === "ROUTINE_ENGAGEMENT" ? "Routine d'engagement démarrée" : "Marque créée",
     },
   });
+
+  if (pipelineStatus === "DEVIS_ACCEPTE") {
+    await ensureClientAndProjects(brand.id, brand.discoveryNotes, brand.potentialRevenue);
+  }
 
   return NextResponse.json(brand, { status: 201 });
 }

@@ -41,7 +41,29 @@ export default function BrandActions({ brandId }: { brandId: string }) {
     if (!confirm("Supprimer cette fiche prospect ? Cette action est irréversible.")) return;
     setDeleting(true);
     setDeleteError("");
-    const res = await fetch(`/api/brands/${brandId}`, { method: "DELETE" });
+
+    let res = await fetch(`/api/brands/${brandId}`, { method: "DELETE" });
+
+    if (res.status === 409) {
+      const data = await res.json();
+      if (data.hasClient) {
+        const detail = [
+          data.projectCount > 0 ? `${data.projectCount} projet(s)` : null,
+          data.invoiceCount > 0 ? `${data.invoiceCount} facture(s)` : null,
+        ]
+          .filter(Boolean)
+          .join(" et ");
+        const warning = detail
+          ? `Cette marque a un client avec ${detail}. Tout sera supprimé définitivement, y compris l'historique de facturation. Confirmer la suppression ?`
+          : "Cette marque a un client associé (sans projet). Le client sera aussi supprimé. Confirmer ?";
+        if (!confirm(warning)) {
+          setDeleting(false);
+          return;
+        }
+        res = await fetch(`/api/brands/${brandId}?force=true`, { method: "DELETE" });
+      }
+    }
+
     if (!res.ok) {
       const data = await res.json();
       setDeleteError(data.error ?? "Suppression impossible.");

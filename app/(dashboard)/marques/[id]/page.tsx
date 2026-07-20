@@ -119,8 +119,8 @@ export default async function BrandDetailPage({
         />
       </div>
 
-      {/* Projets : sous les données dès qu'il y en a */}
-      {client && projects.length > 0 && (
+      {/* Projets : sous les données dès qu'il y a un client (même sans projet encore) */}
+      {client && (
         <div className="rounded-3xl bg-white p-6 shadow-soft">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="flex items-center gap-2 font-sans text-base font-extrabold text-ink">
@@ -130,6 +130,8 @@ export default async function BrandDetailPage({
               📋 Notes d&apos;appel découverte
             </Link>
           </div>
+
+          {projects.length === 0 && <p className="mb-4 text-sm font-light text-ink/40">Aucun projet pour l&apos;instant.</p>}
 
           <div className="flex flex-col gap-2">
             {projects.map((project) => (

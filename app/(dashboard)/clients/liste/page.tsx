@@ -14,12 +14,17 @@ export default async function ClientsListPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <Link href="/clients" className="text-sm font-semibold text-accent hover:underline">
-          ← Retour aux projets
+      <header className="flex items-start justify-between">
+        <div>
+          <Link href="/clients" className="text-sm font-semibold text-accent hover:underline">
+            ← Retour aux projets
+          </Link>
+          <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">Clients</h1>
+          <p className="font-light text-ink/60">Marques passées en devis accepté, avec le CA généré par client.</p>
+        </div>
+        <Link href="/clients/new" className="text-sm font-semibold text-accent hover:underline">
+          + Nouveau client
         </Link>
-        <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">Clients</h1>
-        <p className="font-light text-ink/60">Marques passées en devis accepté, avec le CA généré par client.</p>
       </header>
 
       {clients.length === 0 ? (
