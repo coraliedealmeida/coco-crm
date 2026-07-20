@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import KanbanBoard from "@/components/KanbanBoard";
 import StatCard from "@/components/StatCard";
@@ -35,6 +36,7 @@ export default async function PipelinePage() {
   const serialized = brands.map((b) => ({
     id: b.id,
     name: b.name,
+    emoji: b.emoji,
     platform: b.platform,
     pipelineStatus: b.pipelineStatus,
     lastContactDate: b.lastContactDate?.toISOString() ?? null,
@@ -46,9 +48,14 @@ export default async function PipelinePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="font-sans text-3xl font-extrabold text-ink">Pipeline prospection</h1>
-        <p className="font-light text-ink/60">Glisse-dépose les marques entre les statuts.</p>
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="font-sans text-3xl font-extrabold text-ink">Pipeline prospection</h1>
+          <p className="font-light text-ink/60">Glisse-dépose les marques entre les statuts.</p>
+        </div>
+        <Link href="/marques" className="text-sm font-semibold text-accent hover:underline">
+          Voir la liste des prospects →
+        </Link>
       </header>
 
       <div className="grid grid-cols-3 gap-4">

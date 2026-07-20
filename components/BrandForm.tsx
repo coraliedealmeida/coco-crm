@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { PipelineStatus } from "@prisma/client";
 import DatePicker from "@/components/DatePicker";
 import CreatableSelect from "@/components/CreatableSelect";
+import { pipelineColumns } from "@/lib/pipeline";
 
 type Brand = {
   id?: string;
   name: string;
+  emoji: string | null;
   platform: "LINKEDIN" | "INSTAGRAM" | "BOTH";
   sector: string;
   source: string;
@@ -20,6 +23,7 @@ type Brand = {
 
 const emptyBrand: Brand = {
   name: "",
+  emoji: null,
   platform: "LINKEDIN",
   sector: "",
   source: "",
@@ -30,12 +34,21 @@ const emptyBrand: Brand = {
   potentialRevenue: null,
 };
 
+const EMOJI_CHOICES = ["🐾", "🐶", "🐱", "🐰", "🦴", "🐦", "🐟", "🐹", "🦊", "🐻", "🐼", "🐨", "🦜", "🐴", "✨", "🎨"];
+
+// Statuts de départ possibles quand on n'engage pas de routine (les plus courants).
+const START_STATUSES: PipelineStatus[] = ["PREMIER_DM", "EN_DISCUSSION", "APPEL_PREVU", "DEVIS_A_FAIRE"];
+
 export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id?: string } }) {
   const router = useRouter();
   const [brand, setBrand] = useState<Brand>({ ...emptyBrand, ...initial });
   const [sectors, setSectors] = useState<string[]>([]);
   const [sources, setSources] = useState<string[]>([]);
+  const [withRoutine, setWithRoutine] = useState(true);
+  const [startStatus, setStartStatus] = useState<PipelineStatus>("PREMIER_DM");
   const [saving, setSaving] = useState(false);
+
+  const isNew = !initial?.id;
 
   useEffect(() => {
     fetch("/api/options/sectors")
@@ -52,11 +65,14 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
 
     const method = initial?.id ? "PATCH" : "POST";
     const url = initial?.id ? `/api/brands/${initial.id}` : "/api/brands";
+    const payload = isNew
+      ? { ...brand, pipelineStatus: withRoutine ? "ROUTINE_ENGAGEMENT" : startStatus }
+      : brand;
 
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(brand),
+      body: JSON.stringify(payload),
     });
 
     setSaving(false);
@@ -70,6 +86,33 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
 
   return (
     <form onSubmit={handleSubmit} className="flex max-w-xl flex-col gap-5">
+      <Field label="Emoji de la marque">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setBrand({ ...brand, emoji: null })}
+            className={`flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold transition ${
+              brand.emoji == null ? "bg-accent text-white" : "bg-soft text-ink/50 hover:bg-accent-light/30"
+            }`}
+            title="Aucun (initiales)"
+          >
+            Aa
+          </button>
+          {EMOJI_CHOICES.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => setBrand({ ...brand, emoji })}
+              className={`flex h-10 w-10 items-center justify-center rounded-full text-lg transition ${
+                brand.emoji === emoji ? "bg-accent-light ring-2 ring-accent" : "bg-soft hover:bg-accent-light/40"
+              }`}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      </Field>
+
       <Field label="Nom de la marque">
         <input
           required
@@ -124,6 +167,41 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
           }}
         />
       </Field>
+
+      {isNew && (
+        <div className="rounded-2xl bg-soft/60 p-4">
+          <label className="flex items-center justify-between gap-3">
+            <span className="text-sm font-semibold text-ink">Démarrer une routine d&apos;engagement</span>
+            <button
+              type="button"
+              onClick={() => setWithRoutine((v) => !v)}
+              className={`h-6 w-11 shrink-0 rounded-full transition ${withRoutine ? "bg-accent" : "bg-ink/20"}`}
+            >
+              <span
+                className={`block h-5 w-5 translate-x-0.5 rounded-full bg-white transition ${
+                  withRoutine ? "translate-x-5" : ""
+                }`}
+              />
+            </button>
+          </label>
+          {!withRoutine && (
+            <div className="mt-3">
+              <label className="mb-2 block text-sm font-semibold text-ink">Statut de départ</label>
+              <select
+                value={startStatus}
+                onChange={(e) => setStartStatus(e.target.value as PipelineStatus)}
+                className="w-full rounded-xl border border-accent-light bg-white px-4 py-3 text-sm text-ink outline-none focus:border-accent"
+              >
+                {START_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {pipelineColumns.find((c) => c.status === s)?.label ?? s}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      )}
 
       <Field label="Date de début d'engagement">
         <DatePicker

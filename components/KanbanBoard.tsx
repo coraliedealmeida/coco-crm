@@ -25,6 +25,7 @@ import BrandCard from "@/components/BrandCard";
 type Brand = {
   id: string;
   name: string;
+  emoji: string | null;
   platform: "LINKEDIN" | "INSTAGRAM" | "BOTH";
   pipelineStatus: PipelineStatus;
   lastContactDate: string | null;

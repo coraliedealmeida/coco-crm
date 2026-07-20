@@ -4,6 +4,7 @@ import { avatarColor, initials, platformBadge } from "@/lib/pipeline";
 export type BrandCardData = {
   id: string;
   name: string;
+  emoji?: string | null;
   platform: "LINKEDIN" | "INSTAGRAM" | "BOTH";
   potentialRevenue?: number | null;
   engagementDays?: number | null;
@@ -42,12 +43,18 @@ export default function BrandCard({
   return (
     <div className="rounded-2xl bg-white p-4 shadow-md transition hover:shadow-lg">
       <div className="mb-3 flex items-center gap-3">
-        <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white"
-          style={{ backgroundColor: avatarColor(brand.name) }}
-        >
-          {initials(brand.name)}
-        </div>
+        {brand.emoji ? (
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-soft text-lg">
+            {brand.emoji}
+          </div>
+        ) : (
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white"
+            style={{ backgroundColor: avatarColor(brand.name) }}
+          >
+            {initials(brand.name)}
+          </div>
+        )}
         <Link
           href={href}
           className="flex-1 truncate text-sm font-extrabold text-ink hover:underline"
@@ -77,7 +84,7 @@ export default function BrandCard({
             className="rounded-full bg-soft px-2.5 py-1 text-xs font-semibold"
             style={{ color: engagementColor === "#CCFF00" ? "#1D1C1F" : engagementColor }}
           >
-            🔥 {brand.engagementDays}j d&apos;engagement
+            🔥 J{brand.engagementDays}
           </span>
         )}
         {brand.paymentStatus && (

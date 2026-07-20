@@ -11,15 +11,18 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
+  const pipelineStatus = body.pipelineStatus ?? "ROUTINE_ENGAGEMENT";
 
   const brand = await prisma.brand.create({
     data: {
       name: body.name,
+      emoji: body.emoji || null,
       platform: body.platform,
       sector: body.sector,
       source: body.source,
       notes: body.notes || null,
       engagementStartDate: new Date(body.engagementStartDate),
+      pipelineStatus,
       contactName: body.contactName || null,
       contactRole: body.contactRole || null,
       potentialRevenue: body.potentialRevenue != null ? Number(body.potentialRevenue) : null,
@@ -30,7 +33,7 @@ export async function POST(request: NextRequest) {
     data: {
       brandId: brand.id,
       date: new Date(),
-      type: "Routine d'engagement démarrée",
+      type: pipelineStatus === "ROUTINE_ENGAGEMENT" ? "Routine d'engagement démarrée" : "Marque créée",
     },
   });
 

@@ -21,6 +21,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   const data: Record<string, unknown> = {};
   for (const key of [
     "name",
+    "emoji",
     "platform",
     "sector",
     "source",
