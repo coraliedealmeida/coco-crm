@@ -25,17 +25,15 @@ export default function BrandCard({
   statusContent,
   engagementColor = "#8B5CF6",
   footer,
-  from,
 }: {
   brand: BrandCardData;
   statusContent: React.ReactNode;
   engagementColor?: string;
   footer?: React.ReactNode;
-  from?: string;
 }) {
   const badge = platformBadge[brand.platform];
   const showPlatformBadge = brand.acquisitionPath !== "CONTACT" && brand.acquisitionPath !== "DIRECT";
-  const href = from ? `/marques/${brand.id}?from=${from}` : `/marques/${brand.id}`;
+  const href = `/marques/${brand.id}`;
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-md transition hover:shadow-lg">

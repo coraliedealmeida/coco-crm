@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
 import { projectLabel } from "@/lib/projects";
 import ProjectForm from "@/components/ProjectForm";
 import ProjectNotesPanel from "@/components/ProjectNotesPanel";
+import BackButton from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
 
@@ -39,12 +39,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <Link
-          href={`/marques/${project.client.brand.id}?from=projets`}
-          className="text-sm font-semibold text-accent hover:underline"
-        >
-          ← Retour à {project.client.brand.name}
-        </Link>
+        <BackButton />
         <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">{projectLabel(project)}</h1>
         <p className="font-light text-ink/60">
           {project.client.brand.name}

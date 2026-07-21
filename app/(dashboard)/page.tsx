@@ -102,7 +102,6 @@ export default async function DashboardPage() {
           >
             {routineBrands.map((b) => (
               <BrandCard
-                from="dashboard"
                 key={b.id}
                 brand={{ ...b, engagementDays: b.days, potentialRevenue: b.potentialRevenue }}
                 statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
@@ -120,7 +119,6 @@ export default async function DashboardPage() {
           >
             {greenLightBrands.map((b) => (
               <BrandCard
-                from="dashboard"
                 key={b.id}
                 brand={{ ...b, engagementDays: b.days, potentialRevenue: b.potentialRevenue }}
                 statusContent={<span className="text-xs font-semibold text-accent">🟢 Prête pour le premier DM</span>}
@@ -138,7 +136,6 @@ export default async function DashboardPage() {
           >
             {relanceBrands.map((b) => (
               <BrandCard
-                from="dashboard"
                 key={`relance-${b.id}`}
                 brand={{
                   ...b,
@@ -150,7 +147,6 @@ export default async function DashboardPage() {
             ))}
             {dueReminders.map((r) => (
               <BrandCard
-                from="dashboard"
                 key={`reminder-${r.id}`}
                 brand={{
                   ...r.brand,

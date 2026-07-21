@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { isProjectActive, paidTotal } from "@/lib/projects";
 import ClientsTable from "@/components/ClientsTable";
+import BackButton from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +31,7 @@ export default async function ClientsListPage() {
     <div className="flex flex-col gap-6">
       <header className="flex items-start justify-between">
         <div>
-          <Link href="/clients" className="text-sm font-semibold text-accent hover:underline">
-            ← Retour aux projets
-          </Link>
+          <BackButton />
           <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">Clients</h1>
         </div>
         <div className="flex flex-col items-end gap-2">

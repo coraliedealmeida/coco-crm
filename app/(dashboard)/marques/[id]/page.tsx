@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { avatarColor, initials, statusLabel, nextAutomaticActionLabel } from "@/lib/pipeline";
@@ -11,24 +10,11 @@ import RemindersPanel from "@/components/RemindersPanel";
 import NewProjectButton from "@/components/NewProjectButton";
 import ClientProjectsCard from "@/components/ClientProjectsCard";
 import { formatRevenue } from "@/lib/format";
+import BackButton from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
 
-const backLinks: Record<string, { href: string; label: string }> = {
-  pipeline: { href: "/pipeline", label: "← Retour au Pipeline" },
-  projets: { href: "/clients", label: "← Retour aux projets" },
-  clients: { href: "/clients/liste", label: "← Retour aux clients" },
-  prospects: { href: "/marques", label: "← Retour aux prospects" },
-  dashboard: { href: "/", label: "← Retour au Dashboard" },
-};
-
-export default async function BrandDetailPage({
-  params,
-  searchParams,
-}: {
-  params: { id: string };
-  searchParams: { from?: string };
-}) {
+export default async function BrandDetailPage({ params }: { params: { id: string } }) {
   const [brand, settings, client] = await Promise.all([
     prisma.brand.findUnique({
       where: { id: params.id },
@@ -45,8 +31,6 @@ export default async function BrandDetailPage({
   ]);
 
   if (!brand) notFound();
-
-  const back = backLinks[searchParams.from ?? ""] ?? backLinks.prospects;
 
   const days = countBusinessDays(brand.engagementStartDate, new Date());
   const greenLight = days >= settings.daysBeforeGreenLight && brand.pipelineStatus === "ROUTINE_ENGAGEMENT";
@@ -69,9 +53,7 @@ export default async function BrandDetailPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href={back.href} className="w-fit text-sm font-semibold text-accent hover:underline">
-        {back.label}
-      </Link>
+      <BackButton className="w-fit text-sm font-semibold text-accent hover:underline" />
 
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-4">

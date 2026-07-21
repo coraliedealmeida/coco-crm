@@ -75,7 +75,7 @@ export default function ClientsTable({ rows }: { rows: ClientRow[] }) {
             <tr key={c.id} className="border-t border-soft hover:bg-soft/50">
               <td className="px-5 py-3">
                 <Link
-                  href={`/marques/${c.brandId}?from=clients`}
+                  href={`/marques/${c.brandId}`}
                   className="flex items-center gap-2.5 font-semibold text-ink hover:underline"
                 >
                   {c.emoji && <span className="text-base">{c.emoji}</span>}

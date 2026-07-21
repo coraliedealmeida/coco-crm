@@ -5,5 +5,5 @@ import { prisma } from "@/lib/prisma";
 export default async function ClientRedirect({ params }: { params: { id: string } }) {
   const client = await prisma.client.findUnique({ where: { id: params.id }, select: { brandId: true } });
   if (!client) notFound();
-  redirect(`/marques/${client.brandId}?from=projets`);
+  redirect(`/marques/${client.brandId}`);
 }

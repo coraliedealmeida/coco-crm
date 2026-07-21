@@ -55,7 +55,7 @@ export default function NewClientForm() {
 
     if (res.ok) {
       const data = await res.json();
-      router.push(`/marques/${data.id}?from=projets`);
+      router.push(`/marques/${data.id}`);
       router.refresh();
     }
   }

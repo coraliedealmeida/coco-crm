@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { projectLabel } from "@/lib/projects";
 import { formatRevenue } from "@/lib/format";
 import StatCard from "@/components/StatCard";
+import BackButton from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,6 @@ export default async function AnneeProjetsPage({ searchParams }: { searchParams:
   const selectedYear = Number(searchParams.year) || now.getFullYear();
 
   const projectsOfYear = projects.filter((p) => (p.completedAt ?? p.createdAt).getFullYear() === selectedYear);
-  const totalOfYear = projectsOfYear.reduce((sum, p) => sum + (p.quoteAmount ?? 0), 0);
   const clientsOfYear = new Set(projectsOfYear.map((p) => p.clientId)).size;
 
   // Le CA encaissé se base sur la date de paiement réelle des factures (Invoice.paidAt), pas sur
@@ -58,13 +58,8 @@ export default async function AnneeProjetsPage({ searchParams }: { searchParams:
     <div className="flex flex-col gap-6">
       <header className="flex items-start justify-between">
         <div>
-          <Link href="/clients" className="text-sm font-semibold text-accent hover:underline">
-            ← Retour aux projets
-          </Link>
+          <BackButton />
           <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">Vue annuelle des projets</h1>
-          <p className="font-light text-ink/60">
-            {projectsOfYear.length} projet(s) terminé(s) en {selectedYear} · {formatRevenue(totalOfYear)}
-          </p>
         </div>
         <div className="flex w-fit gap-1 rounded-2xl bg-white p-1.5 shadow-soft">
           {years.map((year) => (
