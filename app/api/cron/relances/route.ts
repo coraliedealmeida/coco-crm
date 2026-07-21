@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 import { statusLabel } from "@/lib/pipeline";
+import { projectLabel } from "@/lib/projects";
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
   }
 
   const now = new Date();
-  const [brands, quoteRequests] = await Promise.all([
+  const [brands, quoteRequests, reminders] = await Promise.all([
     prisma.brand.findMany({
       where: {
         archivedAt: null,
@@ -36,9 +37,21 @@ export async function GET(request: NextRequest) {
       },
       include: { client: { include: { brand: true } } },
     }),
+    // Rappels programmés (marque ou projet) arrivés à échéance — jusqu'ici absents de cet email.
+    prisma.reminder.findMany({
+      where: {
+        completed: false,
+        date: { lte: now },
+        OR: [
+          { brandId: { not: null }, brand: { archivedAt: null } },
+          { projectId: { not: null }, project: { currentStep: { not: "Terminé" } } },
+        ],
+      },
+      include: { brand: true, project: { include: { client: { include: { brand: true } } } } },
+    }),
   ]);
 
-  const total = brands.length + quoteRequests.length;
+  const total = brands.length + quoteRequests.length + reminders.length;
   if (total === 0) {
     return NextResponse.json({ sent: false, reason: "Aucune relance aujourd'hui." });
   }
@@ -49,7 +62,12 @@ export async function GET(request: NextRequest) {
     (q) =>
       `<li><strong>${q.client.brand.name}</strong> — ${statusLabel(q.status)} (${q.label || "Demande de devis"})</li>`
   );
-  const list = [...brandItems, ...quoteItems].join("");
+  const reminderItems = reminders.map((r) => {
+    const brandName = r.brand?.name ?? r.project!.client.brand.name;
+    const context = r.project ? ` — ${projectLabel(r.project)}` : "";
+    return `<li><strong>${brandName}</strong>${context} — 📌 ${r.label}</li>`;
+  });
+  const list = [...brandItems, ...quoteItems, ...reminderItems].join("");
 
   await resend.emails.send({
     from: "Dashboard COCO <onboarding@resend.dev>",

@@ -5,6 +5,7 @@ import { serviceTypeLabel } from "@/lib/serviceTypes";
 import { projectLabel } from "@/lib/projects";
 import ProjectForm from "@/components/ProjectForm";
 import ProjectNotesPanel from "@/components/ProjectNotesPanel";
+import RemindersPanel from "@/components/RemindersPanel";
 import BackButton from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
@@ -16,25 +17,37 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
       client: { include: { brand: true } },
       trackingNotes: { orderBy: { date: "desc" } },
       invoices: { orderBy: { createdAt: "asc" } },
+      reminders: { orderBy: { date: "asc" } },
     },
   });
 
   if (!project || project.clientId !== params.id) notFound();
 
   const suivi = (
-    <div className="rounded-3xl bg-white p-6 shadow-soft">
-      <h2 className="mb-4 flex items-center gap-2 font-sans text-base font-extrabold text-ink">
-        <span>🗓️</span> Suivi du projet
-      </h2>
-      <ProjectNotesPanel
-        projectId={project.id}
-        notes={project.trackingNotes.map((n) => ({
-          id: n.id,
-          date: n.date.toISOString(),
-          content: n.content,
+    <>
+      <div className="rounded-3xl bg-white p-6 shadow-soft">
+        <h2 className="mb-4 flex items-center gap-2 font-sans text-base font-extrabold text-ink">
+          <span>🗓️</span> Suivi du projet
+        </h2>
+        <ProjectNotesPanel
+          projectId={project.id}
+          notes={project.trackingNotes.map((n) => ({
+            id: n.id,
+            date: n.date.toISOString(),
+            content: n.content,
+          }))}
+        />
+      </div>
+      <RemindersPanel
+        createUrl={`/api/projects/${project.id}/reminders`}
+        reminders={project.reminders.map((r) => ({
+          id: r.id,
+          date: r.date.toISOString(),
+          label: r.label,
+          completed: r.completed,
         }))}
       />
-    </div>
+    </>
   );
 
   return (

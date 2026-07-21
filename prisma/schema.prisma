@@ -71,10 +71,13 @@ model Brand {
 }
 
 // Rappel programmable librement (date + libellé), indépendant du calcul automatique des relances.
+// Rattaché soit à une marque, soit à un projet (jamais les deux) — brandId/projectId nullables.
 model Reminder {
   id        String   @id @default(cuid())
-  brandId   String
-  brand     Brand    @relation(fields: [brandId], references: [id])
+  brandId   String?
+  brand     Brand?   @relation(fields: [brandId], references: [id])
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
   date      DateTime
   label     String
   completed Boolean  @default(false)
@@ -180,6 +183,7 @@ model Project {
   createdAt             DateTime      @default(now())
   invoices              Invoice[]
   trackingNotes         ProjectNote[]
+  reminders             Reminder[]
 }
 
 // Note de suivi datée, propre à un projet (même principe que le Suivi de la fiche prospect).

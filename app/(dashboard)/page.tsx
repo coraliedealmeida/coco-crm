@@ -49,9 +49,18 @@ export default async function DashboardPage() {
       where: { archivedAt: null, OR: [{ acquisitionPath: null }, { acquisitionPath: { not: "DIRECT" } }] },
     }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+    // Rappels programmés sur une marque OU sur un projet (jamais les deux) — on exclut les
+    // marques archivées et les projets déjà terminés, comme pour le reste du Dashboard.
     prisma.reminder.findMany({
-      where: { completed: false, date: { lte: new Date() }, brand: { archivedAt: null } },
-      include: { brand: true },
+      where: {
+        completed: false,
+        date: { lte: new Date() },
+        OR: [
+          { brandId: { not: null }, brand: { archivedAt: null } },
+          { projectId: { not: null }, project: { currentStep: { not: "Terminé" } } },
+        ],
+      },
+      include: { brand: true, project: { include: { client: { include: { brand: true } } } } },
       orderBy: { date: "asc" },
     }),
     prisma.project.findMany({ include: { client: { include: { brand: true } } } }),
@@ -154,17 +163,25 @@ export default async function DashboardPage() {
                 statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
               />
             ))}
-            {dueReminders.map((r) => (
-              <BrandCard
-                key={`reminder-${r.id}`}
-                brand={{
-                  ...r.brand,
-                  engagementDays: null,
-                  potentialRevenue: r.brand.potentialRevenue,
-                }}
-                statusContent={<span className="text-xs font-semibold text-accent">📌 {r.label}</span>}
-              />
-            ))}
+            {dueReminders.map((r) => {
+              const target = r.brand ?? r.project!.client.brand;
+              const href = r.project ? `/clients/${r.project.clientId}/projects/${r.project.id}` : undefined;
+              return (
+                <BrandCard
+                  key={`reminder-${r.id}`}
+                  brand={{
+                    id: target.id,
+                    name: target.name,
+                    emoji: target.emoji,
+                    engagementDays: null,
+                    potentialRevenue: r.brand?.potentialRevenue,
+                    serviceType: r.project ? projectLabel(r.project) : null,
+                    href,
+                  }}
+                  statusContent={<span className="text-xs font-semibold text-accent">📌 {r.label}</span>}
+                />
+              );
+            })}
             {quoteRequests.map((q) => (
               <BrandCard
                 key={`quote-${q.id}`}

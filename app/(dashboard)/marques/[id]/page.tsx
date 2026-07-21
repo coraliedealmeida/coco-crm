@@ -181,7 +181,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
             </div>
           </div>
           <RemindersPanel
-            brandId={brand.id}
+            createUrl={`/api/brands/${brand.id}/reminders`}
             reminders={brand.reminders.map((r) => ({
               id: r.id,
               date: r.date.toISOString(),

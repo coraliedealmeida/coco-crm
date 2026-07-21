@@ -11,7 +11,7 @@ type Reminder = {
   completed: boolean;
 };
 
-export default function RemindersPanel({ brandId, reminders }: { brandId: string; reminders: Reminder[] }) {
+export default function RemindersPanel({ createUrl, reminders }: { createUrl: string; reminders: Reminder[] }) {
   const router = useRouter();
   const [date, setDate] = useState<Date | null>(null);
   const [label, setLabel] = useState("");
@@ -24,7 +24,7 @@ export default function RemindersPanel({ brandId, reminders }: { brandId: string
   async function handleAdd() {
     if (!date || !label.trim()) return;
     setSaving(true);
-    await fetch(`/api/brands/${brandId}/reminders`, {
+    await fetch(createUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ date: date.toISOString(), label: label.trim() }),
