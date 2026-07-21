@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import KanbanBoard from "@/components/KanbanBoard";
-import StatCard from "@/components/StatCard";
+import StatsGrid from "@/components/StatsGrid";
 import { formatRevenue } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -64,11 +64,13 @@ export default async function PipelinePage() {
         </Link>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Revenu potentiel en cours" value={formatRevenue(potentialRevenue)} accent="#CCFF00" />
-        <StatCard label="Appels découverte (30 derniers jours)" value={String(appelsCount)} accent="#34D399" />
-        <StatCard label="Devis envoyés" value={String(devisCount)} accent="#8B5CF6" />
-      </div>
+      <StatsGrid
+        stats={[
+          { label: "Revenu potentiel en cours", value: formatRevenue(potentialRevenue), accent: "#CCFF00" },
+          { label: "Appels découverte (30 derniers jours)", value: String(appelsCount), accent: "#34D399" },
+          { label: "Devis envoyés", value: String(devisCount), accent: "#8B5CF6" },
+        ]}
+      />
 
       <KanbanBoard brands={serialized} greenLightThreshold={settings.daysBeforeGreenLight} />
     </div>

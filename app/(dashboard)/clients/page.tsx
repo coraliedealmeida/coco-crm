@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import StatCard from "@/components/StatCard";
+import StatsGrid from "@/components/StatsGrid";
 import ProjectsKanbanBoard from "@/components/ProjectsKanbanBoard";
 import { isProjectActive, invoicedInMonth, paidInMonth, factureRelanceDue } from "@/lib/projects";
 import { formatRevenue } from "@/lib/format";
@@ -49,11 +49,13 @@ export default async function ProjectsPage() {
         </Link>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Projets en cours" value={String(projectsEnCours)} accent="#8B5CF6" />
-        <StatCard label="Total facturé ce mois" value={formatRevenue(totalFactureCeMois)} accent="#FB923C" />
-        <StatCard label="Total encaissé ce mois" value={formatRevenue(totalEncaisseCeMois)} accent="#CCFF00" />
-      </div>
+      <StatsGrid
+        stats={[
+          { label: "Projets en cours", value: String(projectsEnCours), accent: "#8B5CF6" },
+          { label: "Total facturé ce mois", value: formatRevenue(totalFactureCeMois), accent: "#FB923C" },
+          { label: "Total encaissé ce mois", value: formatRevenue(totalEncaisseCeMois), accent: "#CCFF00" },
+        ]}
+      />
 
       {projects.length === 0 ? (
         <p className="rounded-3xl bg-white p-6 text-sm font-light text-ink/50 shadow-soft">

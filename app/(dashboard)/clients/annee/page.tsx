@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { projectLabel } from "@/lib/projects";
 import { formatRevenue } from "@/lib/format";
-import StatCard from "@/components/StatCard";
+import StatsGrid from "@/components/StatsGrid";
 import BackButton from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
@@ -76,11 +76,13 @@ export default async function AnneeProjetsPage({ searchParams }: { searchParams:
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Projets terminés" value={String(projectsOfYear.length)} accent="#8B5CF6" />
-        <StatCard label="CA encaissé" value={formatRevenue(revenueEncaisse)} accent="#CCFF00" />
-        <StatCard label="Clients" value={String(clientsOfYear)} accent="#FB923C" />
-      </div>
+      <StatsGrid
+        stats={[
+          { label: "Projets terminés", value: String(projectsOfYear.length), accent: "#8B5CF6" },
+          { label: "CA encaissé", value: formatRevenue(revenueEncaisse), accent: "#CCFF00" },
+          { label: "Clients", value: String(clientsOfYear), accent: "#FB923C" },
+        ]}
+      />
 
       <div className="flex gap-4 overflow-x-auto pb-4">
         {months.map((month) => (
