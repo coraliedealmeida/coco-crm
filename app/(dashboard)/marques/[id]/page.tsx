@@ -55,7 +55,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
     <div className="flex flex-col gap-6">
       <BackButton className="w-fit text-sm font-semibold text-accent hover:underline" />
 
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           {brand.emoji ? (
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-soft text-2xl">
@@ -78,7 +78,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
         )}
       </header>
 
-      <div className="grid grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
         <InfoTile
           icon="📅"
           label="Premier contact"
@@ -119,7 +119,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
         />
       )}
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="flex flex-col gap-6">
           <div className="rounded-3xl bg-white p-6 shadow-soft">
             <h2 className="mb-4 flex items-center gap-2 font-sans text-base font-extrabold text-ink">

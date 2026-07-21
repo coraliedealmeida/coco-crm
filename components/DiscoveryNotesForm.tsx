@@ -388,7 +388,7 @@ export default function DiscoveryNotesForm({
           </p>
         )}
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <RecapTile label="Total HT" value={formatPrice(totalHT)} accent="#8B5CF6" />
           <RecapTile label="Acompte 30%" value={formatPrice(deposit30)} accent="#C4B5FD" />
           <RecapTile label="3x sans frais" value={`${formatPrice(threeInstallments)} × 3`} accent="#CCFF00" />

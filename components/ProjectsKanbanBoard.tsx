@@ -16,6 +16,12 @@ import ProjectCard, { ProjectCardData } from "@/components/ProjectCard";
 
 type BoardProject = ProjectCardData & { steps: string[]; relance: 1 | 2 | null };
 
+function groupProjectsFor(group: { id: string }, projects: BoardProject[]) {
+  return projects
+    .filter((p) => macroGroupForStep(p.currentStep) === group.id)
+    .filter((p) => !isProjectDone(p));
+}
+
 export default function ProjectsKanbanBoard({ projects: initialProjects }: { projects: BoardProject[] }) {
   const [projects, setProjects] = useState(initialProjects);
   const router = useRouter();
@@ -49,23 +55,33 @@ export default function ProjectsKanbanBoard({ projects: initialProjects }: { pro
   }
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {projectMacroGroups.map((group) => {
-          const groupProjects = projects
-            .filter((p) => macroGroupForStep(p.currentStep) === group.id)
-            .filter((p) => !isProjectDone(p));
-          return (
-            <Column
-              key={group.id}
-              group={group}
-              visibleProjects={groupProjects}
-              onStepChange={updateStep}
-            />
-          );
-        })}
+    <>
+      <div className="flex flex-col gap-3 md:hidden">
+        {projectMacroGroups.map((group) => (
+          <AccordionSection
+            key={group.id}
+            group={group}
+            visibleProjects={groupProjectsFor(group, projects)}
+            onStepChange={updateStep}
+          />
+        ))}
       </div>
-    </DndContext>
+
+      <div className="hidden md:block">
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {projectMacroGroups.map((group) => (
+              <Column
+                key={group.id}
+                group={group}
+                visibleProjects={groupProjectsFor(group, projects)}
+                onStepChange={updateStep}
+              />
+            ))}
+          </div>
+        </DndContext>
+      </div>
+    </>
   );
 }
 
@@ -106,6 +122,92 @@ function Column({
   );
 }
 
+function AccordionSection({
+  group,
+  visibleProjects,
+  onStepChange,
+}: {
+  group: { id: string; label: string; color: string };
+  visibleProjects: BoardProject[];
+  onStepChange: (projectId: string, step: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="overflow-hidden rounded-2xl bg-white shadow-softer">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 px-4 py-3.5 text-left"
+      >
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: group.color }} />
+        <span className="text-sm font-extrabold text-ink">{group.label}</span>
+        <span className="ml-auto rounded-full bg-soft px-2 py-0.5 text-xs font-semibold text-ink/50">
+          {visibleProjects.length}
+        </span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className={`shrink-0 text-ink/40 transition-transform ${open ? "rotate-180" : ""}`}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="flex flex-col gap-2.5 border-t border-soft p-3">
+          {visibleProjects.map((p) => (
+            <CardBody key={p.id} project={p} onStepChange={onStepChange} />
+          ))}
+          {visibleProjects.length === 0 && (
+            <p className="px-1 py-1 text-xs font-light text-ink/30">Rien ici.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CardBody({
+  project,
+  onStepChange,
+}: {
+  project: BoardProject;
+  onStepChange: (projectId: string, step: string) => void;
+}) {
+  const steps = resolveSteps(project.serviceType, project.steps);
+
+  return (
+    <ProjectCard
+      project={project}
+      badge={
+        project.relance && (
+          <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-600">
+            📮 Relance {project.relance}
+          </span>
+        )
+      }
+      statusContent={
+        <select
+          value={project.currentStep}
+          onChange={(e) => onStepChange(project.id, e.target.value)}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="w-full rounded-lg border border-accent-light bg-soft px-2.5 py-1.5 text-xs font-semibold text-ink outline-none focus:border-accent"
+        >
+          {steps.map((step) => (
+            <option key={step} value={step}>
+              {step}
+            </option>
+          ))}
+        </select>
+      }
+    />
+  );
+}
+
 function DraggableCard({
   project,
   onStepChange,
@@ -114,7 +216,6 @@ function DraggableCard({
   onStepChange: (projectId: string, step: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: project.id });
-  const steps = resolveSteps(project.serviceType, project.steps);
 
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
@@ -128,30 +229,7 @@ function DraggableCard({
       {...attributes}
       className={`cursor-grab ${isDragging ? "rotate-1 opacity-80" : ""}`}
     >
-      <ProjectCard
-        project={project}
-        badge={
-          project.relance && (
-            <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-600">
-              📮 Relance {project.relance}
-            </span>
-          )
-        }
-        statusContent={
-          <select
-            value={project.currentStep}
-            onChange={(e) => onStepChange(project.id, e.target.value)}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="w-full rounded-lg border border-accent-light bg-soft px-2.5 py-1.5 text-xs font-semibold text-ink outline-none focus:border-accent"
-          >
-            {steps.map((step) => (
-              <option key={step} value={step}>
-                {step}
-              </option>
-            ))}
-          </select>
-        }
-      />
+      <CardBody project={project} onStepChange={onStepChange} />
     </div>
   );
 }

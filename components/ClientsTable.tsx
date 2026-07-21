@@ -46,7 +46,8 @@ export default function ClientsTable({ rows }: { rows: ClientRow[] }) {
 
   return (
     <div className="overflow-hidden rounded-3xl bg-white shadow-soft">
-      <table className="w-full text-left text-sm">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[640px] text-left text-sm">
         <thead className="bg-soft text-ink/60">
           <tr>
             <SortableHeader label="Client" active={sortKey === "name"} dir={sortDir} onClick={() => toggleSort("name")} />
@@ -106,6 +107,7 @@ export default function ClientsTable({ rows }: { rows: ClientRow[] }) {
           )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

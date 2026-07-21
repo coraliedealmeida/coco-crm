@@ -189,7 +189,7 @@ export default function PricingGridManager({
             const base = b.serviceIds.reduce((sum, id) => sum + (services.find((s) => s.id === id)?.price ?? 0), 0);
             const bundlePrice = base * (1 - b.discountPercent / 100);
             return (
-              <div key={b.id} className={`grid grid-cols-[1fr_2fr_140px] gap-4 px-6 py-4 ${b.active ? "" : "opacity-40"}`}>
+              <div key={b.id} className={`grid grid-cols-1 gap-3 px-6 py-4 sm:grid-cols-[1fr_2fr_140px] sm:gap-4 ${b.active ? "" : "opacity-40"}`}>
                 <div>
                   <input
                     value={b.name}
@@ -205,7 +205,7 @@ export default function PricingGridManager({
                   rows={2}
                   className="w-full resize-none rounded-lg border border-transparent bg-transparent py-1 text-sm font-light leading-relaxed text-ink/70 outline-none hover:border-accent-light focus:border-accent"
                 />
-                <div className="flex flex-col items-end gap-1">
+                <div className="flex flex-col items-start gap-1 sm:items-end">
                   <span className="text-xs text-ink/40 line-through">{formatPrice(base)}</span>
                   <span className="font-sans text-base font-extrabold text-accent">{formatPrice(bundlePrice)}</span>
                   <div className="flex items-center gap-1 text-xs text-ink/60">
@@ -403,7 +403,7 @@ function AccordionSection({
 
 function ColumnHeaders() {
   return (
-    <div className="grid grid-cols-[1fr_2fr_140px] gap-4 px-6 pt-3 text-xs font-semibold uppercase tracking-wide text-ink/40">
+    <div className="hidden gap-4 px-6 pt-3 sm:grid sm:grid-cols-[1fr_2fr_140px] text-xs font-semibold uppercase tracking-wide text-ink/40">
       <span>Offre</span>
       <span>Contenu inclus</span>
       <span className="text-right">Tarif HT</span>
@@ -421,7 +421,7 @@ function ServiceRowEditor({
   onDelete: () => void;
 }) {
   return (
-    <div className={`grid grid-cols-[1fr_2fr_140px] gap-4 px-6 py-4 ${service.active ? "" : "opacity-40"}`}>
+    <div className={`grid grid-cols-1 gap-3 px-6 py-4 sm:grid-cols-[1fr_2fr_140px] sm:gap-4 ${service.active ? "" : "opacity-40"}`}>
       <input
         value={service.name}
         onChange={(e) => onUpdate({ name: e.target.value })}
@@ -436,7 +436,7 @@ function ServiceRowEditor({
         className="w-full resize-none rounded-lg border border-transparent bg-transparent py-1 text-sm font-light leading-relaxed text-ink/70 outline-none hover:border-accent-light focus:border-accent"
       />
 
-      <div className="flex flex-col items-end gap-1">
+      <div className="flex flex-col items-start gap-1 sm:items-end">
         <div className="flex items-center gap-1">
           <input
             type="number"

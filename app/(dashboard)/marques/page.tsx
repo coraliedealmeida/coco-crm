@@ -22,7 +22,7 @@ export default async function MarquesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <BackButton />
           <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">Marques prospects</h1>

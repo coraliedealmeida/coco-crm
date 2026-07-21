@@ -56,17 +56,17 @@ export default async function AnneeProjetsPage({ searchParams }: { searchParams:
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-start justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <BackButton />
           <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">Vue annuelle des projets</h1>
         </div>
-        <div className="flex w-fit gap-1 rounded-2xl bg-white p-1.5 shadow-soft">
+        <div className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-2xl bg-white p-1.5 shadow-soft">
           {years.map((year) => (
             <Link
               key={year}
               href={`/clients/annee?year=${year}`}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+              className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition ${
                 year === selectedYear ? "bg-accent text-white" : "text-ink/60 hover:bg-soft"
               }`}
             >
@@ -76,7 +76,7 @@ export default async function AnneeProjetsPage({ searchParams }: { searchParams:
         </div>
       </header>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Projets terminés" value={String(projectsOfYear.length)} accent="#8B5CF6" />
         <StatCard label="CA encaissé" value={formatRevenue(revenueEncaisse)} accent="#CCFF00" />
         <StatCard label="Clients" value={String(clientsOfYear)} accent="#FB923C" />

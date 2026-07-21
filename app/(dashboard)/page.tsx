@@ -92,7 +92,7 @@ export default async function DashboardPage() {
 
       <section>
         <h2 className="mb-4 font-sans text-lg font-extrabold text-ink">Prospection</h2>
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           <DashboardSection
             title="Routine d'engagement"
             icon="🌱"
@@ -162,7 +162,7 @@ export default async function DashboardPage() {
 
       <section>
         <h2 className="mb-4 font-sans text-lg font-extrabold text-ink">Suivi projets</h2>
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           <DashboardSection
             title="Projets en cours"
             icon="📁"

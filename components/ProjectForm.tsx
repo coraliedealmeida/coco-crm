@@ -79,7 +79,7 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
   return (
     <div className="flex flex-col gap-6">
       {/* Données clés du projet */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <HeaderTile label="Statut en cours" value={project.currentStep} accent="#8B5CF6" />
         <HeaderTile
           label="Date de livraison"
@@ -184,7 +184,7 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
       {suiviSlot}
 
       {/* Informations + Facturation en bas de page */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-3xl bg-white p-6 shadow-soft">
           <h2 className="mb-4 font-sans text-base font-extrabold text-ink">Informations</h2>
           <div className="flex flex-col gap-4">

@@ -17,7 +17,7 @@ export default async function ParametresPage() {
         <h1 className="font-sans text-3xl font-extrabold text-ink">Paramètres</h1>
       </header>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <SettingsForm
           initial={{
             daysBeforeGreenLight: settings.daysBeforeGreenLight,

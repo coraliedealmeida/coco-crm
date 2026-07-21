@@ -55,7 +55,7 @@ export default async function PipelinePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-sans text-3xl font-extrabold text-ink">Pipeline prospection</h1>
         </div>
@@ -64,7 +64,7 @@ export default async function PipelinePage() {
         </Link>
       </header>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Revenu potentiel en cours" value={formatRevenue(potentialRevenue)} accent="#CCFF00" />
         <StatCard label="Appels découverte (30 derniers jours)" value={String(appelsCount)} accent="#34D399" />
         <StatCard label="Devis envoyés" value={String(devisCount)} accent="#8B5CF6" />

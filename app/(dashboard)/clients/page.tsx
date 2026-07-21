@@ -40,7 +40,7 @@ export default async function ProjectsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-sans text-3xl font-extrabold text-ink">Projets</h1>
         </div>
@@ -49,7 +49,7 @@ export default async function ProjectsPage() {
         </Link>
       </header>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Projets en cours" value={String(projectsEnCours)} accent="#8B5CF6" />
         <StatCard label="Total facturé ce mois" value={formatRevenue(totalFactureCeMois)} accent="#FB923C" />
         <StatCard label="Total encaissé ce mois" value={formatRevenue(totalEncaisseCeMois)} accent="#CCFF00" />

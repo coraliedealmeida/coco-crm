@@ -33,7 +33,7 @@ export default function MessagesTemplates() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {filtered.map((t) => (
           <MessageCard key={t.id} template={t} />
         ))}

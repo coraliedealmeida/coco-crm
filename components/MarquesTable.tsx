@@ -45,7 +45,7 @@ export default function MarquesTable({ rows }: { rows: Row[] }) {
 
   return (
     <div className="overflow-hidden rounded-3xl bg-white shadow-soft">
-      <table className="w-full text-left text-sm">
+      <table className="w-full min-w-[640px] text-left text-sm">
         <thead className="bg-soft text-ink/60">
           <tr>
             <SortableHeader label="Marque" active={sortKey === "name"} dir={sortDir} onClick={() => toggleSort("name")} />

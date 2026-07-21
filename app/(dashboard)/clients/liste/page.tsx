@@ -29,12 +29,12 @@ export default async function ClientsListPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-start justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <BackButton />
           <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">Clients</h1>
         </div>
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col items-start gap-2 sm:items-end">
           <Link
             href="/clients/new"
             className="rounded-xl bg-cta px-5 py-3 font-semibold text-ink transition hover:opacity-90"
