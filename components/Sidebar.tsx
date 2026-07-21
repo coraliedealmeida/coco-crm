@@ -25,7 +25,7 @@ export default function Sidebar() {
 
   return (
     <>
-      <div className="flex items-center justify-between border-b border-soft bg-white px-4 py-3 md:hidden">
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-soft bg-white px-4 py-3 md:hidden">
         <Link href="/" className="flex items-center" onClick={() => setOpen(false)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.svg" alt="Dashboard Coco" className="h-9 w-auto object-contain" />
