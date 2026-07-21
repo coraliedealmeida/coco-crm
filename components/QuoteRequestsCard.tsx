@@ -14,7 +14,12 @@ type QuoteRequest = {
   serviceTypes: ServiceType[];
   status: PipelineStatus;
   potentialRevenue: number | null;
+  lastContactDate: string | null;
 };
+
+function toDateInputValue(iso: string): string {
+  return new Date(iso).toISOString().slice(0, 10);
+}
 
 export default function QuoteRequestsCard({
   clientId,
@@ -45,6 +50,16 @@ export default function QuoteRequestsCard({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
+    });
+    router.refresh();
+  }
+
+  async function handleDateChange(id: string, isoDate: string) {
+    setQuoteRequests((prev) => prev.map((q) => (q.id === id ? { ...q, lastContactDate: isoDate } : q)));
+    await fetch(`/api/quote-requests/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lastContactDate: isoDate }),
     });
     router.refresh();
   }
@@ -92,7 +107,13 @@ export default function QuoteRequestsCard({
 
       <div className="flex flex-col gap-2">
         {openRequests.map((q) => (
-          <QuoteRequestRow key={q.id} q={q} onStatusChange={handleStatusChange} onDelete={handleDelete} />
+          <QuoteRequestRow
+            key={q.id}
+            q={q}
+            onStatusChange={handleStatusChange}
+            onDateChange={handleDateChange}
+            onDelete={handleDelete}
+          />
         ))}
 
         {closed.length > 0 && (
@@ -105,7 +126,13 @@ export default function QuoteRequestsCard({
             </button>
             {showClosed &&
               closed.map((q) => (
-                <QuoteRequestRow key={q.id} q={q} onStatusChange={handleStatusChange} onDelete={handleDelete} />
+                <QuoteRequestRow
+                  key={q.id}
+                  q={q}
+                  onStatusChange={handleStatusChange}
+                  onDateChange={handleDateChange}
+                  onDelete={handleDelete}
+                />
               ))}
           </>
         )}
@@ -168,12 +195,15 @@ export default function QuoteRequestsCard({
 function QuoteRequestRow({
   q,
   onStatusChange,
+  onDateChange,
   onDelete,
 }: {
   q: QuoteRequest;
   onStatusChange: (id: string, status: PipelineStatus) => void;
+  onDateChange: (id: string, isoDate: string) => void;
   onDelete: (id: string) => void;
 }) {
+  const [editingDate, setEditingDate] = useState(false);
   const title = q.label || q.serviceTypes.map((t) => serviceTypeLabel[t]).join(", ") || "Demande de devis";
 
   return (
@@ -183,6 +213,29 @@ function QuoteRequestRow({
         {q.potentialRevenue != null && (
           <p className="text-xs font-light text-ink/50">{formatRevenue(q.potentialRevenue)}</p>
         )}
+        {q.lastContactDate &&
+          (editingDate ? (
+            <input
+              type="date"
+              autoFocus
+              defaultValue={toDateInputValue(q.lastContactDate)}
+              onBlur={() => setEditingDate(false)}
+              onChange={(e) => {
+                if (!e.target.value) return;
+                setEditingDate(false);
+                onDateChange(q.id, new Date(e.target.value).toISOString());
+              }}
+              className="mt-1 rounded-lg border border-accent-light bg-white px-2 py-1 text-xs text-ink outline-none focus:border-accent"
+            />
+          ) : (
+            <button
+              onClick={() => setEditingDate(true)}
+              title="Modifier la date"
+              className="text-xs font-light text-ink/40 underline-offset-2 hover:underline"
+            >
+              Dernier contact : {new Date(q.lastContactDate).toLocaleDateString("fr-FR")}
+            </button>
+          ))}
       </div>
       <div className="flex items-center gap-2">
         <select

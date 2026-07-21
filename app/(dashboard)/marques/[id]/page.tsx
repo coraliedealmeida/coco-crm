@@ -134,6 +134,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
             serviceTypes: q.serviceTypes,
             status: q.status,
             potentialRevenue: q.potentialRevenue,
+            lastContactDate: q.lastContactDate ? q.lastContactDate.toISOString() : null,
           }))}
         />
       )}

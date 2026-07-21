@@ -31,6 +31,21 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     });
     const computed = computeNextActionDate(newStatus, now, settings);
     if (computed !== undefined) data.nextActionDate = computed;
+  } else if ("lastContactDate" in body) {
+    // Correction manuelle de la date (ex : devis en réalité envoyé plus tôt que la date système
+    // enregistrée automatiquement) : on recalcule la relance à partir de cette date corrigée,
+    // pas de la date du jour, sinon la relance se déclenche trop tard.
+    const correctedDate = new Date(body.lastContactDate);
+    data.lastContactDate = correctedDate;
+
+    const current = await prisma.quoteRequest.findUniqueOrThrow({ where: { id: params.id } });
+    const settings = await prisma.settings.upsert({
+      where: { id: "singleton" },
+      update: {},
+      create: { id: "singleton" },
+    });
+    const computed = computeNextActionDate(current.status, correctedDate, settings);
+    if (computed !== undefined) data.nextActionDate = computed;
   }
 
   const quoteRequest = await prisma.quoteRequest.update({
