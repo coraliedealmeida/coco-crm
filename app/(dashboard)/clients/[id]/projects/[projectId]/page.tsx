@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
 import { projectLabel } from "@/lib/projects";
@@ -42,7 +43,9 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
         <BackButton />
         <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">{projectLabel(project)}</h1>
         <p className="font-light text-ink/60">
-          {project.client.brand.name}
+          <Link href={`/marques/${project.client.brand.id}`} className="hover:text-accent hover:underline">
+            {project.client.brand.name}
+          </Link>
           {project.name && ` · ${serviceTypeLabel[project.serviceType]}`}
         </p>
       </header>
