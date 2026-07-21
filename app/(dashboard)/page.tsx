@@ -87,7 +87,6 @@ export default async function DashboardPage() {
         <span className="text-3xl">🐾</span>
         <div>
           <h1 className="font-sans text-4xl font-extrabold tracking-tight text-ink">Dashboard</h1>
-          <p className="font-light text-ink/50">Tes actions du jour, en un coup d&apos;œil.</p>
         </div>
       </header>
 

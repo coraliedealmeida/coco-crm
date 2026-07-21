@@ -17,8 +17,8 @@ export type ClientRow = {
 type SortKey = "name" | "activeProjectCount" | "lastProjectDate" | "revenue";
 
 export default function ClientsTable({ rows }: { rows: ClientRow[] }) {
-  const [sortKey, setSortKey] = useState<SortKey>("name");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [sortKey, setSortKey] = useState<SortKey>("activeProjectCount");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {

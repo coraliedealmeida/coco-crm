@@ -15,7 +15,6 @@ export default async function ParametresPage() {
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="font-sans text-3xl font-extrabold text-ink">Paramètres</h1>
-        <p className="font-light text-ink/60">Ajuste les délais et les listes personnalisables.</p>
       </header>
 
       <div className="grid grid-cols-2 gap-6">

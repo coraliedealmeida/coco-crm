@@ -23,7 +23,10 @@ export default async function MarquesPage() {
     <div className="flex flex-col gap-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="font-sans text-3xl font-extrabold text-ink">Marques prospects</h1>
+          <Link href="/pipeline" className="text-sm font-semibold text-accent hover:underline">
+            ← Retour au Pipeline
+          </Link>
+          <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">Marques prospects</h1>
           <p className="font-light text-ink/60">Toutes les marques en routine d&apos;engagement ou en pipeline.</p>
         </div>
         <Link

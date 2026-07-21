@@ -52,16 +52,14 @@ export default function ProjectsKanbanBoard({ projects: initialProjects }: { pro
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="flex gap-4 overflow-x-auto pb-4">
         {projectMacroGroups.map((group) => {
-          const groupProjects = projects.filter((p) => macroGroupForStep(p.currentStep) === group.id);
-          const isOffboarding = group.id === "OFFBOARDING";
-          const visible = isOffboarding ? groupProjects.filter((p) => !isProjectDone(p)) : groupProjects;
-          const archived = isOffboarding ? groupProjects.filter(isProjectDone) : [];
+          const groupProjects = projects
+            .filter((p) => macroGroupForStep(p.currentStep) === group.id)
+            .filter((p) => !isProjectDone(p));
           return (
             <Column
               key={group.id}
               group={group}
-              visibleProjects={visible}
-              archivedProjects={archived}
+              visibleProjects={groupProjects}
               onStepChange={updateStep}
             />
           );
@@ -74,16 +72,13 @@ export default function ProjectsKanbanBoard({ projects: initialProjects }: { pro
 function Column({
   group,
   visibleProjects,
-  archivedProjects,
   onStepChange,
 }: {
   group: { id: string; label: string; color: string };
   visibleProjects: BoardProject[];
-  archivedProjects: BoardProject[];
   onStepChange: (projectId: string, step: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: group.id });
-  const [showArchived, setShowArchived] = useState(false);
 
   return (
     <div
@@ -96,28 +91,15 @@ function Column({
         <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: group.color }} />
         <h3 className="text-sm font-extrabold text-ink">{group.label}</h3>
         <span className="ml-auto rounded-full bg-soft px-2 py-0.5 text-xs font-semibold text-ink/50">
-          {visibleProjects.length + archivedProjects.length}
+          {visibleProjects.length}
         </span>
       </div>
       <div className="flex flex-col gap-2.5">
         {visibleProjects.map((p) => (
           <DraggableCard key={p.id} project={p} onStepChange={onStepChange} />
         ))}
-        {visibleProjects.length === 0 && archivedProjects.length === 0 && (
+        {visibleProjects.length === 0 && (
           <p className="px-1 text-xs font-light text-ink/30">⠿ Glisser ici</p>
-        )}
-
-        {archivedProjects.length > 0 && (
-          <>
-            <button
-              onClick={() => setShowArchived((v) => !v)}
-              className="w-fit text-xs font-semibold text-ink/50 hover:text-accent hover:underline"
-            >
-              {showArchived ? "Réduire" : `Voir les projets terminés/archivés (${archivedProjects.length})`}
-            </button>
-            {showArchived &&
-              archivedProjects.map((p) => <DraggableCard key={p.id} project={p} onStepChange={onStepChange} />)}
-          </>
         )}
       </div>
     </div>

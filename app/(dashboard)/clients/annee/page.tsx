@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { projectLabel } from "@/lib/projects";
 import { formatRevenue } from "@/lib/format";
+import StatCard from "@/components/StatCard";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,16 @@ export default async function AnneeProjetsPage({ searchParams }: { searchParams:
 
   const projectsOfYear = projects.filter((p) => (p.completedAt ?? p.createdAt).getFullYear() === selectedYear);
   const totalOfYear = projectsOfYear.reduce((sum, p) => sum + (p.quoteAmount ?? 0), 0);
+  const clientsOfYear = new Set(projectsOfYear.map((p) => p.clientId)).size;
+
+  // Le CA encaissé se base sur la date de paiement réelle des factures (Invoice.paidAt), pas sur
+  // Project.completedAt : un projet terminé fin décembre peut être payé en janvier suivant (et inversement).
+  const paidInvoices = await prisma.invoice.findMany({
+    where: { paidAt: { not: null } },
+  });
+  const revenueEncaisse = paidInvoices
+    .filter((inv) => inv.paidAt!.getFullYear() === selectedYear)
+    .reduce((sum, inv) => sum + inv.amount, 0);
 
   const months = MONTH_LABELS.map((label, index) => ({
     label,
@@ -69,6 +80,12 @@ export default async function AnneeProjetsPage({ searchParams }: { searchParams:
           ))}
         </div>
       </header>
+
+      <div className="grid grid-cols-3 gap-4">
+        <StatCard label="Projets terminés" value={String(projectsOfYear.length)} accent="#8B5CF6" />
+        <StatCard label="CA encaissé" value={formatRevenue(revenueEncaisse)} accent="#CCFF00" />
+        <StatCard label="Clients" value={String(clientsOfYear)} accent="#FB923C" />
+      </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4">
         {months.map((month) => (

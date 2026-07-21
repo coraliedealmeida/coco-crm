@@ -58,7 +58,6 @@ export default async function PipelinePage() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="font-sans text-3xl font-extrabold text-ink">Pipeline prospection</h1>
-          <p className="font-light text-ink/60">Glisse-dépose les marques entre les statuts.</p>
         </div>
         <Link href="/marques" className="text-sm font-semibold text-accent hover:underline">
           Voir la liste des prospects →

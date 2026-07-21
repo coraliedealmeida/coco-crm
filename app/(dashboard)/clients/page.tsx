@@ -43,7 +43,6 @@ export default async function ProjectsPage() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="font-sans text-3xl font-extrabold text-ink">Projets</h1>
-          <p className="font-light text-ink/60">Glisse-dépose les projets entre les statuts.</p>
         </div>
         <Link href="/clients/liste" className="text-sm font-semibold text-accent hover:underline">
           Voir la liste des clients →
