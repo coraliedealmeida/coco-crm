@@ -3,7 +3,7 @@ import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 
 /**
- * Sauvegarde mensuelle : exporte toutes les données en JSON et l'envoie par
+ * Sauvegarde quotidienne : exporte toutes les données en JSON et l'envoie par
  * email en pièce jointe. Sert de filet de sécurité si l'accès à la base de
  * données (Neon) venait à être perdu.
  */
@@ -13,13 +13,32 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   }
 
-  const [brands, contactHistory, reminders, sectors, sources, settings] = await Promise.all([
+  const [
+    brands,
+    contactHistory,
+    reminders,
+    sectors,
+    sources,
+    settings,
+    clients,
+    projects,
+    projectNotes,
+    invoices,
+    services,
+    bundles,
+  ] = await Promise.all([
     prisma.brand.findMany(),
     prisma.contactHistoryEntry.findMany(),
     prisma.reminder.findMany(),
     prisma.sectorOption.findMany(),
     prisma.sourceOption.findMany(),
     prisma.settings.findMany(),
+    prisma.client.findMany(),
+    prisma.project.findMany(),
+    prisma.projectNote.findMany(),
+    prisma.invoice.findMany(),
+    prisma.service.findMany(),
+    prisma.bundle.findMany(),
   ]);
 
   const backup = {
@@ -30,6 +49,12 @@ export async function GET(request: NextRequest) {
     sectors,
     sources,
     settings,
+    clients,
+    projects,
+    projectNotes,
+    invoices,
+    services,
+    bundles,
   };
 
   const json = JSON.stringify(backup, null, 2);
@@ -40,7 +65,7 @@ export async function GET(request: NextRequest) {
     from: "Dashboard COCO <onboarding@resend.dev>",
     to: process.env.NOTIFICATION_EMAIL ?? "",
     subject: `Sauvegarde Dashboard COCO — ${dateLabel}`,
-    html: `<p>Voici la sauvegarde mensuelle automatique de toutes les données de ton CRM (${brands.length} marques, ${contactHistory.length} entrées de suivi, ${reminders.length} rappels).</p><p>Garde ce fichier de côté — il permet de tout reconstituer en cas de problème d'accès à la base de données.</p>`,
+    html: `<p>Voici la sauvegarde quotidienne automatique de toutes les données de ton CRM (${brands.length} marques, ${clients.length} clients, ${projects.length} projets, ${invoices.length} factures).</p><p>Garde ce fichier de côté — il permet de tout reconstituer en cas de problème d'accès à la base de données.</p>`,
     attachments: [
       {
         filename: `sauvegarde-coco-${dateLabel}.json`,
@@ -49,5 +74,5 @@ export async function GET(request: NextRequest) {
     ],
   });
 
-  return NextResponse.json({ sent: true, brandsCount: brands.length });
+  return NextResponse.json({ sent: true, brandsCount: brands.length, projectsCount: projects.length });
 }
