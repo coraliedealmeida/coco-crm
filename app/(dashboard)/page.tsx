@@ -42,7 +42,7 @@ function ProjectRow({
 }
 
 export default async function DashboardPage() {
-  const [brands, settings, dueReminders, projects, pendingInvoices] = await Promise.all([
+  const [brands, settings, dueReminders, projects, pendingInvoices, quoteRequests] = await Promise.all([
     // Les clients créés directement (sans prospection) ne doivent alimenter aucun bloc prospection.
     // { not: "DIRECT" } exclurait aussi les marques sans acquisitionPath renseigné (NULL) — OR explicite.
     prisma.brand.findMany({
@@ -59,6 +59,15 @@ export default async function DashboardPage() {
       where: { sentAt: { not: null }, paidAt: null },
       include: { project: { include: { client: { include: { brand: true } } } } },
       orderBy: { sentAt: "asc" },
+    }),
+    // Demandes de devis pour des clients déjà existants : mêmes relances que les marques
+    // classiques, à faire apparaître dans "Relances du jour" au même titre.
+    prisma.quoteRequest.findMany({
+      where: {
+        status: { in: ["DEVIS_ENVOYE", "RELANCE_DEVIS_1"] },
+        nextActionDate: { lte: new Date() },
+      },
+      include: { client: { include: { brand: true } } },
     }),
   ]);
 
@@ -130,8 +139,8 @@ export default async function DashboardPage() {
             title="Relances du jour"
             icon="⏰"
             accent="#8B5CF6"
-            count={relanceBrands.length + dueReminders.length}
-            isEmpty={relanceBrands.length === 0 && dueReminders.length === 0}
+            count={relanceBrands.length + dueReminders.length + quoteRequests.length}
+            isEmpty={relanceBrands.length === 0 && dueReminders.length === 0 && quoteRequests.length === 0}
             emptyLabel="Aucune relance aujourd'hui."
           >
             {relanceBrands.map((b) => (
@@ -154,6 +163,20 @@ export default async function DashboardPage() {
                   potentialRevenue: r.brand.potentialRevenue,
                 }}
                 statusContent={<span className="text-xs font-semibold text-accent">📌 {r.label}</span>}
+              />
+            ))}
+            {quoteRequests.map((q) => (
+              <BrandCard
+                key={`quote-${q.id}`}
+                brand={{
+                  id: q.client.brand.id,
+                  name: q.client.brand.name,
+                  emoji: q.client.brand.emoji,
+                  engagementDays: null,
+                  potentialRevenue: q.potentialRevenue,
+                  serviceType: q.label || "Demande de devis",
+                }}
+                statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(q.status)}</span>}
               />
             ))}
           </DashboardSection>

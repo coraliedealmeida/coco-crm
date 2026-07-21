@@ -19,10 +19,12 @@ import {
   statusLabel,
   showsEngagementDays,
 } from "@/lib/pipeline";
+import { quoteRequestStatuses } from "@/lib/quoteRequests";
 import { countBusinessDays } from "@/lib/business-days";
 import BrandCard from "@/components/BrandCard";
 
 type Brand = {
+  kind: "brand";
   id: string;
   name: string;
   emoji: string | null;
@@ -36,74 +38,110 @@ type Brand = {
   updatedAt: string;
 };
 
+type QuoteRequestItem = {
+  kind: "quoteRequest";
+  id: string;
+  brandId: string;
+  name: string;
+  emoji: string | null;
+  pipelineStatus: PipelineStatus;
+  lastContactDate: string | null;
+  nextActionDate: string | null;
+  potentialRevenue: number | null;
+  badgeLabel: string | null;
+  updatedAt: string;
+};
+
+type PipelineItem = Brand | QuoteRequestItem;
+
 const RECENT_WIN_DAYS = 30;
 
-function isRecentWin(brand: Brand): boolean {
-  if (brand.pipelineStatus !== "DEVIS_ACCEPTE") return false;
-  const daysSinceUpdate = (Date.now() - new Date(brand.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
+function isRecentWin(item: PipelineItem): boolean {
+  if (item.pipelineStatus !== "DEVIS_ACCEPTE") return false;
+  const daysSinceUpdate = (Date.now() - new Date(item.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
   return daysSinceUpdate <= RECENT_WIN_DAYS;
 }
 
-function splitGroupBrands(group: { id: string }, brands: Brand[]) {
-  const groupBrands = brands.filter((b) => macroGroupForStatus(b.pipelineStatus).id === group.id);
+function splitGroupItems(group: { id: string }, items: PipelineItem[]) {
+  const groupItems = items.filter((it) => macroGroupForStatus(it.pipelineStatus).id === group.id);
   const isClosing = group.id === "CLOSING";
-  const visible = isClosing ? groupBrands.filter(isRecentWin) : groupBrands;
-  const collapsed = isClosing ? groupBrands.filter((b) => !isRecentWin(b)) : [];
+  const visible = isClosing ? groupItems.filter(isRecentWin) : groupItems;
+  const collapsed = isClosing ? groupItems.filter((it) => !isRecentWin(it)) : [];
   return { visible, collapsed };
+}
+
+/** Statut valide le plus pertinent pour faire atterrir un item dans ce groupe macro. */
+function firstStatusForGroup(item: PipelineItem, groupId: string): PipelineStatus | null {
+  const targetGroup = macroGroups.find((g) => g.id === groupId);
+  if (!targetGroup) return null;
+  if (item.kind === "brand") return targetGroup.statuses[0];
+  // Une demande de devis n'a de sens que dans les statuts liés au devis : on ignore le
+  // déplacement s'il n'y a aucun statut valide dans le groupe cible (ex : "À contacter").
+  return quoteRequestStatuses.find((s) => targetGroup.statuses.includes(s)) ?? null;
 }
 
 export default function KanbanBoard({
   brands: initialBrands,
+  quoteRequests: initialQuoteRequests = [],
   greenLightThreshold,
 }: {
-  brands: Brand[];
+  brands: Omit<Brand, "kind">[];
+  quoteRequests?: Omit<QuoteRequestItem, "kind">[];
   greenLightThreshold: number;
 }) {
-  const [brands, setBrands] = useState(initialBrands);
+  const [items, setItems] = useState<PipelineItem[]>([
+    ...initialBrands.map((b) => ({ ...b, kind: "brand" as const })),
+    ...initialQuoteRequests.map((q) => ({ ...q, kind: "quoteRequest" as const })),
+  ]);
   const router = useRouter();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  async function updateStatus(brandId: string, newStatus: PipelineStatus) {
-    setBrands((prev) =>
-      prev.map((b) => (b.id === brandId ? { ...b, pipelineStatus: newStatus } : b))
-    );
-    await fetch(`/api/brands/${brandId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pipelineStatus: newStatus }),
-    });
+  async function updateStatus(item: PipelineItem, newStatus: PipelineStatus) {
+    setItems((prev) => prev.map((it) => (it === item ? { ...it, pipelineStatus: newStatus } : it)));
+    if (item.kind === "brand") {
+      await fetch(`/api/brands/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pipelineStatus: newStatus }),
+      });
+    } else {
+      await fetch(`/api/quote-requests/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+    }
     router.refresh();
   }
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over) return;
-    const brandId = active.id as string;
+    const [kind, id] = (active.id as string).split(":");
     const targetGroupId = over.id as string;
 
-    const brand = brands.find((b) => b.id === brandId);
-    if (!brand) return;
+    const item = items.find((it) => it.kind === kind && it.id === id);
+    if (!item) return;
 
-    const currentGroup = macroGroupForStatus(brand.pipelineStatus);
+    const currentGroup = macroGroupForStatus(item.pipelineStatus);
     if (currentGroup.id === targetGroupId) return;
 
-    const targetGroup = macroGroups.find((g) => g.id === targetGroupId);
-    if (!targetGroup) return;
-
-    await updateStatus(brandId, targetGroup.statuses[0]);
+    const nextStatus = firstStatusForGroup(item, targetGroupId);
+    if (!nextStatus) return;
+    await updateStatus(item, nextStatus);
   }
 
   return (
     <>
       <div className="flex flex-col gap-3 md:hidden">
         {macroGroups.map((group) => {
-          const { visible, collapsed } = splitGroupBrands(group, brands);
+          const { visible, collapsed } = splitGroupItems(group, items);
           return (
             <AccordionSection
               key={group.id}
               group={group}
-              visibleBrands={visible}
-              collapsedBrands={collapsed}
+              visibleItems={visible}
+              collapsedItems={collapsed}
               greenLightThreshold={greenLightThreshold}
               onStatusChange={updateStatus}
             />
@@ -115,13 +153,13 @@ export default function KanbanBoard({
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div className="flex gap-4 overflow-x-auto pb-4">
             {macroGroups.map((group) => {
-              const { visible, collapsed } = splitGroupBrands(group, brands);
+              const { visible, collapsed } = splitGroupItems(group, items);
               return (
                 <Column
                   key={group.id}
                   group={group}
-                  visibleBrands={visible}
-                  collapsedBrands={collapsed}
+                  visibleItems={visible}
+                  collapsedItems={collapsed}
                   greenLightThreshold={greenLightThreshold}
                   onStatusChange={updateStatus}
                 />
@@ -136,16 +174,16 @@ export default function KanbanBoard({
 
 function Column({
   group,
-  visibleBrands,
-  collapsedBrands,
+  visibleItems,
+  collapsedItems,
   greenLightThreshold,
   onStatusChange,
 }: {
   group: { id: string; label: string; color: string };
-  visibleBrands: Brand[];
-  collapsedBrands: Brand[];
+  visibleItems: PipelineItem[];
+  collapsedItems: PipelineItem[];
   greenLightThreshold: number;
-  onStatusChange: (brandId: string, status: PipelineStatus) => void;
+  onStatusChange: (item: PipelineItem, status: PipelineStatus) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: group.id });
   const [showCollapsed, setShowCollapsed] = useState(false);
@@ -161,21 +199,21 @@ function Column({
         <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: group.color }} />
         <h3 className="text-sm font-extrabold text-ink">{group.label}</h3>
         <span className="ml-auto rounded-full bg-soft px-2 py-0.5 text-xs font-semibold text-ink/50">
-          {visibleBrands.length + collapsedBrands.length}
+          {visibleItems.length + collapsedItems.length}
         </span>
       </div>
       <div className="flex flex-col gap-2.5">
-        {visibleBrands.map((b) => (
+        {visibleItems.map((it) => (
           <DraggableCard
-            key={b.id}
-            brand={b}
+            key={`${it.kind}:${it.id}`}
+            item={it}
             groupColor={group.color}
             greenLightThreshold={greenLightThreshold}
             onStatusChange={onStatusChange}
           />
         ))}
 
-        {collapsedBrands.length > 0 && (
+        {collapsedItems.length > 0 && (
           <>
             <button
               onClick={() => setShowCollapsed((v) => !v)}
@@ -183,13 +221,13 @@ function Column({
             >
               {showCollapsed
                 ? "Réduire"
-                : `Voir les marques ghostées/archivées/anciennes (${collapsedBrands.length})`}
+                : `Voir les marques ghostées/archivées/anciennes (${collapsedItems.length})`}
             </button>
             {showCollapsed &&
-              collapsedBrands.map((b) => (
+              collapsedItems.map((it) => (
                 <DraggableCard
-                  key={b.id}
-                  brand={b}
+                  key={`${it.kind}:${it.id}`}
+                  item={it}
                   groupColor={group.color}
                   greenLightThreshold={greenLightThreshold}
                   onStatusChange={onStatusChange}
@@ -204,20 +242,20 @@ function Column({
 
 function AccordionSection({
   group,
-  visibleBrands,
-  collapsedBrands,
+  visibleItems,
+  collapsedItems,
   greenLightThreshold,
   onStatusChange,
 }: {
   group: { id: string; label: string; color: string };
-  visibleBrands: Brand[];
-  collapsedBrands: Brand[];
+  visibleItems: PipelineItem[];
+  collapsedItems: PipelineItem[];
   greenLightThreshold: number;
-  onStatusChange: (brandId: string, status: PipelineStatus) => void;
+  onStatusChange: (item: PipelineItem, status: PipelineStatus) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [showCollapsed, setShowCollapsed] = useState(false);
-  const total = visibleBrands.length + collapsedBrands.length;
+  const total = visibleItems.length + collapsedItems.length;
 
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-softer">
@@ -245,10 +283,10 @@ function AccordionSection({
 
       {open && (
         <div className="flex flex-col gap-2.5 border-t border-soft p-3">
-          {visibleBrands.map((b) => (
+          {visibleItems.map((it) => (
             <CardBody
-              key={b.id}
-              brand={b}
+              key={`${it.kind}:${it.id}`}
+              item={it}
               groupColor={group.color}
               greenLightThreshold={greenLightThreshold}
               onStatusChange={onStatusChange}
@@ -256,7 +294,7 @@ function AccordionSection({
           ))}
           {total === 0 && <p className="px-1 py-1 text-xs font-light text-ink/30">Rien ici.</p>}
 
-          {collapsedBrands.length > 0 && (
+          {collapsedItems.length > 0 && (
             <>
               <button
                 onClick={() => setShowCollapsed((v) => !v)}
@@ -264,13 +302,13 @@ function AccordionSection({
               >
                 {showCollapsed
                   ? "Réduire"
-                  : `Voir les marques ghostées/archivées/anciennes (${collapsedBrands.length})`}
+                  : `Voir les marques ghostées/archivées/anciennes (${collapsedItems.length})`}
               </button>
               {showCollapsed &&
-                collapsedBrands.map((b) => (
+                collapsedItems.map((it) => (
                   <CardBody
-                    key={b.id}
-                    brand={b}
+                    key={`${it.kind}:${it.id}`}
+                    item={it}
                     groupColor={group.color}
                     greenLightThreshold={greenLightThreshold}
                     onStatusChange={onStatusChange}
@@ -285,48 +323,64 @@ function AccordionSection({
 }
 
 function CardBody({
-  brand,
+  item,
   groupColor,
   greenLightThreshold,
   onStatusChange,
 }: {
-  brand: Brand;
+  item: PipelineItem;
   groupColor: string;
   greenLightThreshold: number;
-  onStatusChange: (brandId: string, status: PipelineStatus) => void;
+  onStatusChange: (item: PipelineItem, status: PipelineStatus) => void;
 }) {
-  const days = countBusinessDays(new Date(brand.engagementStartDate), new Date());
+  const days =
+    item.kind === "brand" ? countBusinessDays(new Date(item.engagementStartDate), new Date()) : 0;
+
+  const statusOptions = item.kind === "brand" ? pipelineColumns.map((c) => c.status) : quoteRequestStatuses;
 
   return (
     <BrandCard
       brand={{
-        ...brand,
-        engagementDays: showsEngagementDays(brand.pipelineStatus, days, greenLightThreshold) ? days : null,
+        id: item.kind === "brand" ? item.id : item.brandId,
+        name: item.name,
+        emoji: item.emoji,
+        platform: item.kind === "brand" ? item.platform : undefined,
+        acquisitionPath: item.kind === "brand" ? item.acquisitionPath : "DIRECT",
+        potentialRevenue: item.potentialRevenue,
+        engagementDays:
+          item.kind === "brand" && showsEngagementDays(item.pipelineStatus, days, greenLightThreshold)
+            ? days
+            : null,
+        serviceType: item.kind === "quoteRequest" ? item.badgeLabel : null,
+        href: item.kind === "quoteRequest" ? `/marques/${item.brandId}` : undefined,
       }}
       engagementColor={groupColor}
       statusContent={
         <select
-          value={brand.pipelineStatus}
-          onChange={(e) => onStatusChange(brand.id, e.target.value as PipelineStatus)}
+          value={item.pipelineStatus}
+          onChange={(e) => onStatusChange(item, e.target.value as PipelineStatus)}
           onPointerDown={(e) => e.stopPropagation()}
           className="w-full rounded-lg border border-accent-light bg-soft px-2.5 py-1.5 text-xs font-semibold text-ink outline-none focus:border-accent"
         >
-          {pipelineColumns.map((c) => (
-            <option key={c.status} value={c.status}>
-              {statusLabel(c.status)}
+          {statusOptions.map((status) => (
+            <option key={status} value={status}>
+              {statusLabel(status)}
             </option>
           ))}
         </select>
       }
       footer={
         <div className="mb-2.5 flex flex-col gap-1 border-t border-soft pt-2.5 text-xs font-light text-ink/60">
-          {brand.lastContactDate && (
-            <p>Dernier contact : {new Date(brand.lastContactDate).toLocaleDateString("fr-FR")}</p>
+          {item.kind === "quoteRequest" && (
+            <p className="font-semibold text-accent/80">📋 Demande de devis · client existant</p>
           )}
-          {brand.nextActionDate && (
-            <p>Prochaine action : {new Date(brand.nextActionDate).toLocaleDateString("fr-FR")}</p>
+          {item.lastContactDate && (
+            <p>Dernier contact : {new Date(item.lastContactDate).toLocaleDateString("fr-FR")}</p>
           )}
-          {!brand.lastContactDate && !brand.nextActionDate && <p className="text-ink/30">⠿ Glisser ici</p>}
+          {item.nextActionDate && (
+            <p>Prochaine action : {new Date(item.nextActionDate).toLocaleDateString("fr-FR")}</p>
+          )}
+          {!item.lastContactDate && !item.nextActionDate && <p className="text-ink/30">⠿ Glisser ici</p>}
         </div>
       }
     />
@@ -334,17 +388,19 @@ function CardBody({
 }
 
 function DraggableCard({
-  brand,
+  item,
   groupColor,
   greenLightThreshold,
   onStatusChange,
 }: {
-  brand: Brand;
+  item: PipelineItem;
   groupColor: string;
   greenLightThreshold: number;
-  onStatusChange: (brandId: string, status: PipelineStatus) => void;
+  onStatusChange: (item: PipelineItem, status: PipelineStatus) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: brand.id });
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `${item.kind}:${item.id}`,
+  });
 
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
@@ -359,7 +415,7 @@ function DraggableCard({
       className={`cursor-grab ${isDragging ? "rotate-1 opacity-80" : ""}`}
     >
       <CardBody
-        brand={brand}
+        item={item}
         groupColor={groupColor}
         greenLightThreshold={greenLightThreshold}
         onStatusChange={onStatusChange}

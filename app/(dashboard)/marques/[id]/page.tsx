@@ -9,6 +9,7 @@ import HistoryPanel from "@/components/HistoryPanel";
 import RemindersPanel from "@/components/RemindersPanel";
 import NewProjectButton from "@/components/NewProjectButton";
 import ClientProjectsCard from "@/components/ClientProjectsCard";
+import QuoteRequestsCard from "@/components/QuoteRequestsCard";
 import { formatRevenue } from "@/lib/format";
 import BackButton from "@/components/BackButton";
 
@@ -26,7 +27,10 @@ export default async function BrandDetailPage({ params }: { params: { id: string
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
     prisma.client.findUnique({
       where: { brandId: params.id },
-      include: { projects: { orderBy: { createdAt: "desc" }, include: { invoices: true } } },
+      include: {
+        projects: { orderBy: { createdAt: "desc" }, include: { invoices: true } },
+        quoteRequests: { orderBy: { createdAt: "desc" } },
+      },
     }),
   ]);
 
@@ -116,6 +120,21 @@ export default async function BrandDetailPage({ params }: { params: { id: string
             createdAt: p.createdAt.toISOString(),
           }))}
           newProjectSlot={<NewProjectButton clientId={client.id} />}
+        />
+      )}
+
+      {/* Demandes de devis : uniquement pour un client déjà existant (un nouveau devis pour un
+          prospect classique se gère via le statut de la marque elle-même dans le Pipeline). */}
+      {client && (
+        <QuoteRequestsCard
+          clientId={client.id}
+          quoteRequests={client.quoteRequests.map((q) => ({
+            id: q.id,
+            label: q.label,
+            serviceTypes: q.serviceTypes,
+            status: q.status,
+            potentialRevenue: q.potentialRevenue,
+          }))}
         />
       )}
 

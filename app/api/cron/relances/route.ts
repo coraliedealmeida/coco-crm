@@ -20,29 +20,43 @@ export async function GET(request: NextRequest) {
   }
 
   const now = new Date();
-  const brands = await prisma.brand.findMany({
-    where: {
-      archivedAt: null,
-      pipelineStatus: { in: ["PREMIER_DM", "RELANCE_1", "DEVIS_ENVOYE", "RELANCE_DEVIS_1"] },
-      nextActionDate: { lte: now },
-    },
-  });
+  const [brands, quoteRequests] = await Promise.all([
+    prisma.brand.findMany({
+      where: {
+        archivedAt: null,
+        pipelineStatus: { in: ["PREMIER_DM", "RELANCE_1", "DEVIS_ENVOYE", "RELANCE_DEVIS_1"] },
+        nextActionDate: { lte: now },
+      },
+    }),
+    // Demandes de devis pour des clients déjà existants : mêmes relances qu'une marque classique.
+    prisma.quoteRequest.findMany({
+      where: {
+        status: { in: ["DEVIS_ENVOYE", "RELANCE_DEVIS_1"] },
+        nextActionDate: { lte: now },
+      },
+      include: { client: { include: { brand: true } } },
+    }),
+  ]);
 
-  if (brands.length === 0) {
+  const total = brands.length + quoteRequests.length;
+  if (total === 0) {
     return NextResponse.json({ sent: false, reason: "Aucune relance aujourd'hui." });
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const list = brands
-    .map((b) => `<li><strong>${b.name}</strong> — ${statusLabel(b.pipelineStatus)}</li>`)
-    .join("");
+  const brandItems = brands.map((b) => `<li><strong>${b.name}</strong> — ${statusLabel(b.pipelineStatus)}</li>`);
+  const quoteItems = quoteRequests.map(
+    (q) =>
+      `<li><strong>${q.client.brand.name}</strong> — ${statusLabel(q.status)} (${q.label || "Demande de devis"})</li>`
+  );
+  const list = [...brandItems, ...quoteItems].join("");
 
   await resend.emails.send({
     from: "Dashboard COCO <onboarding@resend.dev>",
     to: process.env.NOTIFICATION_EMAIL ?? "",
-    subject: `${brands.length} relance(s) à faire aujourd'hui`,
-    html: `<p>Voici les marques à relancer aujourd'hui :</p><ul>${list}</ul>`,
+    subject: `${total} relance(s) à faire aujourd'hui`,
+    html: `<p>Voici les relances à faire aujourd'hui :</p><ul>${list}</ul>`,
   });
 
-  return NextResponse.json({ sent: true, count: brands.length });
+  return NextResponse.json({ sent: true, count: total });
 }

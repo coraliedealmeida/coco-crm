@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     invoices,
     services,
     bundles,
+    quoteRequests,
   ] = await Promise.all([
     prisma.brand.findMany(),
     prisma.contactHistoryEntry.findMany(),
@@ -39,6 +40,7 @@ export async function GET(request: NextRequest) {
     prisma.invoice.findMany(),
     prisma.service.findMany(),
     prisma.bundle.findMany(),
+    prisma.quoteRequest.findMany(),
   ]);
 
   const backup = {
@@ -55,6 +57,7 @@ export async function GET(request: NextRequest) {
     invoices,
     services,
     bundles,
+    quoteRequests,
   };
 
   const json = JSON.stringify(backup, null, 2);

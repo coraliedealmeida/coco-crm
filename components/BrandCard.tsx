@@ -6,13 +6,16 @@ export type BrandCardData = {
   id: string;
   name: string;
   emoji?: string | null;
-  platform: "LINKEDIN" | "INSTAGRAM" | "BOTH";
+  /** Absent pour une carte qui ne représente pas une marque (ex : demande de devis) — masque le badge plateforme. */
+  platform?: "LINKEDIN" | "INSTAGRAM" | "BOTH";
   acquisitionPath?: "ROUTINE" | "CONTACT" | "DIRECT" | null;
   potentialRevenue?: number | null;
   engagementDays?: number | null;
   /** Phase 2 — n'affiche rien tant que ces données n'existent pas. */
   paymentStatus?: string | null;
   serviceType?: string | null;
+  /** Cible du lien si différente de /marques/{id} (ex : demande de devis → fiche du client concerné). */
+  href?: string;
 };
 
 /**
@@ -31,9 +34,9 @@ export default function BrandCard({
   engagementColor?: string;
   footer?: React.ReactNode;
 }) {
-  const badge = platformBadge[brand.platform];
-  const showPlatformBadge = brand.acquisitionPath !== "CONTACT" && brand.acquisitionPath !== "DIRECT";
-  const href = `/marques/${brand.id}`;
+  const badge = brand.platform ? platformBadge[brand.platform] : null;
+  const showPlatformBadge = !!badge && brand.acquisitionPath !== "CONTACT" && brand.acquisitionPath !== "DIRECT";
+  const href = brand.href ?? `/marques/${brand.id}`;
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-md transition hover:shadow-lg">
@@ -56,7 +59,7 @@ export default function BrandCard({
         >
           {brand.name}
         </Link>
-        {showPlatformBadge && (
+        {showPlatformBadge && badge && (
           <span
             className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
             style={{ backgroundColor: badge.bg, color: badge.text }}

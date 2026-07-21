@@ -128,11 +128,32 @@ enum ServiceType {
 }
 
 model Client {
-  id        String    @id @default(cuid())
-  brandId   String    @unique
-  brand     Brand     @relation(fields: [brandId], references: [id])
-  createdAt DateTime  @default(now())
-  projects  Project[]
+  id            String         @id @default(cuid())
+  brandId       String         @unique
+  brand         Brand          @relation(fields: [brandId], references: [id])
+  createdAt     DateTime       @default(now())
+  projects      Project[]
+  quoteRequests QuoteRequest[]
+}
+
+// Nouvelle demande de devis pour un client déjà existant (ex : marque créée directement,
+// ou ancien projet déjà terminé), en parallèle d'éventuels autres projets/demandes en cours
+// pour ce même client. Contrairement à Brand, qui ne porte qu'un seul statut de prospection à
+// la fois, plusieurs QuoteRequest peuvent coexister pour un même Client. Réutilise le même enum
+// PipelineStatus que Brand (restreint aux statuts liés au devis dans l'UI, cf. lib/quoteRequests.ts)
+// pour profiter des mêmes libellés/couleurs/calculs de relance.
+model QuoteRequest {
+  id               String         @id @default(cuid())
+  clientId         String
+  client           Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  label            String?
+  serviceTypes     ServiceType[]
+  status           PipelineStatus @default(DEVIS_A_FAIRE)
+  potentialRevenue Float?
+  lastContactDate  DateTime?
+  nextActionDate   DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 }
 
 model Project {

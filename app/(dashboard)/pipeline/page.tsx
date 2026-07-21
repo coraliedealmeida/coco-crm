@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import KanbanBoard from "@/components/KanbanBoard";
 import StatsGrid from "@/components/StatsGrid";
 import { formatRevenue } from "@/lib/format";
+import { serviceTypeLabel } from "@/lib/serviceTypes";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,7 @@ export default async function PipelinePage() {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [brands, settings, appelsGroups, devisGroups] = await Promise.all([
+  const [brands, settings, appelsGroups, devisGroups, quoteRequests] = await Promise.all([
     // Les clients créés directement (bouton "+ Nouveau client", import) n'ont jamais fait de
     // prospection : ils n'ont rien à faire dans le Pipeline, même une fois "Devis accepté".
     // { not: "DIRECT" } exclurait aussi silencieusement les marques sans acquisitionPath
@@ -27,19 +28,25 @@ export default async function PipelinePage() {
       by: ["brandId"],
       where: { type: "Appel découverte", date: { gte: startOfMonth } },
     }),
-    // "Devis envoyé" est loggé automatiquement dans l'historique de contact au moment où la
-    // marque passe au statut DEVIS_ENVOYE (cf. lib/statusEffects.ts) : compter ces entrées du
-    // mois en cours donne les devis réellement envoyés ce mois-ci, plutôt que le nombre de
-    // marques actuellement à ce statut (qui ne bouge pas avec le temps).
     prisma.contactHistoryEntry.groupBy({
       by: ["brandId"],
       where: { type: "Devis envoyé", date: { gte: startOfMonth } },
     }),
+    // Demandes de devis pour des clients déjà existants (ex : marque créée directement) :
+    // apparaissent dans le Pipeline en parallèle du statut de prospection classique.
+    prisma.quoteRequest.findMany({
+      include: { client: { include: { brand: true } } },
+    }),
   ]);
 
   const brandIds = new Set(brands.map((b) => b.id));
+  // Une demande de devis loggue ses évènements ("Devis envoyé"...) sur la marque du client
+  // concerné, même si celle-ci est en acquisitionPath DIRECT (donc absente de `brandIds`) :
+  // on l'ajoute explicitement pour ne pas perdre ces relances légitimes du comptage.
+  const quoteRequestBrandIds = new Set(quoteRequests.map((q) => q.client.brand.id));
+  const eligibleBrandIds = new Set([...brandIds, ...quoteRequestBrandIds]);
   const appelsCount = appelsGroups.filter((g) => brandIds.has(g.brandId)).length;
-  const devisCount = devisGroups.filter((g) => brandIds.has(g.brandId)).length;
+  const devisCount = devisGroups.filter((g) => eligibleBrandIds.has(g.brandId)).length;
 
   const potentialRevenue = brands
     .filter((b) => !b.archivedAt)
@@ -57,6 +64,19 @@ export default async function PipelinePage() {
     engagementStartDate: b.engagementStartDate.toISOString(),
     potentialRevenue: b.potentialRevenue,
     updatedAt: b.updatedAt.toISOString(),
+  }));
+
+  const serializedQuoteRequests = quoteRequests.map((q) => ({
+    id: q.id,
+    brandId: q.client.brand.id,
+    name: q.client.brand.name,
+    emoji: q.client.brand.emoji,
+    pipelineStatus: q.status,
+    lastContactDate: q.lastContactDate?.toISOString() ?? null,
+    nextActionDate: q.nextActionDate?.toISOString() ?? null,
+    potentialRevenue: q.potentialRevenue,
+    badgeLabel: q.serviceTypes.length > 0 ? q.serviceTypes.map((s) => serviceTypeLabel[s]).join(", ") : null,
+    updatedAt: q.updatedAt.toISOString(),
   }));
 
   return (
@@ -78,7 +98,11 @@ export default async function PipelinePage() {
         ]}
       />
 
-      <KanbanBoard brands={serialized} greenLightThreshold={settings.daysBeforeGreenLight} />
+      <KanbanBoard
+        brands={serialized}
+        quoteRequests={serializedQuoteRequests}
+        greenLightThreshold={settings.daysBeforeGreenLight}
+      />
     </div>
   );
 }
