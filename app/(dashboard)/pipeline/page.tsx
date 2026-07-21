@@ -6,12 +6,11 @@ import { formatRevenue } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-const devisInProgressStatuses = ["DEVIS_ENVOYE", "RELANCE_DEVIS_1", "RELANCE_DEVIS_2", "DEVIS_ACCEPTE", "DEVIS_REFUSE"];
-
 export default async function PipelinePage() {
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [brands, settings, appelsGroups] = await Promise.all([
+  const [brands, settings, appelsGroups, devisGroups] = await Promise.all([
     // Les clients créés directement (bouton "+ Nouveau client", import) n'ont jamais fait de
     // prospection : ils n'ont rien à faire dans le Pipeline, même une fois "Devis accepté".
     // { not: "DIRECT" } exclurait aussi silencieusement les marques sans acquisitionPath
@@ -26,18 +25,25 @@ export default async function PipelinePage() {
     // coup, en comparant aux marques déjà chargées (qui excluent les clients "création directe").
     prisma.contactHistoryEntry.groupBy({
       by: ["brandId"],
-      where: { type: "Appel découverte", date: { gte: thirtyDaysAgo } },
+      where: { type: "Appel découverte", date: { gte: startOfMonth } },
+    }),
+    // "Devis envoyé" est loggé automatiquement dans l'historique de contact au moment où la
+    // marque passe au statut DEVIS_ENVOYE (cf. lib/statusEffects.ts) : compter ces entrées du
+    // mois en cours donne les devis réellement envoyés ce mois-ci, plutôt que le nombre de
+    // marques actuellement à ce statut (qui ne bouge pas avec le temps).
+    prisma.contactHistoryEntry.groupBy({
+      by: ["brandId"],
+      where: { type: "Devis envoyé", date: { gte: startOfMonth } },
     }),
   ]);
 
   const brandIds = new Set(brands.map((b) => b.id));
   const appelsCount = appelsGroups.filter((g) => brandIds.has(g.brandId)).length;
+  const devisCount = devisGroups.filter((g) => brandIds.has(g.brandId)).length;
 
   const potentialRevenue = brands
     .filter((b) => !b.archivedAt)
     .reduce((sum, b) => sum + (b.potentialRevenue ?? 0), 0);
-
-  const devisCount = brands.filter((b) => devisInProgressStatuses.includes(b.pipelineStatus)).length;
 
   const serialized = brands.map((b) => ({
     id: b.id,
@@ -67,8 +73,8 @@ export default async function PipelinePage() {
       <StatsGrid
         stats={[
           { label: "Revenu potentiel en cours", value: formatRevenue(potentialRevenue), accent: "#CCFF00" },
-          { label: "Appels découverte (30 derniers jours)", value: String(appelsCount), accent: "#34D399" },
-          { label: "Devis envoyés", value: String(devisCount), accent: "#8B5CF6" },
+          { label: "Appels découverte (ce mois-ci)", value: String(appelsCount), accent: "#34D399" },
+          { label: "Devis envoyés (ce mois-ci)", value: String(devisCount), accent: "#8B5CF6" },
         ]}
       />
 
