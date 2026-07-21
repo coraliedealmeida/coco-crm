@@ -4,6 +4,7 @@ import KanbanBoard from "@/components/KanbanBoard";
 import StatsGrid from "@/components/StatsGrid";
 import { formatRevenue } from "@/lib/format";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
+import { isQuoteRequestClosed } from "@/lib/quoteRequests";
 
 export const dynamic = "force-dynamic";
 
@@ -48,9 +49,14 @@ export default async function PipelinePage() {
   const appelsCount = appelsGroups.filter((g) => brandIds.has(g.brandId)).length;
   const devisCount = devisGroups.filter((g) => eligibleBrandIds.has(g.brandId)).length;
 
-  const potentialRevenue = brands
-    .filter((b) => !b.archivedAt)
-    .reduce((sum, b) => sum + (b.potentialRevenue ?? 0), 0);
+  // Le revenu potentiel en cours doit aussi compter les demandes de devis ouvertes (souvent
+  // sur des marques créées directement, sans potentialRevenue propre) — sinon leur montant
+  // n'apparaît nulle part dans ce total, même tant qu'elles sont activement en négociation.
+  const potentialRevenue =
+    brands.filter((b) => !b.archivedAt).reduce((sum, b) => sum + (b.potentialRevenue ?? 0), 0) +
+    quoteRequests
+      .filter((q) => !isQuoteRequestClosed(q.status))
+      .reduce((sum, q) => sum + (q.potentialRevenue ?? 0), 0);
 
   const serialized = brands.map((b) => ({
     id: b.id,
