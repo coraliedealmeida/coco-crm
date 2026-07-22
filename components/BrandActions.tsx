@@ -132,61 +132,69 @@ export default function BrandActions({ brandId }: { brandId: string }) {
       </div>
 
       {/* Pas maintenant */}
-      {!showPausModal ? (
-        <button
-          onClick={() => setShowPauseModal(true)}
-          className="w-fit text-sm font-semibold text-accent/60 hover:text-accent"
-        >
-          ⏸ Pas maintenant — fixer une date de rappel
-        </button>
-      ) : (
-        <div className="rounded-2xl border border-accent-light bg-soft p-5">
-          <p className="mb-3 text-sm font-extrabold text-ink">Rappel dans combien de temps ?</p>
-          <div className="mb-3 flex flex-wrap gap-2">
-            {[
-              { label: "3 mois", months: 3 },
-              { label: "6 mois", months: 6 },
-              { label: "1 an", months: 12 },
-            ].map(({ label, months }) => (
+      <div className="rounded-3xl bg-white p-6 shadow-soft">
+        <h2 className="mb-4 flex items-center gap-2 font-sans text-base font-extrabold text-ink">
+          <span>⏸</span> Pas maintenant
+        </h2>
+        {!showPausModal ? (
+          <div>
+            <p className="mb-4 text-sm text-ink/50">Mettre cette marque en pause et recevoir un rappel à une date choisie.</p>
+            <button
+              onClick={() => setShowPauseModal(true)}
+              className="rounded-xl bg-soft px-4 py-2.5 text-sm font-semibold text-ink/70 transition hover:bg-accent-light/30 hover:text-ink"
+            >
+              Fixer une date de rappel →
+            </button>
+          </div>
+        ) : (
+          <div>
+            <p className="mb-3 text-sm font-semibold text-ink">Rappel dans combien de temps ?</p>
+            <div className="mb-3 flex flex-wrap gap-2">
+              {[
+                { label: "3 mois", months: 3 },
+                { label: "6 mois", months: 6 },
+                { label: "1 an", months: 12 },
+              ].map(({ label, months }) => (
+                <button
+                  key={months}
+                  onClick={() => setPauseDate(addMonths(new Date(), months))}
+                  className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                    pauseDate === addMonths(new Date(), months)
+                      ? "bg-accent text-white"
+                      : "bg-soft text-ink hover:bg-accent-light/30"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="mb-5 flex items-center gap-2">
+              <span className="text-xs font-light text-ink/50">Ou choisir une date :</span>
+              <input
+                type="date"
+                value={pauseDate}
+                onChange={(e) => setPauseDate(e.target.value)}
+                className="rounded-xl border border-accent-light bg-soft px-3 py-1.5 text-sm text-ink outline-none focus:border-accent"
+              />
+            </div>
+            <div className="flex gap-2">
               <button
-                key={months}
-                onClick={() => setPauseDate(addMonths(new Date(), months))}
-                className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                  pauseDate === addMonths(new Date(), months)
-                    ? "bg-accent text-white"
-                    : "bg-white text-ink hover:bg-accent-light/30"
-                }`}
+                onClick={handlePause}
+                disabled={saving || !pauseDate}
+                className="rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
               >
-                {label}
+                {saving ? "Enregistrement..." : "Confirmer"}
               </button>
-            ))}
+              <button
+                onClick={() => { setShowPauseModal(false); setPauseDate(""); }}
+                className="rounded-xl bg-soft px-5 py-2.5 text-sm font-semibold text-ink/50 hover:text-ink"
+              >
+                Annuler
+              </button>
+            </div>
           </div>
-          <div className="mb-4 flex items-center gap-2">
-            <span className="text-xs font-light text-ink/50">Ou choisir une date :</span>
-            <input
-              type="date"
-              value={pauseDate}
-              onChange={(e) => setPauseDate(e.target.value)}
-              className="rounded-xl border border-accent-light bg-white px-3 py-1.5 text-sm text-ink outline-none focus:border-accent"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handlePause}
-              disabled={saving || !pauseDate}
-              className="rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
-            >
-              {saving ? "Enregistrement..." : "Confirmer"}
-            </button>
-            <button
-              onClick={() => { setShowPauseModal(false); setPauseDate(""); }}
-              className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-ink/50 hover:text-ink"
-            >
-              Annuler
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {deleteError && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{deleteError}</p>}
       <button

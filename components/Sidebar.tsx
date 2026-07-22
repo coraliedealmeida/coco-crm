@@ -11,6 +11,15 @@ const links = [
   { href: "/parametres", label: "Paramètres" },
 ];
 
+// Ordre mobile : Pipeline | Projets | Dashboard (centre) | Ressources | Paramètres
+const mobileLinks = [
+  links[1], // Pipeline
+  links[2], // Projets
+  links[0], // Dashboard (centre, logo seul)
+  links[3], // Ressources
+  links[4], // Paramètres
+];
+
 const mobileIcons: Record<string, React.ReactNode> = {
   "/": (
     // Logo COCO à la place de l'icône maison
@@ -89,20 +98,23 @@ export default function Sidebar() {
 
       {/* ── Mobile bottom nav — pas de top bar ── */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-soft bg-white md:hidden">
-        {links.map((link) => {
+        {mobileLinks.map((link) => {
           const active = pathname === link.href;
+          const isCenter = link.href === "/";
           return (
             <Link
               key={link.href}
               href={link.href}
-              className={`flex flex-1 flex-col items-center gap-1 py-3 text-[9px] font-semibold transition ${
+              className={`flex flex-1 flex-col items-center gap-1 py-3 transition ${
                 active ? "text-accent" : "text-ink/40"
               }`}
             >
-              <span className={`transition ${active ? "scale-110" : ""}`}>
+              <span className={`transition ${active ? "scale-110" : ""} ${isCenter ? "scale-125" : ""}`}>
                 {mobileIcons[link.href]}
               </span>
-              {link.label}
+              {!isCenter && (
+                <span className="text-[9px] font-semibold leading-none">{link.label}</span>
+              )}
             </Link>
           );
         })}
