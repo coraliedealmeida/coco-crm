@@ -67,6 +67,8 @@ export function computeNextActionDate(
       return addBusinessDays(now, settings.daysBeforeDevisRelance2);
     case "RELANCE_DEVIS_2":
       return null;
+    case "PAS_MAINTENANT":
+      return null;
     default:
       return undefined;
   }

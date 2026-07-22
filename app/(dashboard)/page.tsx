@@ -6,7 +6,9 @@ import { serviceTypeLabel } from "@/lib/serviceTypes";
 import { isProjectActive, projectLabel } from "@/lib/projects";
 import DashboardSection from "@/components/DashboardSection";
 import BrandCard from "@/components/BrandCard";
+import RelaunchButton from "@/components/RelaunchButton";
 import { formatRevenue } from "@/lib/format";
+import { dueBadgeFromDate, dueBadgeFromThreshold, dueSortKey } from "@/lib/dueStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +44,7 @@ function ProjectRow({
 }
 
 export default async function DashboardPage() {
-  const [brands, settings, dueReminders, projects, pendingInvoices, quoteRequests] = await Promise.all([
+  const [brands, settings, dueReminders, projects, pendingInvoices, quoteRequests, reconsiderBrands] = await Promise.all([
     // Les clients créés directement (sans prospection) ne doivent alimenter aucun bloc prospection.
     // { not: "DIRECT" } exclurait aussi les marques sans acquisitionPath renseigné (NULL) — OR explicite.
     prisma.brand.findMany({
@@ -78,26 +80,104 @@ export default async function DashboardPage() {
       },
       include: { client: { include: { brand: true } } },
     }),
+    prisma.brand.findMany({
+      where: {
+        pipelineStatus: "PAS_MAINTENANT",
+        reconsiderDate: { lte: new Date() },
+        archivedAt: null,
+      },
+      orderBy: { reconsiderDate: "asc" },
+    }),
   ]);
 
   const now = new Date();
 
   const routineBrands = brands
     .filter((b) => b.pipelineStatus === "ROUTINE_ENGAGEMENT")
-    .map((b) => ({ ...b, days: countBusinessDays(b.engagementStartDate, now) }))
-    .sort((a, b) => b.days - a.days);
+    .map((b) => {
+      const days = countBusinessDays(b.engagementStartDate, now);
+      return { ...b, days, dueBadge: dueBadgeFromThreshold(days, settings.daysBeforeGreenLight) };
+    })
+    .sort((a, b) => dueSortKey(a.dueBadge) - dueSortKey(b.dueBadge) || b.days - a.days);
 
   const greenLightBrands = routineBrands.filter((b) => b.days >= settings.daysBeforeGreenLight);
 
-  const relanceBrands = brands.filter(
-    (b) =>
-      ["PREMIER_DM", "RELANCE_1", "DEVIS_ENVOYE", "RELANCE_DEVIS_1"].includes(b.pipelineStatus) &&
-      b.nextActionDate &&
-      b.nextActionDate <= now
-  );
+  const relanceBrands = brands
+    .filter(
+      (b) =>
+        ["PREMIER_DM", "RELANCE_1", "DEVIS_ENVOYE", "RELANCE_DEVIS_1"].includes(b.pipelineStatus) &&
+        b.nextActionDate &&
+        b.nextActionDate <= now
+    )
+    .map((b) => ({ ...b, dueBadge: dueBadgeFromDate(b.nextActionDate, now) }))
+    .sort((a, b) => dueSortKey(a.dueBadge) - dueSortKey(b.dueBadge));
 
   const projectsEnCours = projects.filter(isProjectActive);
   const aFacturer = projects.filter((p) => p.currentStep === "Facture à faire");
+
+  // Les 3 sources de "Relances du jour" (marques, rappels, demandes de devis) sont fusionnées
+  // et triées ensemble par gravité de retard, pour un seul ordre cohérent dans le bloc.
+  const relanceItems = [
+    ...relanceBrands.map((b) => ({
+      key: `relance-${b.id}`,
+      sortKey: dueSortKey(b.dueBadge),
+      node: (
+        <BrandCard
+          key={`relance-${b.id}`}
+          brand={{ ...b, engagementDays: null, potentialRevenue: b.potentialRevenue }}
+          dueBadge={b.dueBadge}
+          statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
+        />
+      ),
+    })),
+    ...dueReminders.map((r) => {
+      const target = r.brand ?? r.project!.client.brand;
+      const href = r.project ? `/clients/${r.project.clientId}/projects/${r.project.id}` : undefined;
+      const dueBadge = dueBadgeFromDate(r.date, now);
+      return {
+        key: `reminder-${r.id}`,
+        sortKey: dueSortKey(dueBadge),
+        node: (
+          <BrandCard
+            key={`reminder-${r.id}`}
+            brand={{
+              id: target.id,
+              name: target.name,
+              emoji: target.emoji,
+              engagementDays: null,
+              potentialRevenue: r.brand?.potentialRevenue,
+              serviceType: r.project ? projectLabel(r.project) : null,
+              href,
+            }}
+            dueBadge={dueBadge}
+            statusContent={<span className="text-xs font-semibold text-accent">📌 {r.label}</span>}
+          />
+        ),
+      };
+    }),
+    ...quoteRequests.map((q) => {
+      const dueBadge = dueBadgeFromDate(q.nextActionDate, now);
+      return {
+        key: `quote-${q.id}`,
+        sortKey: dueSortKey(dueBadge),
+        node: (
+          <BrandCard
+            key={`quote-${q.id}`}
+            brand={{
+              id: q.client.brand.id,
+              name: q.client.brand.name,
+              emoji: q.client.brand.emoji,
+              engagementDays: null,
+              potentialRevenue: q.potentialRevenue,
+              serviceType: q.label || "Demande de devis",
+            }}
+            dueBadge={dueBadge}
+            statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(q.status)}</span>}
+          />
+        ),
+      };
+    }),
+  ].sort((a, b) => a.sortKey - b.sortKey);
 
   return (
     <div className="flex flex-col gap-8">
@@ -122,6 +202,7 @@ export default async function DashboardPage() {
               <BrandCard
                 key={b.id}
                 brand={{ ...b, engagementDays: b.days, potentialRevenue: b.potentialRevenue }}
+                dueBadge={b.dueBadge}
                 statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
               />
             ))}
@@ -139,6 +220,7 @@ export default async function DashboardPage() {
               <BrandCard
                 key={b.id}
                 brand={{ ...b, engagementDays: b.days, potentialRevenue: b.potentialRevenue }}
+                dueBadge={b.dueBadge}
                 statusContent={<span className="text-xs font-semibold text-accent">🟢 Prête pour le premier DM</span>}
               />
             ))}
@@ -152,53 +234,35 @@ export default async function DashboardPage() {
             isEmpty={relanceBrands.length === 0 && dueReminders.length === 0 && quoteRequests.length === 0}
             emptyLabel="Aucune relance aujourd'hui."
           >
-            {relanceBrands.map((b) => (
-              <BrandCard
-                key={`relance-${b.id}`}
-                brand={{
-                  ...b,
-                  engagementDays: null,
-                  potentialRevenue: b.potentialRevenue,
-                }}
-                statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
-              />
-            ))}
-            {dueReminders.map((r) => {
-              const target = r.brand ?? r.project!.client.brand;
-              const href = r.project ? `/clients/${r.project.clientId}/projects/${r.project.id}` : undefined;
-              return (
-                <BrandCard
-                  key={`reminder-${r.id}`}
-                  brand={{
-                    id: target.id,
-                    name: target.name,
-                    emoji: target.emoji,
-                    engagementDays: null,
-                    potentialRevenue: r.brand?.potentialRevenue,
-                    serviceType: r.project ? projectLabel(r.project) : null,
-                    href,
-                  }}
-                  statusContent={<span className="text-xs font-semibold text-accent">📌 {r.label}</span>}
-                />
-              );
-            })}
-            {quoteRequests.map((q) => (
-              <BrandCard
-                key={`quote-${q.id}`}
-                brand={{
-                  id: q.client.brand.id,
-                  name: q.client.brand.name,
-                  emoji: q.client.brand.emoji,
-                  engagementDays: null,
-                  potentialRevenue: q.potentialRevenue,
-                  serviceType: q.label || "Demande de devis",
-                }}
-                statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(q.status)}</span>}
-              />
-            ))}
+            {relanceItems.map((item) => item.node)}
           </DashboardSection>
         </div>
       </section>
+
+      {reconsiderBrands.length > 0 && (
+        <section>
+          <h2 className="mb-4 font-sans text-lg font-extrabold text-ink">À reconsidérer</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {reconsiderBrands.map((b) => (
+              <div key={b.id} className="rounded-2xl bg-white p-4 shadow-md">
+                <div className="mb-1 flex items-center gap-2">
+                  {b.emoji && <span className="text-base">{b.emoji}</span>}
+                  <span className="text-sm font-extrabold text-ink">{b.name}</span>
+                  <span className="ml-auto rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ backgroundColor: "#C4B5FD" }}>
+                    Pas maintenant
+                  </span>
+                </div>
+                {b.reconsiderDate && (
+                  <p className="mb-1 text-xs font-light text-ink/50">
+                    Rappel prévu : {new Date(b.reconsiderDate).toLocaleDateString("fr-FR")}
+                  </p>
+                )}
+                <RelaunchButton brandId={b.id} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="mb-4 font-sans text-lg font-extrabold text-ink">Suivi projets</h2>

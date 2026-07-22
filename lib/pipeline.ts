@@ -15,6 +15,7 @@ export const pipelineColumns: { status: PipelineStatus; label: string; color: st
   { status: "DEVIS_ACCEPTE", label: "Devis accepté", color: "#CCFF00" },
   { status: "DEVIS_REFUSE", label: "Devis refusé", color: "#EF4444" },
   { status: "ARCHIVE", label: "Archivé", color: "#D1D5DB" },
+  { status: "PAS_MAINTENANT", label: "Pas maintenant", color: "#C4B5FD" },
 ];
 
 export function statusLabel(status: PipelineStatus): string {
@@ -61,6 +62,12 @@ export const macroGroups: MacroGroup[] = [
     label: "Closing",
     color: "#CCFF00",
     statuses: ["DEVIS_ACCEPTE", "GHOSTE", "DEVIS_REFUSE", "ARCHIVE"],
+  },
+  {
+    id: "EN_PAUSE",
+    label: "En pause",
+    color: "#C4B5FD",
+    statuses: ["PAS_MAINTENANT"],
   },
 ];
 

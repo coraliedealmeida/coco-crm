@@ -41,6 +41,7 @@ enum PipelineStatus {
   DEVIS_ACCEPTE
   DEVIS_REFUSE
   ARCHIVE
+  PAS_MAINTENANT
 }
 
 model Brand {
@@ -62,6 +63,7 @@ model Brand {
   potentialRevenue    Float?
   discoveryNotes      Json?
   archivedAt          DateTime?
+  reconsiderDate      DateTime?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 

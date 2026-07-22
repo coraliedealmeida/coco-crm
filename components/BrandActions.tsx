@@ -17,6 +17,12 @@ const actionTypes = [
   "Note",
 ];
 
+function addMonths(date: Date, months: number): string {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function BrandActions({ brandId }: { brandId: string }) {
   const router = useRouter();
   const [type, setType] = useState(actionTypes[0]);
@@ -24,6 +30,22 @@ export default function BrandActions({ brandId }: { brandId: string }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [showPausModal, setShowPauseModal] = useState(false);
+  const [pauseDate, setPauseDate] = useState("");
+
+  async function handlePause() {
+    if (!pauseDate) return;
+    setSaving(true);
+    await fetch(`/api/brands/${brandId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pipelineStatus: "PAS_MAINTENANT", reconsiderDate: pauseDate }),
+    });
+    setSaving(false);
+    setShowPauseModal(false);
+    setPauseDate("");
+    router.refresh();
+  }
 
   async function handleLog() {
     setSaving(true);
@@ -108,6 +130,63 @@ export default function BrandActions({ brandId }: { brandId: string }) {
           </button>
         </div>
       </div>
+
+      {/* Pas maintenant */}
+      {!showPausModal ? (
+        <button
+          onClick={() => setShowPauseModal(true)}
+          className="w-fit text-sm font-semibold text-accent/60 hover:text-accent"
+        >
+          ⏸ Pas maintenant — fixer une date de rappel
+        </button>
+      ) : (
+        <div className="rounded-2xl border border-accent-light bg-soft p-5">
+          <p className="mb-3 text-sm font-extrabold text-ink">Rappel dans combien de temps ?</p>
+          <div className="mb-3 flex flex-wrap gap-2">
+            {[
+              { label: "3 mois", months: 3 },
+              { label: "6 mois", months: 6 },
+              { label: "1 an", months: 12 },
+            ].map(({ label, months }) => (
+              <button
+                key={months}
+                onClick={() => setPauseDate(addMonths(new Date(), months))}
+                className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                  pauseDate === addMonths(new Date(), months)
+                    ? "bg-accent text-white"
+                    : "bg-white text-ink hover:bg-accent-light/30"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="mb-4 flex items-center gap-2">
+            <span className="text-xs font-light text-ink/50">Ou choisir une date :</span>
+            <input
+              type="date"
+              value={pauseDate}
+              onChange={(e) => setPauseDate(e.target.value)}
+              className="rounded-xl border border-accent-light bg-white px-3 py-1.5 text-sm text-ink outline-none focus:border-accent"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handlePause}
+              disabled={saving || !pauseDate}
+              className="rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+            >
+              {saving ? "Enregistrement..." : "Confirmer"}
+            </button>
+            <button
+              onClick={() => { setShowPauseModal(false); setPauseDate(""); }}
+              className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-ink/50 hover:text-ink"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
 
       {deleteError && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{deleteError}</p>}
       <button
