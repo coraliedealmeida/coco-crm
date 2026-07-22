@@ -7,6 +7,8 @@ import { isProjectActive, projectLabel } from "@/lib/projects";
 import DashboardSection from "@/components/DashboardSection";
 import BrandCard from "@/components/BrandCard";
 import RelaunchButton from "@/components/RelaunchButton";
+import GuidedSession from "@/components/GuidedSession";
+import type { SessionBrand } from "@/components/GuidedSession";
 import { formatRevenue } from "@/lib/format";
 import { dueBadgeFromDate, dueBadgeFromThreshold, dueSortKey } from "@/lib/dueStatus";
 
@@ -112,6 +114,43 @@ export default async function DashboardPage() {
     .map((b) => ({ ...b, dueBadge: dueBadgeFromDate(b.nextActionDate, now) }))
     .sort((a, b) => dueSortKey(a.dueBadge) - dueSortKey(b.dueBadge));
 
+  // Données pour la session guidée
+  const sessionMessageBrands: SessionBrand[] = [
+    ...greenLightBrands.map((b) => ({
+      id: b.id,
+      name: b.name,
+      emoji: b.emoji,
+      platform: b.platform,
+      pipelineStatus: b.pipelineStatus,
+      contactName: b.contactName,
+      sector: b.sector,
+      notes: b.notes,
+    })),
+    ...relanceBrands
+      .filter((b) => ["PREMIER_DM", "RELANCE_1"].includes(b.pipelineStatus))
+      .map((b) => ({
+        id: b.id,
+        name: b.name,
+        emoji: b.emoji,
+        platform: b.platform,
+        pipelineStatus: b.pipelineStatus,
+        contactName: b.contactName,
+        sector: b.sector,
+        notes: b.notes,
+      })),
+  ];
+  // Déduplique (greenLight est déjà dans routineBrands mais pipelineStatus ROUTINE_ENGAGEMENT)
+  const sessionRoutineBrands: SessionBrand[] = routineBrands.map((b) => ({
+    id: b.id,
+    name: b.name,
+    emoji: b.emoji,
+    platform: b.platform,
+    pipelineStatus: b.pipelineStatus,
+    contactName: b.contactName,
+    sector: b.sector,
+    notes: b.notes,
+  }));
+
   const projectsEnCours = projects.filter(isProjectActive);
   const aFacturer = projects.filter((p) => p.currentStep === "Facture à faire");
 
@@ -181,11 +220,12 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <header className="flex items-center gap-3">
-        <span className="text-3xl">🐾</span>
-        <div>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">🐾</span>
           <h1 className="font-sans text-4xl font-extrabold tracking-tight text-ink">Dashboard</h1>
         </div>
+        <GuidedSession messageBrands={sessionMessageBrands} routineBrands={sessionRoutineBrands} />
       </header>
 
       <section>
