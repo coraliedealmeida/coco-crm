@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { avatarColor, initials, platformBadge } from "@/lib/pipeline";
 import { formatRevenue } from "@/lib/format";
+import DueBadge from "@/components/DueBadge";
+import type { DueBadge as DueBadgeData } from "@/lib/dueStatus";
 
 export type BrandCardData = {
   id: string;
@@ -28,11 +30,14 @@ export default function BrandCard({
   statusContent,
   engagementColor = "#8B5CF6",
   footer,
+  dueBadge,
 }: {
   brand: BrandCardData;
   statusContent: React.ReactNode;
   engagementColor?: string;
   footer?: React.ReactNode;
+  /** Badge "Aujourd'hui"/"En retard de X jours" calculé par l'appelant (cf. lib/dueStatus.ts). */
+  dueBadge?: DueBadgeData | null;
 }) {
   const badge = brand.platform ? platformBadge[brand.platform] : null;
   const showPlatformBadge = !!badge && brand.acquisitionPath !== "CONTACT" && brand.acquisitionPath !== "DIRECT";
@@ -74,6 +79,7 @@ export default function BrandCard({
       {footer}
 
       <div className="mt-3 flex flex-wrap gap-1.5">
+        <DueBadge badge={dueBadge} />
         {brand.potentialRevenue != null && (
           <span className="rounded-full bg-cta/30 px-2.5 py-1 text-xs font-semibold text-ink">
             💰 {formatRevenue(brand.potentialRevenue)}

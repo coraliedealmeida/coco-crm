@@ -21,6 +21,7 @@ import {
 } from "@/lib/pipeline";
 import { quoteRequestStatuses } from "@/lib/quoteRequests";
 import { countBusinessDays } from "@/lib/business-days";
+import { dueBadgeFromDate } from "@/lib/dueStatus";
 import BrandCard from "@/components/BrandCard";
 
 type Brand = {
@@ -337,9 +338,11 @@ function CardBody({
     item.kind === "brand" ? countBusinessDays(new Date(item.engagementStartDate), new Date()) : 0;
 
   const statusOptions = item.kind === "brand" ? pipelineColumns.map((c) => c.status) : quoteRequestStatuses;
+  const dueBadge = dueBadgeFromDate(item.nextActionDate, new Date());
 
   return (
     <BrandCard
+      dueBadge={dueBadge}
       brand={{
         id: item.kind === "brand" ? item.id : item.brandId,
         name: item.name,

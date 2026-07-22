@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { avatarColor, initials, statusLabel, nextAutomaticActionLabel } from "@/lib/pipeline";
 import { paidTotal } from "@/lib/projects";
+import { dueBadgeFromDate } from "@/lib/dueStatus";
+import DueBadge from "@/components/DueBadge";
 import BrandForm from "@/components/BrandForm";
 import BrandActions from "@/components/BrandActions";
 import HistoryPanel from "@/components/HistoryPanel";
@@ -50,6 +52,8 @@ export default async function BrandDetailPage({ params }: { params: { id: string
     : brand.nextActionDate
       ? `${autoActionLabel ?? "Action prévue"} — ${new Date(brand.nextActionDate).toLocaleDateString("fr-FR")}`
       : (autoActionLabel ?? "Aucune prévue");
+  const nextActionDueDate = nextReminder ? nextReminder.date : brand.nextActionDate;
+  const nextActionBadge = dueBadgeFromDate(nextActionDueDate, new Date());
 
   const projects = client?.projects ?? [];
   const revenue = projects.reduce((sum, p) => sum + paidTotal(p.invoices), 0);
@@ -90,7 +94,14 @@ export default async function BrandDetailPage({ params }: { params: { id: string
           accent="#C4B5FD"
         />
         <InfoTile icon="🎯" label="Statut actuel" value={statusLabel(brand.pipelineStatus)} accent="#60A5FA" />
-        <InfoTile icon="⏰" label="Prochaine action" value={nextActionLabel} accent="#8B5CF6" />
+        <InfoTile icon="⏰" label="Prochaine action" accent="#8B5CF6">
+          <p className="mt-2 font-sans text-xl font-extrabold leading-tight text-accent">{nextActionLabel}</p>
+          {nextActionBadge && (
+            <div className="mt-2">
+              <DueBadge badge={nextActionBadge} />
+            </div>
+          )}
+        </InfoTile>
         <InfoTile
           icon="💰"
           label={hasProjects ? "CA généré" : "Revenu potentiel"}
