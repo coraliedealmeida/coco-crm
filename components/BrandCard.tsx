@@ -42,54 +42,41 @@ export default function BrandCard({
   const href = brand.href ?? `/marques/${brand.id}`;
 
   if (compact) {
-    const hasTags = showPlatformBadge || brand.engagementDays != null || brand.potentialRevenue != null || statusContent;
     return (
-      <div className="rounded-xl bg-soft px-4 py-3 transition hover:bg-accent-light/30">
-        <div className="flex items-center gap-3">
+      <div className="rounded-xl bg-soft px-3 py-2.5 transition hover:bg-accent-light/30">
+        <div className="flex items-center gap-1.5">
           {brand.emoji ? (
-            <span className="shrink-0 text-base">{brand.emoji}</span>
+            <span className="shrink-0 text-sm">{brand.emoji}</span>
           ) : (
             <div
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white"
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-extrabold text-white"
               style={{ backgroundColor: avatarColor(brand.name) }}
             >
               {initials(brand.name)}
             </div>
           )}
-          <Link href={href} className="min-w-0 flex-1 text-sm font-semibold text-ink hover:underline">
+          <Link href={href} className="min-w-0 flex-1 truncate text-sm font-semibold text-ink hover:underline">
             {brand.name}
           </Link>
-          <DueBadge badge={dueBadge} />
+          {showPlatformBadge && badge && (
+            <span
+              className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+              style={{ backgroundColor: badge.bg, color: badge.text }}
+            >
+              {badge.icon}
+            </span>
+          )}
+          {brand.engagementDays != null && (
+            <span
+              className="shrink-0 rounded-full bg-white px-1.5 py-0.5 text-[10px] font-semibold"
+              style={{ color: engagementColor === "#CCFF00" ? "#1D1C1F" : engagementColor }}
+            >
+              🔥J{brand.engagementDays}
+            </span>
+          )}
+          <DueBadge badge={dueBadge} compact />
         </div>
-        {hasTags && (
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-7">
-            {showPlatformBadge && badge && (
-              <span
-                className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                style={{ backgroundColor: badge.bg, color: badge.text }}
-              >
-                {badge.icon}
-              </span>
-            )}
-            {brand.engagementDays != null && (
-              <span
-                className="rounded-full bg-soft px-2 py-0.5 text-[11px] font-semibold"
-                style={{ color: engagementColor === "#CCFF00" ? "#1D1C1F" : engagementColor }}
-              >
-                🔥 J{brand.engagementDays}
-              </span>
-            )}
-            {brand.potentialRevenue != null && (
-              <span className="rounded-full bg-cta/30 px-2 py-0.5 text-[11px] font-semibold text-ink">
-                💰 {formatRevenue(brand.potentialRevenue)}
-              </span>
-            )}
-            {statusContent && (
-              <span className="text-[11px] text-ink/50">{statusContent}</span>
-            )}
-          </div>
-        )}
-        {footer && <div className="mt-2 pl-7">{footer}</div>}
+        {footer && <div className="mt-2 pl-6">{footer}</div>}
       </div>
     );
   }

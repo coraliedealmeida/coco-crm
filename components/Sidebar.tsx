@@ -97,7 +97,7 @@ export default function Sidebar() {
       </aside>
 
       {/* ── Mobile bottom nav — pas de top bar ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-soft bg-white md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-soft bg-white px-3 md:hidden">
         {mobileLinks.map((link) => {
           const active = pathname === link.href;
           const isCenter = link.href === "/";

@@ -18,8 +18,6 @@ export default async function ParametresPage() {
         <h1 className="font-sans text-3xl font-extrabold text-ink">Paramètres</h1>
       </header>
 
-      <LogoutButton />
-
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <SettingsForm
           initial={{
@@ -38,6 +36,7 @@ export default async function ParametresPage() {
           <OptionsManager title="Sources" endpoint="/api/options/sources" initial={sources} />
         </div>
       </div>
+      <LogoutButton />
     </div>
   );
 }
