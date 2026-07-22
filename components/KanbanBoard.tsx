@@ -222,7 +222,7 @@ function Column({
             >
               {showCollapsed
                 ? "Réduire"
-                : `Voir les marques ghostées/archivées/anciennes (${collapsedItems.length})`}
+                : `Voir les marques archivées (${collapsedItems.length})`}
             </button>
             {showCollapsed &&
               collapsedItems.map((it) => (
@@ -303,7 +303,7 @@ function AccordionSection({
               >
                 {showCollapsed
                   ? "Réduire"
-                  : `Voir les marques ghostées/archivées/anciennes (${collapsedItems.length})`}
+                  : `Voir les marques archivées (${collapsedItems.length})`}
               </button>
               {showCollapsed &&
                 collapsedItems.map((it) => (

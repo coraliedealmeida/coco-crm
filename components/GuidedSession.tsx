@@ -475,14 +475,24 @@ export default function GuidedSession({ messageBrands, routineBrands }: Props) {
   const [step, setStep] = useState(1);
   const [sentCount, setSentCount] = useState(0);
   const [engagedCount, setEngagedCount] = useState(0);
+  // Données gelées au démarrage de la session pour éviter que router.refresh() les vide en cours de route
+  const [frozen, setFrozen] = useState<{ msg: SessionBrand[]; routine: SessionBrand[] } | null>(null);
 
-  const skipMessages = messageBrands.length === 0;
+  const activeMsg = frozen?.msg ?? [];
+  const activeRoutine = frozen?.routine ?? [];
+  const skipMessages = activeMsg.length === 0;
+
+  function handleOpen() {
+    setFrozen({ msg: messageBrands, routine: routineBrands });
+    setOpen(true);
+  }
 
   function handleClose() {
     setOpen(false);
     setStep(1);
     setSentCount(0);
     setEngagedCount(0);
+    setFrozen(null);
   }
 
   const handleStart = useCallback(() => {
@@ -506,7 +516,7 @@ export default function GuidedSession({ messageBrands, routineBrands }: Props) {
   if (!open) {
     return (
       <button
-        onClick={() => setOpen(true)}
+        onClick={handleOpen}
         className="rounded-2xl bg-cta px-6 py-3 text-sm font-extrabold text-ink shadow-soft transition hover:opacity-90"
       >
         ▶ Démarrer ma session du jour
@@ -531,19 +541,19 @@ export default function GuidedSession({ messageBrands, routineBrands }: Props) {
 
         {step === 1 && (
           <Step1
-            messageBrands={messageBrands}
-            routineBrands={routineBrands}
+            messageBrands={activeMsg}
+            routineBrands={activeRoutine}
             onStart={handleStart}
           />
         )}
-        {step === 2 && messageBrands.length > 0 && (
-          <Step2 brands={messageBrands} onDone={handleStep2Done} />
+        {step === 2 && activeMsg.length > 0 && (
+          <Step2 brands={activeMsg} onDone={handleStep2Done} />
         )}
-        {step === 3 && messageBrands.length > 0 && (
-          <Step3 brands={messageBrands} onDone={handleStep3Done} />
+        {step === 3 && (
+          <Step3 brands={activeMsg} onDone={handleStep3Done} />
         )}
         {step === 4 && (
-          <Step4 brands={routineBrands} onDone={handleStep4Done} />
+          <Step4 brands={activeRoutine} onDone={handleStep4Done} />
         )}
         {step === 5 && (
           <Step5 sentCount={sentCount} engagedCount={engagedCount} onClose={handleClose} />

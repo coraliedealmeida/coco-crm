@@ -163,9 +163,10 @@ export default async function DashboardPage() {
       node: (
         <BrandCard
           key={`relance-${b.id}`}
+          compact
           brand={{ ...b, engagementDays: null, potentialRevenue: b.potentialRevenue }}
           dueBadge={b.dueBadge}
-          statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
+          statusContent={<span>{statusLabel(b.pipelineStatus)}</span>}
         />
       ),
     })),
@@ -179,6 +180,7 @@ export default async function DashboardPage() {
         node: (
           <BrandCard
             key={`reminder-${r.id}`}
+            compact
             brand={{
               id: target.id,
               name: target.name,
@@ -189,7 +191,7 @@ export default async function DashboardPage() {
               href,
             }}
             dueBadge={dueBadge}
-            statusContent={<span className="text-xs font-semibold text-accent">📌 {r.label}</span>}
+            statusContent={<span className="text-accent">📌 {r.label}</span>}
           />
         ),
       };
@@ -202,6 +204,7 @@ export default async function DashboardPage() {
         node: (
           <BrandCard
             key={`quote-${q.id}`}
+            compact
             brand={{
               id: q.client.brand.id,
               name: q.client.brand.name,
@@ -211,7 +214,29 @@ export default async function DashboardPage() {
               serviceType: q.label || "Demande de devis",
             }}
             dueBadge={dueBadge}
-            statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(q.status)}</span>}
+            statusContent={<span>{statusLabel(q.status)}</span>}
+          />
+        ),
+      };
+    }),
+    // Marques "Pas maintenant" dont la date de rappel est atteinte — fusionnées dans Relances du jour
+    ...reconsiderBrands.map((b) => {
+      const dueBadge = dueBadgeFromDate(b.reconsiderDate, now);
+      return {
+        key: `reconsider-${b.id}`,
+        sortKey: dueSortKey(dueBadge),
+        node: (
+          <BrandCard
+            key={`reconsider-${b.id}`}
+            compact
+            brand={{ id: b.id, name: b.name, emoji: b.emoji, engagementDays: null, potentialRevenue: b.potentialRevenue }}
+            dueBadge={dueBadge}
+            statusContent={
+              <span style={{ color: "#C4B5FD" }}>
+                ⏸ rappel du {b.reconsiderDate ? new Date(b.reconsiderDate).toLocaleDateString("fr-FR") : ""}
+              </span>
+            }
+            footer={<RelaunchButton brandId={b.id} />}
           />
         ),
       };
@@ -220,16 +245,16 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">🐾</span>
-          <h1 className="font-sans text-4xl font-extrabold tracking-tight text-ink">Dashboard</h1>
-        </div>
-        <GuidedSession messageBrands={sessionMessageBrands} routineBrands={sessionRoutineBrands} />
+      <header className="flex items-center gap-3">
+        <span className="text-3xl">🐾</span>
+        <h1 className="font-sans text-4xl font-extrabold tracking-tight text-ink">Dashboard</h1>
       </header>
 
       <section>
-        <h2 className="mb-4 font-sans text-lg font-extrabold text-ink">Prospection</h2>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="font-sans text-lg font-extrabold text-ink">Prospection</h2>
+          <GuidedSession messageBrands={sessionMessageBrands} routineBrands={sessionRoutineBrands} />
+        </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           <DashboardSection
             title="Routine d'engagement"
@@ -241,9 +266,9 @@ export default async function DashboardPage() {
             {routineBrands.map((b) => (
               <BrandCard
                 key={b.id}
+                compact
                 brand={{ ...b, engagementDays: b.days, potentialRevenue: b.potentialRevenue }}
                 dueBadge={b.dueBadge}
-                statusContent={<span className="text-xs font-semibold text-ink/60">{statusLabel(b.pipelineStatus)}</span>}
               />
             ))}
           </DashboardSection>
@@ -259,9 +284,10 @@ export default async function DashboardPage() {
             {greenLightBrands.map((b) => (
               <BrandCard
                 key={b.id}
+                compact
+                engagementColor="#CCFF00"
                 brand={{ ...b, engagementDays: b.days, potentialRevenue: b.potentialRevenue }}
                 dueBadge={b.dueBadge}
-                statusContent={<span className="text-xs font-semibold text-accent">🟢 Prête pour le premier DM</span>}
               />
             ))}
           </DashboardSection>
@@ -270,39 +296,14 @@ export default async function DashboardPage() {
             title="Relances du jour"
             icon="⏰"
             accent="#8B5CF6"
-            count={relanceBrands.length + dueReminders.length + quoteRequests.length}
-            isEmpty={relanceBrands.length === 0 && dueReminders.length === 0 && quoteRequests.length === 0}
+            count={relanceBrands.length + dueReminders.length + quoteRequests.length + reconsiderBrands.length}
+            isEmpty={relanceBrands.length === 0 && dueReminders.length === 0 && quoteRequests.length === 0 && reconsiderBrands.length === 0}
             emptyLabel="Aucune relance aujourd'hui."
           >
             {relanceItems.map((item) => item.node)}
           </DashboardSection>
         </div>
       </section>
-
-      {reconsiderBrands.length > 0 && (
-        <section>
-          <h2 className="mb-4 font-sans text-lg font-extrabold text-ink">À reconsidérer</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {reconsiderBrands.map((b) => (
-              <div key={b.id} className="rounded-2xl bg-white p-4 shadow-md">
-                <div className="mb-1 flex items-center gap-2">
-                  {b.emoji && <span className="text-base">{b.emoji}</span>}
-                  <span className="text-sm font-extrabold text-ink">{b.name}</span>
-                  <span className="ml-auto rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ backgroundColor: "#C4B5FD" }}>
-                    Pas maintenant
-                  </span>
-                </div>
-                {b.reconsiderDate && (
-                  <p className="mb-1 text-xs font-light text-ink/50">
-                    Rappel prévu : {new Date(b.reconsiderDate).toLocaleDateString("fr-FR")}
-                  </p>
-                )}
-                <RelaunchButton brandId={b.id} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       <section>
         <h2 className="mb-4 font-sans text-lg font-extrabold text-ink">Suivi projets</h2>

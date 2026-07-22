@@ -20,28 +20,79 @@ export type BrandCardData = {
   href?: string;
 };
 
-/**
- * Carte marque/projet unifiée, utilisée dans le Pipeline, le Dashboard, et
- * réutilisable en Phase 2 pour les cartes de suivi projet (statut de
- * paiement et type de prestation n'apparaissent que si renseignés).
- */
 export default function BrandCard({
   brand,
   statusContent,
   engagementColor = "#8B5CF6",
   footer,
   dueBadge,
+  compact = false,
 }: {
   brand: BrandCardData;
-  statusContent: React.ReactNode;
+  statusContent?: React.ReactNode;
   engagementColor?: string;
   footer?: React.ReactNode;
   /** Badge "Aujourd'hui"/"En retard de X jours" calculé par l'appelant (cf. lib/dueStatus.ts). */
   dueBadge?: DueBadgeData | null;
+  /** Mode compact (Dashboard) : ligne plate style ProjectRow, badges à droite. */
+  compact?: boolean;
 }) {
   const badge = brand.platform ? platformBadge[brand.platform] : null;
   const showPlatformBadge = !!badge && brand.acquisitionPath !== "CONTACT" && brand.acquisitionPath !== "DIRECT";
   const href = brand.href ?? `/marques/${brand.id}`;
+
+  if (compact) {
+    const hasTags = showPlatformBadge || brand.engagementDays != null || brand.potentialRevenue != null || statusContent;
+    return (
+      <div className="rounded-xl bg-white px-4 py-3 shadow-softer transition hover:bg-accent-light/10">
+        <div className="flex items-center gap-3">
+          {brand.emoji ? (
+            <span className="shrink-0 text-base">{brand.emoji}</span>
+          ) : (
+            <div
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white"
+              style={{ backgroundColor: avatarColor(brand.name) }}
+            >
+              {initials(brand.name)}
+            </div>
+          )}
+          <Link href={href} className="min-w-0 flex-1 text-sm font-semibold text-ink hover:underline">
+            {brand.name}
+          </Link>
+          <DueBadge badge={dueBadge} />
+        </div>
+        {hasTags && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-7">
+            {showPlatformBadge && badge && (
+              <span
+                className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                style={{ backgroundColor: badge.bg, color: badge.text }}
+              >
+                {badge.icon}
+              </span>
+            )}
+            {brand.engagementDays != null && (
+              <span
+                className="rounded-full bg-soft px-2 py-0.5 text-[11px] font-semibold"
+                style={{ color: engagementColor === "#CCFF00" ? "#1D1C1F" : engagementColor }}
+              >
+                🔥 J{brand.engagementDays}
+              </span>
+            )}
+            {brand.potentialRevenue != null && (
+              <span className="rounded-full bg-cta/30 px-2 py-0.5 text-[11px] font-semibold text-ink">
+                💰 {formatRevenue(brand.potentialRevenue)}
+              </span>
+            )}
+            {statusContent && (
+              <span className="text-[11px] text-ink/50">{statusContent}</span>
+            )}
+          </div>
+        )}
+        {footer && <div className="mt-2 pl-7">{footer}</div>}
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-md transition hover:shadow-lg">
@@ -74,7 +125,7 @@ export default function BrandCard({
         )}
       </div>
 
-      <div className="mb-2.5">{statusContent}</div>
+      {statusContent && <div className="mb-2.5">{statusContent}</div>}
 
       {footer}
 
