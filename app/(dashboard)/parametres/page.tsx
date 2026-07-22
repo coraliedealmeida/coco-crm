@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import SettingsForm from "@/components/SettingsForm";
 import OptionsManager from "@/components/OptionsManager";
+import LogoutButton from "@/components/LogoutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,8 @@ export default async function ParametresPage() {
       <header>
         <h1 className="font-sans text-3xl font-extrabold text-ink">Paramètres</h1>
       </header>
+
+      <LogoutButton />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <SettingsForm

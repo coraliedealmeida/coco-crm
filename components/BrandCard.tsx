@@ -44,7 +44,7 @@ export default function BrandCard({
   if (compact) {
     const hasTags = showPlatformBadge || brand.engagementDays != null || brand.potentialRevenue != null || statusContent;
     return (
-      <div className="rounded-xl bg-white px-4 py-3 shadow-softer transition hover:bg-accent-light/10">
+      <div className="rounded-xl bg-soft px-4 py-3 transition hover:bg-accent-light/30">
         <div className="flex items-center gap-3">
           {brand.emoji ? (
             <span className="shrink-0 text-base">{brand.emoji}</span>

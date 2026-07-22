@@ -519,7 +519,7 @@ export default function GuidedSession({ messageBrands, routineBrands }: Props) {
         onClick={handleOpen}
         className="rounded-2xl bg-cta px-6 py-3 text-sm font-extrabold text-ink shadow-soft transition hover:opacity-90"
       >
-        ▶ Démarrer ma session du jour
+        ▶ Démarrer la session
       </button>
     );
   }
