@@ -2,13 +2,45 @@ import { prisma } from "@/lib/prisma";
 
 export const DAILY_QUALIFICATION_BATCH_SIZE = 3;
 
+type Contact = { name: string; position: string; profileUrl: string; platform: string };
+
 export type QualificationProspect = {
   id: string;
   rawName: string;
   handle: string | null;
   platform: string;
   brandCategory: string | null;
+  profileUrl: string | null;
+  contacts: Contact[];
 };
+
+const SELECT_FIELDS = {
+  id: true,
+  rawName: true,
+  handle: true,
+  platform: true,
+  brandCategory: true,
+  profileUrl: true,
+  contacts: true,
+} as const;
+
+function toQualificationProspect(row: {
+  id: string;
+  rawName: string;
+  handle: string | null;
+  platform: string;
+  brandCategory: string | null;
+  profileUrl: string | null;
+  contacts: unknown;
+}): QualificationProspect {
+  return { ...row, contacts: (row.contacts ?? []) as Contact[] };
+}
+
+/** Lien le plus utile vers le profil de la marque : sa propre page (LinkedIn/Instagram) si connue,
+ * sinon le profil du premier contact identifié (souvent la seule info disponible pour du LinkedIn brut). */
+export function bestProfileLink(p: { profileUrl: string | null; contacts: Contact[] }): string | null {
+  return p.profileUrl ?? p.contacts[0]?.profileUrl ?? null;
+}
 
 function shuffle<T>(items: T[]): T[] {
   const copy = [...items];
@@ -30,15 +62,15 @@ export async function getDailyQualificationBatch(): Promise<QualificationProspec
     where: { status: "PENDING", queuedForSessionAt: { not: null } },
     orderBy: { queuedForSessionAt: "asc" },
     take: DAILY_QUALIFICATION_BATCH_SIZE,
-    select: { id: true, rawName: true, handle: true, platform: true, brandCategory: true },
+    select: SELECT_FIELDS,
   });
 
   const missing = DAILY_QUALIFICATION_BATCH_SIZE - alreadyQueued.length;
-  if (missing <= 0) return alreadyQueued;
+  if (missing <= 0) return alreadyQueued.map(toQualificationProspect);
 
   const candidates = await prisma.prospectImport.findMany({
     where: { status: "PENDING", queuedForSessionAt: null },
-    select: { id: true, rawName: true, handle: true, platform: true, brandCategory: true },
+    select: SELECT_FIELDS,
   });
 
   const picked = shuffle(candidates).slice(0, missing);
@@ -50,5 +82,5 @@ export async function getDailyQualificationBatch(): Promise<QualificationProspec
     });
   }
 
-  return [...alreadyQueued, ...picked];
+  return [...alreadyQueued, ...picked].map(toQualificationProspect);
 }

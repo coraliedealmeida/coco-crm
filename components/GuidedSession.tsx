@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { messageTemplates } from "@/lib/messages";
 import { platformBadge } from "@/lib/pipeline";
 import type { PipelineStatus } from "@prisma/client";
-import type { QualificationProspect } from "@/lib/prospectImport";
+import { bestProfileLink, type QualificationProspect } from "@/lib/prospectImport";
 
 export type SessionBrand = {
   id: string;
@@ -402,6 +402,7 @@ function StepQualify({
           const badge = platformBadge[p.platform];
           const status = resolved[p.id];
           const category = categories[p.id] !== undefined ? categories[p.id] : p.brandCategory;
+          const link = bestProfileLink(p);
           return (
             <div
               key={p.id}
@@ -422,6 +423,16 @@ function StepQualify({
                   <p className="truncate text-sm font-extrabold text-ink">{p.rawName}</p>
                   {p.handle && <p className="truncate text-xs font-light text-ink/40">@{p.handle}</p>}
                 </div>
+                {link && (
+                  <a
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 rounded-lg bg-soft px-2.5 py-1 text-xs font-semibold text-accent transition hover:bg-accent-light/40"
+                  >
+                    Voir profil ↗
+                  </a>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <select
@@ -648,6 +659,10 @@ function ProgressBar({ step, total }: { step: number; total: number }) {
 export default function GuidedSession({ messageBrands, routineBrands, qualificationBrands }: Props) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
+  // Plus haute étape jamais atteinte dans la session en cours : sert à garder une étape montée
+  // (juste masquée) une fois visitée, même si on revient en arrière ensuite — sans ça, revenir
+  // à l'étape 1 puis ravancer démonterait les étapes suivantes et perdrait ce qui y était saisi.
+  const [maxStepReached, setMaxStepReached] = useState(1);
   const [sentCount, setSentCount] = useState(0);
   const [engagedCount, setEngagedCount] = useState(0);
   const [qualifiedCount, setQualifiedCount] = useState(0);
@@ -663,6 +678,11 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
   const activeQualification = frozen?.qualification ?? [];
   const skipMessages = activeMsg.length === 0;
 
+  const goToStep = useCallback((next: number) => {
+    setStep(next);
+    setMaxStepReached((m) => Math.max(m, next));
+  }, []);
+
   function handleOpen() {
     setFrozen({ msg: messageBrands, routine: routineBrands, qualification: qualificationBrands });
     setOpen(true);
@@ -671,6 +691,7 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
   function handleClose() {
     setOpen(false);
     setStep(1);
+    setMaxStepReached(1);
     setSentCount(0);
     setEngagedCount(0);
     setQualifiedCount(0);
@@ -678,27 +699,39 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
   }
 
   const handleStart = useCallback(() => {
-    setStep(skipMessages ? 4 : 2);
-  }, [skipMessages]);
+    goToStep(skipMessages ? 4 : 2);
+  }, [skipMessages, goToStep]);
 
   const handleStep2Done = useCallback(() => {
-    setStep(3);
-  }, []);
+    goToStep(3);
+  }, [goToStep]);
 
   const handleStep3Done = useCallback((count: number) => {
     setSentCount(count);
-    setStep(4);
-  }, []);
+    goToStep(4);
+  }, [goToStep]);
 
   const handleQualifyDone = useCallback((count: number) => {
     setQualifiedCount(count);
-    setStep(5);
-  }, []);
+    goToStep(5);
+  }, [goToStep]);
 
   const handleStep4Done = useCallback((count: number) => {
     setEngagedCount(count);
-    setStep(6);
-  }, []);
+    goToStep(6);
+  }, [goToStep]);
+
+  const handleBack = useCallback(() => {
+    // Retour en arrière seulement : ne touche jamais maxStepReached, pour que les étapes déjà
+    // visitées restent montées (donc leurs données conservées) même après un aller-retour.
+    setStep((s) => {
+      if (s === 2) return 1;
+      if (s === 3) return 2;
+      if (s === 4) return skipMessages ? 1 : 3;
+      if (s === 5) return 4;
+      return s;
+    });
+  }, [skipMessages]);
 
   if (!open) {
     return (
@@ -726,6 +759,17 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
 
         <ProgressBar step={step} total={STEPS} />
 
+        {step >= 2 && step <= 5 && (
+          <button
+            onClick={handleBack}
+            className="mb-4 flex items-center gap-1 text-xs font-semibold text-ink/40 hover:text-ink"
+          >
+            ← Précédent
+          </button>
+        )}
+
+        {/* Chaque étape reste montée (juste masquée) une fois atteinte, pour ne jamais perdre
+            ce qui a déjà été saisi/coché si on revient en arrière puis qu'on ravance. */}
         {step === 1 && (
           <Step1
             messageBrands={activeMsg}
@@ -734,17 +778,25 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
             onStart={handleStart}
           />
         )}
-        {step === 2 && activeMsg.length > 0 && (
-          <Step2 brands={activeMsg} onDone={handleStep2Done} />
+        {activeMsg.length > 0 && (
+          <div className={step === 2 ? "" : "hidden"}>
+            <Step2 brands={activeMsg} onDone={handleStep2Done} />
+          </div>
         )}
-        {step === 3 && (
-          <Step3 brands={activeMsg} onDone={handleStep3Done} />
+        {maxStepReached >= 3 && (
+          <div className={step === 3 ? "" : "hidden"}>
+            <Step3 brands={activeMsg} onDone={handleStep3Done} />
+          </div>
         )}
-        {step === 4 && (
-          <StepQualify prospects={activeQualification} onDone={handleQualifyDone} />
+        {maxStepReached >= 4 && (
+          <div className={step === 4 ? "" : "hidden"}>
+            <StepQualify prospects={activeQualification} onDone={handleQualifyDone} />
+          </div>
         )}
-        {step === 5 && (
-          <Step4 brands={activeRoutine} onDone={handleStep4Done} />
+        {maxStepReached >= 5 && (
+          <div className={step === 5 ? "" : "hidden"}>
+            <Step4 brands={activeRoutine} onDone={handleStep4Done} />
+          </div>
         )}
         {step === 6 && (
           <Step5

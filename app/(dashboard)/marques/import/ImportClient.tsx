@@ -301,6 +301,7 @@ export default function ImportClient({
               <tbody>
                 {filtered.map((p) => {
                   const badge = platformBadge[p.platform];
+                  const link = p.profileUrl ?? p.contacts[0]?.profileUrl ?? null;
                   return (
                     <tr
                       key={p.id}
@@ -317,12 +318,21 @@ export default function ImportClient({
                       </td>
                       <td className="px-4 py-3">
                         {badge && (
-                          <span
+                          <a
+                            href={link ?? undefined}
+                            target={link ? "_blank" : undefined}
+                            rel={link ? "noopener noreferrer" : undefined}
+                            title={link ? "Voir le profil" : undefined}
                             className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                            style={{ backgroundColor: badge.bg, color: badge.text }}
+                            style={{
+                              backgroundColor: badge.bg,
+                              color: badge.text,
+                              cursor: link ? "pointer" : "default",
+                            }}
+                            onClick={(e) => { if (!link) e.preventDefault(); }}
                           >
                             {badge.icon}
-                          </span>
+                          </a>
                         )}
                       </td>
                       <td className="px-4 py-3">
