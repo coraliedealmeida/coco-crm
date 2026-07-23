@@ -11,6 +11,7 @@ import GuidedSession from "@/components/GuidedSession";
 import type { SessionBrand } from "@/components/GuidedSession";
 import { formatRevenue } from "@/lib/format";
 import { dueBadgeFromDate, dueBadgeFromThreshold, dueSortKey } from "@/lib/dueStatus";
+import { getDailyQualificationBatch } from "@/lib/prospectImport";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,7 @@ function ProjectRow({
 }
 
 export default async function DashboardPage() {
-  const [brands, settings, dueReminders, projects, pendingInvoices, quoteRequests, reconsiderBrands] = await Promise.all([
+  const [brands, settings, dueReminders, projects, pendingInvoices, quoteRequests, reconsiderBrands, qualificationBatch] = await Promise.all([
     // Les clients créés directement (sans prospection) ne doivent alimenter aucun bloc prospection.
     // { not: "DIRECT" } exclurait aussi les marques sans acquisitionPath renseigné (NULL) — OR explicite.
     prisma.brand.findMany({
@@ -90,6 +91,7 @@ export default async function DashboardPage() {
       },
       orderBy: { reconsiderDate: "asc" },
     }),
+    getDailyQualificationBatch(),
   ]);
 
   const now = new Date();
@@ -253,7 +255,11 @@ export default async function DashboardPage() {
       <section>
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="font-sans text-lg font-extrabold text-ink">Prospection</h2>
-          <GuidedSession messageBrands={sessionMessageBrands} routineBrands={sessionRoutineBrands} />
+          <GuidedSession
+            messageBrands={sessionMessageBrands}
+            routineBrands={sessionRoutineBrands}
+            qualificationBrands={qualificationBatch}
+          />
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           <DashboardSection

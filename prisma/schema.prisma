@@ -97,6 +97,9 @@ model ProspectImport {
   enrichedCity        String?
   // Date de lancement calculée automatiquement à la validation ("Oui"), avant création de la fiche Brand
   scheduledDate       DateTime?
+  // Marque comme faisant partie du lot "à qualifier" de la Session du jour (persiste tant que le
+  // statut reste PENDING, pour ne pas re-tirer un nouveau lot aléatoire à chaque ouverture).
+  queuedForSessionAt  DateTime?
   importedAt          DateTime  @default(now())
   integratedAt        DateTime?
   brandId             String?   @unique

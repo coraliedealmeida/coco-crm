@@ -3,7 +3,9 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { messageTemplates } from "@/lib/messages";
+import { platformBadge } from "@/lib/pipeline";
 import type { PipelineStatus } from "@prisma/client";
+import type { QualificationProspect } from "@/lib/prospectImport";
 
 export type SessionBrand = {
   id: string;
@@ -19,9 +21,16 @@ export type SessionBrand = {
 type Props = {
   messageBrands: SessionBrand[];
   routineBrands: SessionBrand[];
+  qualificationBrands: QualificationProspect[];
 };
 
-const STEPS = 5;
+const STEPS = 6;
+
+const CATEGORY_LABELS: Record<string, string> = {
+  GRANDE_MARQUE: "Grande marque",
+  PME_STARTUP: "PME / Startup",
+  INDEPENDANT: "Indépendant",
+};
 
 function getTemplate(brand: SessionBrand, platform: "LINKEDIN" | "INSTAGRAM"): string {
   const p = platform.toLowerCase() as "linkedin" | "instagram";
@@ -53,16 +62,19 @@ function templateLabel(status: PipelineStatus): string {
 function Step1({
   messageBrands,
   routineBrands,
+  qualificationBrands,
   onStart,
 }: {
   messageBrands: SessionBrand[];
   routineBrands: SessionBrand[];
+  qualificationBrands: QualificationProspect[];
   onStart: () => void;
 }) {
   const totalMessages = messageBrands.length;
   const totalRoutine = routineBrands.length;
+  const totalQualification = qualificationBrands.length;
 
-  if (totalMessages === 0 && totalRoutine === 0) {
+  if (totalMessages === 0 && totalRoutine === 0 && totalQualification === 0) {
     return (
       <div className="flex flex-col items-center gap-6 py-12 text-center">
         <span className="text-5xl">✨</span>
@@ -78,23 +90,29 @@ function Step1({
         <p className="mb-2 text-sm font-light text-ink/50">Voici ce qui t&apos;attend aujourd&apos;hui</p>
         <h2 className="font-sans text-2xl font-extrabold text-ink">Prête à démarrer ?</h2>
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col items-center gap-1 rounded-2xl bg-white p-5 shadow-soft">
+      <div className="grid grid-cols-3 gap-3">
+        <div className="flex flex-col items-center gap-1 rounded-2xl bg-white p-4 shadow-soft">
           <span className="text-3xl font-extrabold text-accent">{totalMessages}</span>
-          <span className="text-xs font-semibold text-ink/60 text-center">
+          <span className="text-center text-xs font-semibold text-ink/60">
             {totalMessages === 1 ? "message à envoyer" : "messages à envoyer"}
           </span>
         </div>
-        <div className="flex flex-col items-center gap-1 rounded-2xl bg-white p-5 shadow-soft">
+        <div className="flex flex-col items-center gap-1 rounded-2xl bg-white p-4 shadow-soft">
           <span className="text-3xl font-extrabold text-ink">{totalRoutine}</span>
-          <span className="text-xs font-semibold text-ink/60 text-center">
+          <span className="text-center text-xs font-semibold text-ink/60">
             {totalRoutine === 1 ? "marque à engager" : "marques à engager"}
+          </span>
+        </div>
+        <div className="flex flex-col items-center gap-1 rounded-2xl bg-white p-4 shadow-soft">
+          <span className="text-3xl font-extrabold text-ink" style={{ color: "#C4B5FD" }}>{totalQualification}</span>
+          <span className="text-center text-xs font-semibold text-ink/60">
+            {totalQualification === 1 ? "prospect à qualifier" : "prospects à qualifier"}
           </span>
         </div>
       </div>
       {totalMessages === 0 && (
         <p className="rounded-xl bg-soft px-4 py-3 text-sm font-light text-ink/60">
-          Aucun DM ni relance à envoyer aujourd&apos;hui — on passe directement à la routine d&apos;engagement.
+          Aucun DM ni relance à envoyer aujourd&apos;hui — on passe directement à la suite.
         </p>
       )}
       <button
@@ -323,7 +341,146 @@ function Step3({
   );
 }
 
-// ─── Step 4 : Routine d'engagement ──────────────────────────────────────────
+// ─── Step 4 : Qualification de prospects ────────────────────────────────────
+
+function StepQualify({
+  prospects,
+  onDone,
+}: {
+  prospects: QualificationProspect[];
+  onDone: (qualifiedCount: number) => void;
+}) {
+  const [resolved, setResolved] = useState<Record<string, string>>({});
+  const [categories, setCategories] = useState<Record<string, string | null>>({});
+  const [saving, setSaving] = useState<Record<string, boolean>>({});
+
+  const qualifiedCount = Object.keys(resolved).length;
+
+  async function handleStatus(id: string, status: string) {
+    setSaving((prev) => ({ ...prev, [id]: true }));
+    await fetch(`/api/import/${id}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    setSaving((prev) => ({ ...prev, [id]: false }));
+    setResolved((prev) => ({ ...prev, [id]: status }));
+  }
+
+  async function handleCategory(id: string, brandCategory: string) {
+    setCategories((prev) => ({ ...prev, [id]: brandCategory || null }));
+    await fetch(`/api/import/${id}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ brandCategory: brandCategory || null }),
+    });
+  }
+
+  if (prospects.length === 0) {
+    return (
+      <div className="flex flex-col gap-6">
+        <p className="rounded-xl bg-soft px-4 py-3 text-sm font-light text-ink/60">
+          Aucun prospect à qualifier aujourd&apos;hui — la liste est à jour.
+        </p>
+        <button
+          onClick={() => onDone(0)}
+          className="w-full rounded-2xl bg-accent py-3 text-sm font-semibold text-white transition hover:opacity-90"
+        >
+          Continuer →
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <p className="text-sm font-light text-ink/60">
+        Qualifie ces {prospects.length} marques tirées de ta liste d&apos;import LinkedIn/Instagram.
+      </p>
+      <div className="flex flex-col gap-3">
+        {prospects.map((p) => {
+          const badge = platformBadge[p.platform];
+          const status = resolved[p.id];
+          const category = categories[p.id] !== undefined ? categories[p.id] : p.brandCategory;
+          return (
+            <div
+              key={p.id}
+              className={`flex flex-col gap-3 rounded-2xl p-4 transition ${
+                status ? "bg-green-50" : "bg-white shadow-soft"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {badge && (
+                  <span
+                    className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                    style={{ backgroundColor: badge.bg, color: badge.text }}
+                  >
+                    {badge.icon}
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-extrabold text-ink">{p.rawName}</p>
+                  {p.handle && <p className="truncate text-xs font-light text-ink/40">@{p.handle}</p>}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={category ?? ""}
+                  onChange={(e) => handleCategory(p.id, e.target.value)}
+                  className="rounded-lg border border-accent-light bg-soft px-2 py-1 text-xs text-ink outline-none focus:border-accent"
+                >
+                  <option value="">—</option>
+                  <option value="GRANDE_MARQUE">{CATEGORY_LABELS.GRANDE_MARQUE}</option>
+                  <option value="PME_STARTUP">{CATEGORY_LABELS.PME_STARTUP}</option>
+                  <option value="INDEPENDANT">{CATEGORY_LABELS.INDEPENDANT}</option>
+                </select>
+                <div className="ml-auto flex gap-1 rounded-xl bg-soft/60 p-1">
+                  <button
+                    onClick={() => handleStatus(p.id, "OUI")}
+                    disabled={saving[p.id]}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                      status === "OUI" ? "bg-cta text-ink" : "text-ink/50 hover:bg-white"
+                    }`}
+                  >
+                    Oui
+                  </button>
+                  <button
+                    onClick={() => handleStatus(p.id, "NON")}
+                    disabled={saving[p.id]}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                      status === "NON" ? "bg-red-500 text-white" : "text-ink/50 hover:bg-white"
+                    }`}
+                  >
+                    Non
+                  </button>
+                  <button
+                    onClick={() => handleStatus(p.id, "PLUS_TARD")}
+                    disabled={saving[p.id]}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                      status === "PLUS_TARD" ? "bg-accent-light text-ink" : "text-ink/50 hover:bg-white"
+                    }`}
+                  >
+                    Maybe
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <button
+        onClick={() => onDone(qualifiedCount)}
+        className="w-full rounded-2xl bg-accent py-3 text-sm font-semibold text-white transition hover:opacity-90"
+      >
+        {qualifiedCount === prospects.length
+          ? "Tout qualifié ! Continuer →"
+          : `Continuer (${qualifiedCount}/${prospects.length} qualifiés) →`}
+      </button>
+    </div>
+  );
+}
+
+// ─── Step 5 : Routine d'engagement ──────────────────────────────────────────
 
 function Step4({
   brands,
@@ -412,27 +569,35 @@ function Step4({
 function Step5({
   sentCount,
   engagedCount,
+  qualifiedCount,
   onClose,
 }: {
   sentCount: number;
   engagedCount: number;
+  qualifiedCount: number;
   onClose: () => void;
 }) {
   return (
     <div className="flex flex-col items-center gap-6 py-8 text-center">
       <span className="text-5xl">🐾</span>
       <h2 className="font-sans text-2xl font-extrabold text-ink">Session terminée !</h2>
-      <div className="grid w-full grid-cols-2 gap-4">
-        <div className="flex flex-col items-center gap-1 rounded-2xl bg-white p-5 shadow-soft">
+      <div className="grid w-full grid-cols-3 gap-3">
+        <div className="flex flex-col items-center gap-1 rounded-2xl bg-white p-4 shadow-soft">
           <span className="text-3xl font-extrabold text-accent">{sentCount}</span>
-          <span className="text-xs font-semibold text-ink/60">
+          <span className="text-center text-xs font-semibold text-ink/60">
             {sentCount === 1 ? "message envoyé" : "messages envoyés"}
           </span>
         </div>
-        <div className="flex flex-col items-center gap-1 rounded-2xl bg-white p-5 shadow-soft">
+        <div className="flex flex-col items-center gap-1 rounded-2xl bg-white p-4 shadow-soft">
           <span className="text-3xl font-extrabold text-ink">{engagedCount}</span>
-          <span className="text-xs font-semibold text-ink/60">
+          <span className="text-center text-xs font-semibold text-ink/60">
             {engagedCount === 1 ? "engagement fait" : "engagements faits"}
+          </span>
+        </div>
+        <div className="flex flex-col items-center gap-1 rounded-2xl bg-white p-4 shadow-soft">
+          <span className="text-3xl font-extrabold" style={{ color: "#C4B5FD" }}>{qualifiedCount}</span>
+          <span className="text-center text-xs font-semibold text-ink/60">
+            {qualifiedCount === 1 ? "prospect qualifié" : "prospects qualifiés"}
           </span>
         </div>
       </div>
@@ -455,7 +620,17 @@ function ProgressBar({ step, total }: { step: number; total: number }) {
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-ink/40">Étape {step} / {total}</span>
         <span className="text-xs font-semibold text-accent">
-          {step === 1 ? "Vue d'ensemble" : step === 2 ? "Préparer les messages" : step === 3 ? "Confirmer les envois" : step === 4 ? "Routine d'engagement" : "Résumé"}
+          {step === 1
+            ? "Vue d'ensemble"
+            : step === 2
+            ? "Préparer les messages"
+            : step === 3
+            ? "Confirmer les envois"
+            : step === 4
+            ? "Qualifier des prospects"
+            : step === 5
+            ? "Routine d'engagement"
+            : "Résumé"}
         </span>
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-soft">
@@ -470,20 +645,26 @@ function ProgressBar({ step, total }: { step: number; total: number }) {
 
 // ─── Composant principal ─────────────────────────────────────────────────────
 
-export default function GuidedSession({ messageBrands, routineBrands }: Props) {
+export default function GuidedSession({ messageBrands, routineBrands, qualificationBrands }: Props) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [sentCount, setSentCount] = useState(0);
   const [engagedCount, setEngagedCount] = useState(0);
+  const [qualifiedCount, setQualifiedCount] = useState(0);
   // Données gelées au démarrage de la session pour éviter que router.refresh() les vide en cours de route
-  const [frozen, setFrozen] = useState<{ msg: SessionBrand[]; routine: SessionBrand[] } | null>(null);
+  const [frozen, setFrozen] = useState<{
+    msg: SessionBrand[];
+    routine: SessionBrand[];
+    qualification: QualificationProspect[];
+  } | null>(null);
 
   const activeMsg = frozen?.msg ?? [];
   const activeRoutine = frozen?.routine ?? [];
+  const activeQualification = frozen?.qualification ?? [];
   const skipMessages = activeMsg.length === 0;
 
   function handleOpen() {
-    setFrozen({ msg: messageBrands, routine: routineBrands });
+    setFrozen({ msg: messageBrands, routine: routineBrands, qualification: qualificationBrands });
     setOpen(true);
   }
 
@@ -492,6 +673,7 @@ export default function GuidedSession({ messageBrands, routineBrands }: Props) {
     setStep(1);
     setSentCount(0);
     setEngagedCount(0);
+    setQualifiedCount(0);
     setFrozen(null);
   }
 
@@ -508,9 +690,14 @@ export default function GuidedSession({ messageBrands, routineBrands }: Props) {
     setStep(4);
   }, []);
 
+  const handleQualifyDone = useCallback((count: number) => {
+    setQualifiedCount(count);
+    setStep(5);
+  }, []);
+
   const handleStep4Done = useCallback((count: number) => {
     setEngagedCount(count);
-    setStep(5);
+    setStep(6);
   }, []);
 
   if (!open) {
@@ -543,6 +730,7 @@ export default function GuidedSession({ messageBrands, routineBrands }: Props) {
           <Step1
             messageBrands={activeMsg}
             routineBrands={activeRoutine}
+            qualificationBrands={activeQualification}
             onStart={handleStart}
           />
         )}
@@ -553,10 +741,18 @@ export default function GuidedSession({ messageBrands, routineBrands }: Props) {
           <Step3 brands={activeMsg} onDone={handleStep3Done} />
         )}
         {step === 4 && (
-          <Step4 brands={activeRoutine} onDone={handleStep4Done} />
+          <StepQualify prospects={activeQualification} onDone={handleQualifyDone} />
         )}
         {step === 5 && (
-          <Step5 sentCount={sentCount} engagedCount={engagedCount} onClose={handleClose} />
+          <Step4 brands={activeRoutine} onDone={handleStep4Done} />
+        )}
+        {step === 6 && (
+          <Step5
+            sentCount={sentCount}
+            engagedCount={engagedCount}
+            qualifiedCount={qualifiedCount}
+            onClose={handleClose}
+          />
         )}
       </div>
     </div>
