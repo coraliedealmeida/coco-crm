@@ -16,6 +16,7 @@
     "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@prisma/client": "^5.20.0",
+    "csv-parse": "^7.0.1",
     "next": "14.2.35",
     "react": "^18.3.1",
     "react-day-picker": "^9.1.4",
@@ -26,10 +27,10 @@
     "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.20",
     "@types/node": "^20.16.10",
     "@types/react": "^18.3.10",
     "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.35",
     "postcss": "^8.4.47",

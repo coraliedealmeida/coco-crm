@@ -70,6 +70,37 @@ model Brand {
   contactHistory ContactHistoryEntry[]
   reminders      Reminder[]
   client         Client?
+  prospectImport ProspectImport?
+}
+
+model ProspectImport {
+  id                  String    @id @default(cuid())
+  // "INSTAGRAM" | "LINKEDIN" | "BOTH"
+  platform            String
+  // Nom brut de la marque/entreprise (Company LinkedIn ou handle Instagram)
+  rawName             String
+  // Handle Instagram si applicable
+  handle              String?
+  // URL du profil Instagram ou page LinkedIn entreprise
+  profileUrl          String?
+  // Contacts connus : [{ name, position, profileUrl, platform }]
+  contacts            Json      @default("[]")
+  brandCategory       String?   // "GRANDE_MARQUE" | "PME_STARTUP" | "INDEPENDANT"
+  status              String    @default("PENDING") // PENDING | OUI | NON | PLUS_TARD
+  enrichedAt          DateTime?
+  enrichedName        String?
+  enrichedSummary     String?
+  deepEnrichedAt      DateTime?
+  enrichedRevenue     String?
+  enrichedFunding     String?
+  enrichedWebsite     String?
+  enrichedCity        String?
+  // Date de lancement calculée automatiquement à la validation ("Oui"), avant création de la fiche Brand
+  scheduledDate       DateTime?
+  importedAt          DateTime  @default(now())
+  integratedAt        DateTime?
+  brandId             String?   @unique
+  brand               Brand?    @relation(fields: [brandId], references: [id])
 }
 
 // Rappel programmable librement (date + libellé), indépendant du calcul automatique des relances.

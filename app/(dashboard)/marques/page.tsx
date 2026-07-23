@@ -28,12 +28,17 @@ export default async function MarquesPage() {
           <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">Marques prospects</h1>
           <p className="font-light text-ink/60">Toutes les marques en routine d&apos;engagement ou en pipeline.</p>
         </div>
-        <Link
-          href="/marques/new"
-          className="rounded-xl bg-cta px-5 py-3 font-semibold text-ink transition hover:opacity-90"
-        >
-          + Nouvelle marque
-        </Link>
+        <div className="flex flex-col items-end gap-1">
+          <Link
+            href="/marques/new"
+            className="rounded-xl bg-cta px-5 py-3 font-semibold text-ink transition hover:opacity-90"
+          >
+            + Nouvelle marque
+          </Link>
+          <Link href="/marques/import" className="text-sm text-ink/40 hover:text-accent transition">
+            ↓ Importer des prospects
+          </Link>
+        </div>
       </header>
 
       <MarquesTable rows={rows} />
