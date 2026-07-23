@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import StatsGrid from "@/components/StatsGrid";
+import ProfileLink from "@/components/ProfileLink";
 import { platformBadge } from "@/lib/pipeline";
 import { bestProfileLink } from "@/lib/prospectImport";
 
@@ -314,16 +315,14 @@ export default function ImportClient({
                       style={{ accentColor: "#8B5CF6" }}
                     />
                     {badge && (
-                      <a
+                      <ProfileLink
                         href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         title="Voir le profil"
                         className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
                         style={{ backgroundColor: badge.bg, color: badge.text }}
                       >
                         {badge.icon}
-                      </a>
+                      </ProfileLink>
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-extrabold text-ink">{p.rawName}</p>
@@ -424,16 +423,14 @@ export default function ImportClient({
                       </td>
                       <td className="px-4 py-3">
                         {badge && (
-                          <a
+                          <ProfileLink
                             href={link}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             title="Voir le profil"
                             className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
                             style={{ backgroundColor: badge.bg, color: badge.text }}
                           >
                             {badge.icon}
-                          </a>
+                          </ProfileLink>
                         )}
                       </td>
                       <td className="px-4 py-3">
