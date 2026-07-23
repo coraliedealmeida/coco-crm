@@ -27,9 +27,8 @@ interface Prospect {
 
 interface Stats {
   total: number;
-  linkedin: number;
-  instagram: number;
   validated: number;
+  maybe: number;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -87,7 +86,13 @@ export default function ImportClient({
       const p = prospects.find((x) => x.id === id);
       const wasOui = p?.status === "OUI";
       const isOui = status === "OUI";
-      return { ...prev, validated: prev.validated + (isOui ? 1 : 0) - (wasOui ? 1 : 0) };
+      const wasMaybe = p?.status === "PLUS_TARD";
+      const isMaybe = status === "PLUS_TARD";
+      return {
+        ...prev,
+        validated: prev.validated + (isOui ? 1 : 0) - (wasOui ? 1 : 0),
+        maybe: prev.maybe + (isMaybe ? 1 : 0) - (wasMaybe ? 1 : 0),
+      };
     });
   };
 
@@ -149,9 +154,8 @@ export default function ImportClient({
       <StatsGrid
         stats={[
           { label: "Marques importées", value: String(stats.total), accent: "#8B5CF6" },
-          { label: "Via LinkedIn", value: String(stats.linkedin), accent: "#2563EB" },
-          { label: "Via Instagram", value: String(stats.instagram), accent: "#DB2777" },
           { label: "Validées", value: String(stats.validated), accent: "#CCFF00" },
+          { label: "En attente", value: String(stats.maybe), accent: "#C4B5FD" },
         ]}
       />
 
@@ -205,7 +209,7 @@ export default function ImportClient({
             <option value="PENDING">En attente</option>
             <option value="OUI">Validées</option>
             <option value="NON">Exclues</option>
-            <option value="PLUS_TARD">Plus tard</option>
+            <option value="PLUS_TARD">Maybe</option>
           </select>
           <span className="text-ink/40">{filtered.length} affichées</span>
           {selected.length > 0 && (
@@ -320,7 +324,7 @@ export default function ImportClient({
                               p.status === "PLUS_TARD" ? "bg-accent-light text-ink" : "text-ink/50 hover:bg-white"
                             }`}
                           >
-                            +tard
+                            Maybe
                           </button>
                         </div>
                       </td>

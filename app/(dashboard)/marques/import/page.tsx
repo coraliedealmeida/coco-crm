@@ -10,9 +10,8 @@ export default async function ImportPage() {
   });
 
   const total = prospects.length;
-  const linkedin = prospects.filter((p) => p.platform === "LINKEDIN" || p.platform === "BOTH").length;
-  const instagram = prospects.filter((p) => p.platform === "INSTAGRAM" || p.platform === "BOTH").length;
   const validated = prospects.filter((p) => p.status === "OUI").length;
+  const maybe = prospects.filter((p) => p.status === "PLUS_TARD").length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -35,7 +34,7 @@ export default async function ImportPage() {
           scheduledDate: p.scheduledDate?.toISOString() ?? null,
           integratedAt: p.integratedAt?.toISOString() ?? null,
         }))}
-        stats={{ total, linkedin, instagram, validated }}
+        stats={{ total, validated, maybe }}
       />
     </div>
   );
