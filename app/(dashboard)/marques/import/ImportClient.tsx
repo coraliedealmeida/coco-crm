@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import StatsGrid from "@/components/StatsGrid";
 import { platformBadge } from "@/lib/pipeline";
@@ -38,7 +38,28 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const selectClass =
-  "rounded-xl border border-accent-light bg-soft px-3 py-2 text-sm text-ink outline-none transition focus:border-accent";
+  "w-full rounded-xl border border-accent-light bg-soft px-3 py-2 text-sm text-ink outline-none transition focus:border-accent";
+
+function FilterField({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-xs font-semibold uppercase tracking-wide text-ink/40">{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className={selectClass}>
+        {children}
+      </select>
+    </label>
+  );
+}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -61,6 +82,20 @@ export default function ImportClient({
   const [filterPlatform, setFilterPlatform] = useState<string>("ALL");
   const [filterCategory, setFilterCategory] = useState<string>("ALL");
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [sortByName, setSortByName] = useState<"asc" | "desc" | null>(null);
+  const sortActive = sortByName !== null;
+
+  const filtersActive = filterPlatform !== "ALL" || filterCategory !== "ALL" || filterStatus !== "ALL";
+
+  const resetFilters = () => {
+    setFilterPlatform("ALL");
+    setFilterCategory("ALL");
+    setFilterStatus("ALL");
+  };
+
+  const toggleSortByName = () => {
+    setSortByName((prev) => (prev === "asc" ? "desc" : prev === "desc" ? null : "asc"));
+  };
 
   const handleImport = async () => {
     setImporting(true);
@@ -140,12 +175,19 @@ export default function ImportClient({
     }
   };
 
-  const filtered = prospects.filter((p) => {
-    if (filterPlatform !== "ALL" && p.platform !== filterPlatform) return false;
-    if (filterCategory !== "ALL" && (p.brandCategory ?? "NONE") !== filterCategory) return false;
-    if (filterStatus !== "ALL" && p.status !== filterStatus) return false;
-    return true;
-  });
+  const filtered = useMemo(() => {
+    const result = prospects.filter((p) => {
+      if (filterPlatform !== "ALL" && p.platform !== filterPlatform) return false;
+      if (filterCategory !== "ALL" && (p.brandCategory ?? "NONE") !== filterCategory) return false;
+      if (filterStatus !== "ALL" && p.status !== filterStatus) return false;
+      return true;
+    });
+    if (sortByName) {
+      result.sort((a, b) => a.rawName.localeCompare(b.rawName, "fr"));
+      if (sortByName === "desc") result.reverse();
+    }
+    return result;
+  }, [prospects, filterPlatform, filterCategory, filterStatus, sortByName]);
 
   const toScheduleCount = prospects.filter((p) => p.status === "OUI" && !p.scheduledDate && !p.integratedAt).length;
 
@@ -190,31 +232,40 @@ export default function ImportClient({
       </div>
 
       {prospects.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <select value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)} className={selectClass}>
-            <option value="ALL">Tous les réseaux</option>
-            <option value="LINKEDIN">LinkedIn</option>
-            <option value="INSTAGRAM">Instagram</option>
-            <option value="BOTH">LinkedIn + Instagram</option>
-          </select>
-          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className={selectClass}>
-            <option value="ALL">Toutes catégories</option>
-            <option value="GRANDE_MARQUE">Grande marque</option>
-            <option value="PME_STARTUP">PME / Startup</option>
-            <option value="INDEPENDANT">Indépendant</option>
-            <option value="NONE">Sans catégorie</option>
-          </select>
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className={selectClass}>
-            <option value="ALL">Tous les statuts</option>
-            <option value="PENDING">En attente</option>
-            <option value="OUI">Validées</option>
-            <option value="NON">Exclues</option>
-            <option value="PLUS_TARD">Maybe</option>
-          </select>
-          <span className="text-ink/40">{filtered.length} affichées</span>
-          {selected.length > 0 && (
-            <span className="text-ink/60">· {selected.length}/2 sélectionnées pour fusion</span>
-          )}
+        <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-soft sm:flex-row sm:items-end sm:justify-between">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+            <FilterField label="Réseau" value={filterPlatform} onChange={setFilterPlatform}>
+              <option value="ALL">Tous les réseaux</option>
+              <option value="LINKEDIN">LinkedIn</option>
+              <option value="INSTAGRAM">Instagram</option>
+              <option value="BOTH">LinkedIn + Instagram</option>
+            </FilterField>
+            <FilterField label="Catégorie" value={filterCategory} onChange={setFilterCategory}>
+              <option value="ALL">Toutes catégories</option>
+              <option value="GRANDE_MARQUE">Grande marque</option>
+              <option value="PME_STARTUP">PME / Startup</option>
+              <option value="INDEPENDANT">Indépendant</option>
+              <option value="NONE">Sans catégorie</option>
+            </FilterField>
+            <FilterField label="Statut" value={filterStatus} onChange={setFilterStatus}>
+              <option value="ALL">Tous les statuts</option>
+              <option value="PENDING">En attente</option>
+              <option value="OUI">Validées</option>
+              <option value="NON">Exclues</option>
+              <option value="PLUS_TARD">Maybe</option>
+            </FilterField>
+          </div>
+          <div className="flex items-center gap-3 whitespace-nowrap text-sm">
+            {filtersActive && (
+              <button onClick={resetFilters} className="font-semibold text-accent transition hover:underline">
+                Réinitialiser
+              </button>
+            )}
+            <span className="text-ink/40">{filtered.length} affichées</span>
+            {selected.length > 0 && (
+              <span className="text-ink/60">· {selected.length}/2 sélectionnées pour fusion</span>
+            )}
+          </div>
         </div>
       )}
 
@@ -233,7 +284,14 @@ export default function ImportClient({
                 <tr>
                   <th className="px-3 py-3"></th>
                   <th className="px-4 py-3 font-semibold">Réseau</th>
-                  <th className="px-4 py-3 font-semibold">Marque</th>
+                  <th className="px-4 py-3 font-semibold">
+                    <button onClick={toggleSortByName} className="flex items-center gap-1 hover:text-ink">
+                      Marque
+                      <span className={sortActive ? "text-accent" : "text-ink/20"}>
+                        {sortByName === "desc" ? "▼" : sortByName === "asc" ? "▲" : "⇅"}
+                      </span>
+                    </button>
+                  </th>
                   <th className="hidden px-4 py-3 font-semibold md:table-cell">Contacts</th>
                   <th className="px-4 py-3 font-semibold">Catégorie</th>
                   <th className="px-4 py-3 text-center font-semibold">Décision</th>
