@@ -36,10 +36,18 @@ function toQualificationProspect(row: {
   return { ...row, contacts: (row.contacts ?? []) as Contact[] };
 }
 
-/** Lien le plus utile vers le profil de la marque : sa propre page (LinkedIn/Instagram) si connue,
- * sinon le profil du premier contact identifié (souvent la seule info disponible pour du LinkedIn brut). */
-export function bestProfileLink(p: { profileUrl: string | null; contacts: Contact[] }): string | null {
-  return p.profileUrl ?? p.contacts[0]?.profileUrl ?? null;
+/** Lien le plus utile pour retrouver la marque : sa propre page (LinkedIn/Instagram) si connue,
+ * sinon le profil du premier contact identifié, sinon une recherche du site officiel — pour ne
+ * jamais laisser le lien vide, même quand rien n'a été récupéré à l'import. */
+export function bestProfileLink(p: {
+  rawName: string;
+  platform: string;
+  profileUrl: string | null;
+  contacts: Contact[];
+}): string {
+  if (p.profileUrl) return p.profileUrl;
+  if (p.contacts[0]?.profileUrl) return p.contacts[0].profileUrl;
+  return `https://www.google.com/search?q=${encodeURIComponent(`${p.rawName} site officiel`)}`;
 }
 
 function shuffle<T>(items: T[]): T[] {

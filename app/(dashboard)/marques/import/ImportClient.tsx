@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import StatsGrid from "@/components/StatsGrid";
 import { platformBadge } from "@/lib/pipeline";
+import { bestProfileLink } from "@/lib/prospectImport";
 
 interface Contact {
   name: string;
@@ -82,15 +83,17 @@ export default function ImportClient({
   const [filterPlatform, setFilterPlatform] = useState<string>("ALL");
   const [filterCategory, setFilterCategory] = useState<string>("ALL");
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [search, setSearch] = useState("");
   const [sortByName, setSortByName] = useState<"asc" | "desc" | null>(null);
   const sortActive = sortByName !== null;
 
-  const filtersActive = filterPlatform !== "ALL" || filterCategory !== "ALL" || filterStatus !== "ALL";
+  const filtersActive = filterPlatform !== "ALL" || filterCategory !== "ALL" || filterStatus !== "ALL" || search !== "";
 
   const resetFilters = () => {
     setFilterPlatform("ALL");
     setFilterCategory("ALL");
     setFilterStatus("ALL");
+    setSearch("");
   };
 
   const toggleSortByName = () => {
@@ -176,10 +179,12 @@ export default function ImportClient({
   };
 
   const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
     const result = prospects.filter((p) => {
       if (filterPlatform !== "ALL" && p.platform !== filterPlatform) return false;
       if (filterCategory !== "ALL" && (p.brandCategory ?? "NONE") !== filterCategory) return false;
       if (filterStatus !== "ALL" && p.status !== filterStatus) return false;
+      if (query && !p.rawName.toLowerCase().includes(query)) return false;
       return true;
     });
     if (sortByName) {
@@ -187,7 +192,7 @@ export default function ImportClient({
       if (sortByName === "desc") result.reverse();
     }
     return result;
-  }, [prospects, filterPlatform, filterCategory, filterStatus, sortByName]);
+  }, [prospects, filterPlatform, filterCategory, filterStatus, search, sortByName]);
 
   const toScheduleCount = prospects.filter((p) => p.status === "OUI" && !p.scheduledDate && !p.integratedAt).length;
 
@@ -233,7 +238,17 @@ export default function ImportClient({
 
       {prospects.length > 0 && (
         <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-soft sm:flex-row sm:items-end sm:justify-between">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 sm:gap-4">
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-ink/40">Rechercher</span>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Nom de marque…"
+                className={selectClass}
+              />
+            </label>
             <FilterField label="Réseau" value={filterPlatform} onChange={setFilterPlatform}>
               <option value="ALL">Tous les réseaux</option>
               <option value="LINKEDIN">LinkedIn</option>
@@ -277,7 +292,98 @@ export default function ImportClient({
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-3xl bg-white shadow-soft">
+        <>
+          {/* Mobile : une carte par marque, plus lisible qu'un tableau à défilement horizontal */}
+          <div className="flex flex-col gap-3 sm:hidden">
+            {filtered.map((p) => {
+              const badge = platformBadge[p.platform];
+              const link = bestProfileLink(p);
+              return (
+                <div
+                  key={p.id}
+                  className={`flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-soft transition ${
+                    p.status === "NON" ? "opacity-40" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(p.id)}
+                      onChange={() => toggleSelect(p.id)}
+                      disabled={!selected.includes(p.id) && selected.length >= 2}
+                      style={{ accentColor: "#8B5CF6" }}
+                    />
+                    {badge && (
+                      <a
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Voir le profil"
+                        className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                        style={{ backgroundColor: badge.bg, color: badge.text }}
+                      >
+                        {badge.icon}
+                      </a>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-extrabold text-ink">{p.rawName}</p>
+                      {p.handle && <p className="truncate text-xs font-light text-ink/40">@{p.handle}</p>}
+                    </div>
+                    {(p.integratedAt || p.scheduledDate) && (
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                          p.integratedAt ? "bg-cta/30 text-ink" : "bg-soft text-ink/70"
+                        }`}
+                      >
+                        {p.integratedAt ? `Active le ${formatDate(p.integratedAt)}` : `Prévue le ${formatDate(p.scheduledDate!)}`}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={p.brandCategory ?? ""}
+                      onChange={(e) => handleCategory(p.id, e.target.value)}
+                      className="flex-1 rounded-lg border border-accent-light bg-soft px-2 py-1.5 text-xs text-ink outline-none focus:border-accent"
+                    >
+                      <option value="">—</option>
+                      <option value="GRANDE_MARQUE">{CATEGORY_LABELS.GRANDE_MARQUE}</option>
+                      <option value="PME_STARTUP">{CATEGORY_LABELS.PME_STARTUP}</option>
+                      <option value="INDEPENDANT">{CATEGORY_LABELS.INDEPENDANT}</option>
+                    </select>
+                    <div className="flex gap-1 rounded-xl bg-soft/60 p-1">
+                      <button
+                        onClick={() => handleStatus(p.id, p.status === "OUI" ? "PENDING" : "OUI")}
+                        className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                          p.status === "OUI" ? "bg-cta text-ink" : "text-ink/50 hover:bg-white"
+                        }`}
+                      >
+                        Oui
+                      </button>
+                      <button
+                        onClick={() => handleStatus(p.id, p.status === "NON" ? "PENDING" : "NON")}
+                        className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                          p.status === "NON" ? "bg-red-500 text-white" : "text-ink/50 hover:bg-white"
+                        }`}
+                      >
+                        Non
+                      </button>
+                      <button
+                        onClick={() => handleStatus(p.id, p.status === "PLUS_TARD" ? "PENDING" : "PLUS_TARD")}
+                        className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                          p.status === "PLUS_TARD" ? "bg-accent-light text-ink" : "text-ink/50 hover:bg-white"
+                        }`}
+                      >
+                        Maybe
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop : tableau complet avec colonne contacts */}
+          <div className="hidden overflow-hidden rounded-3xl bg-white shadow-soft sm:block">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[800px] text-left text-sm">
               <thead className="bg-soft text-ink/60">
@@ -301,7 +407,7 @@ export default function ImportClient({
               <tbody>
                 {filtered.map((p) => {
                   const badge = platformBadge[p.platform];
-                  const link = p.profileUrl ?? p.contacts[0]?.profileUrl ?? null;
+                  const link = bestProfileLink(p);
                   return (
                     <tr
                       key={p.id}
@@ -319,17 +425,12 @@ export default function ImportClient({
                       <td className="px-4 py-3">
                         {badge && (
                           <a
-                            href={link ?? undefined}
-                            target={link ? "_blank" : undefined}
-                            rel={link ? "noopener noreferrer" : undefined}
-                            title={link ? "Voir le profil" : undefined}
+                            href={link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Voir le profil"
                             className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                            style={{
-                              backgroundColor: badge.bg,
-                              color: badge.text,
-                              cursor: link ? "pointer" : "default",
-                            }}
-                            onClick={(e) => { if (!link) e.preventDefault(); }}
+                            style={{ backgroundColor: badge.bg, color: badge.text }}
                           >
                             {badge.icon}
                           </a>
@@ -415,7 +516,8 @@ export default function ImportClient({
               </tbody>
             </table>
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

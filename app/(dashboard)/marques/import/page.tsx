@@ -18,7 +18,6 @@ export default async function ImportPage() {
       <header>
         <BackButton />
         <h1 className="mt-2 font-sans text-3xl font-extrabold text-ink">Import prospects</h1>
-        <p className="font-light text-ink/60">LinkedIn · Instagram · Secteur animalier</p>
       </header>
 
       <ImportClient

@@ -423,16 +423,14 @@ function StepQualify({
                   <p className="truncate text-sm font-extrabold text-ink">{p.rawName}</p>
                   {p.handle && <p className="truncate text-xs font-light text-ink/40">@{p.handle}</p>}
                 </div>
-                {link && (
-                  <a
-                    href={link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 rounded-lg bg-soft px-2.5 py-1 text-xs font-semibold text-accent transition hover:bg-accent-light/40"
-                  >
-                    Voir profil ↗
-                  </a>
-                )}
+                <a
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 rounded-lg bg-soft px-2.5 py-1 text-xs font-semibold text-accent transition hover:bg-accent-light/40"
+                >
+                  Voir profil ↗
+                </a>
               </div>
               <div className="flex items-center gap-2">
                 <select
