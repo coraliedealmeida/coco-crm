@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { statusLabel, statusColor } from "@/lib/pipeline";
+import { statusLabel, statusColor, macroGroupForStatus } from "@/lib/pipeline";
 import { dueBadgeFromDate } from "@/lib/dueStatus";
 import DueBadge from "@/components/DueBadge";
 import type { PipelineStatus } from "@prisma/client";
@@ -79,7 +79,13 @@ export default function MarquesTable({ rows }: { rows: Row[] }) {
               <td className="px-5 py-3 text-ink/70">
                 <div className="flex items-center gap-2">
                   <span>{b.nextActionDate ? new Date(b.nextActionDate).toLocaleDateString("fr-FR") : "—"}</span>
-                  <DueBadge badge={dueBadgeFromDate(b.nextActionDate, new Date())} />
+                  <DueBadge
+                    badge={
+                      macroGroupForStatus(b.pipelineStatus).id === "CLOSING"
+                        ? null
+                        : dueBadgeFromDate(b.nextActionDate, new Date())
+                    }
+                  />
                 </div>
               </td>
             </tr>

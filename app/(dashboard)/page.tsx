@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { statusLabel } from "@/lib/pipeline";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isProjectActive, projectLabel } from "@/lib/projects";
+import { isProjectActive, projectLabel, remainingToInvoice } from "@/lib/projects";
 import DashboardSection from "@/components/DashboardSection";
 import BrandCard from "@/components/BrandCard";
 import RelaunchButton from "@/components/RelaunchButton";
@@ -12,8 +12,22 @@ import type { SessionBrand } from "@/components/GuidedSession";
 import { formatRevenue } from "@/lib/format";
 import { dueBadgeFromDate, dueBadgeFromThreshold, dueSortKey } from "@/lib/dueStatus";
 import { getDailyQualificationBatch } from "@/lib/prospectImport";
+import DashboardNotesWidget from "@/components/DashboardNotesWidget";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Première lecture jamais faite sur ce singleton : deux requêtes concurrentes (double rendu
+ * React en dev, prefetch...) peuvent toutes les deux tenter la création et l'une échoue alors
+ * sur la contrainte d'unicité — on se rabat simplement sur une lecture dans ce cas précis.
+ */
+async function getOrCreateDashboardNote() {
+  try {
+    return await prisma.dashboardNote.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } });
+  } catch {
+    return prisma.dashboardNote.findUniqueOrThrow({ where: { id: "singleton" } });
+  }
+}
 
 function ProjectRow({
   project,
@@ -47,7 +61,7 @@ function ProjectRow({
 }
 
 export default async function DashboardPage() {
-  const [brands, settings, dueReminders, projects, pendingInvoices, quoteRequests, reconsiderBrands, qualificationBatch] = await Promise.all([
+  const [brands, settings, dueReminders, projects, pendingInvoices, quoteRequests, reconsiderBrands, qualificationBatch, dashboardTasks, dashboardNote] = await Promise.all([
     // Les clients créés directement (sans prospection) ne doivent alimenter aucun bloc prospection.
     // { not: "DIRECT" } exclurait aussi les marques sans acquisitionPath renseigné (NULL) — OR explicite.
     prisma.brand.findMany({
@@ -68,7 +82,7 @@ export default async function DashboardPage() {
       include: { brand: true, project: { include: { client: { include: { brand: true } } } } },
       orderBy: { date: "asc" },
     }),
-    prisma.project.findMany({ include: { client: { include: { brand: true } } } }),
+    prisma.project.findMany({ include: { client: { include: { brand: true } }, invoices: true } }),
     prisma.invoice.findMany({
       where: { sentAt: { not: null }, paidAt: null },
       include: { project: { include: { client: { include: { brand: true } } } } },
@@ -92,6 +106,8 @@ export default async function DashboardPage() {
       orderBy: { reconsiderDate: "asc" },
     }),
     getDailyQualificationBatch(),
+    prisma.dashboardTask.findMany({ orderBy: { createdAt: "asc" } }),
+    getOrCreateDashboardNote(),
   ]);
 
   const now = new Date();
@@ -359,7 +375,9 @@ export default async function DashboardPage() {
                 }}
                 statusContent={
                   p.quoteAmount != null ? (
-                    <span className="text-xs font-semibold text-ink/60">{formatRevenue(p.quoteAmount)}</span>
+                    <span className="text-xs font-semibold text-ink/60">
+                      {formatRevenue(remainingToInvoice(p.quoteAmount, p.invoices))}
+                    </span>
                   ) : null
                 }
               />
@@ -405,6 +423,19 @@ export default async function DashboardPage() {
               );
             })}
           </DashboardSection>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-4 font-sans text-lg font-extrabold text-ink">Notes & to-do</h2>
+        <div className="overflow-hidden rounded-3xl bg-white shadow-soft">
+          <div className="h-1.5" style={{ backgroundColor: "#8B5CF6" }} />
+          <div className="p-6">
+            <DashboardNotesWidget
+              initialTasks={dashboardTasks.map((t) => ({ id: t.id, label: t.label, completed: t.completed }))}
+              initialNote={dashboardNote.content}
+            />
+          </div>
         </div>
       </section>
     </div>

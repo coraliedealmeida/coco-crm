@@ -338,7 +338,12 @@ function CardBody({
     item.kind === "brand" ? countBusinessDays(new Date(item.engagementStartDate), new Date()) : 0;
 
   const statusOptions = item.kind === "brand" ? pipelineColumns.map((c) => c.status) : quoteRequestStatuses;
-  const dueBadge = dueBadgeFromDate(item.nextActionDate, new Date());
+  // Devis accepté/refusé, ghosté ou archivé : plus rien à relancer, donc plus de badge de retard
+  // même si nextActionDate garde une ancienne valeur calculée avant ce statut final.
+  const dueBadge =
+    macroGroupForStatus(item.pipelineStatus).id === "CLOSING"
+      ? null
+      : dueBadgeFromDate(item.nextActionDate, new Date());
 
   return (
     <BrandCard

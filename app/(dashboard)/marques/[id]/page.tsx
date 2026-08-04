@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
-import { avatarColor, initials, statusLabel, nextAutomaticActionLabel } from "@/lib/pipeline";
+import { avatarColor, initials, statusLabel, nextAutomaticActionLabel, macroGroupForStatus } from "@/lib/pipeline";
 import { paidTotal } from "@/lib/projects";
 import { dueBadgeFromDate } from "@/lib/dueStatus";
 import DueBadge from "@/components/DueBadge";
@@ -53,7 +53,12 @@ export default async function BrandDetailPage({ params }: { params: { id: string
       ? `${autoActionLabel ?? "Action prévue"} — ${new Date(brand.nextActionDate).toLocaleDateString("fr-FR")}`
       : (autoActionLabel ?? "Aucune prévue");
   const nextActionDueDate = nextReminder ? nextReminder.date : brand.nextActionDate;
-  const nextActionBadge = dueBadgeFromDate(nextActionDueDate, new Date());
+  // Devis accepté/refusé, ghosté ou archivé : plus rien à relancer, donc plus de badge de retard
+  // même si nextActionDate garde une ancienne valeur calculée avant ce statut final.
+  const nextActionBadge =
+    macroGroupForStatus(brand.pipelineStatus).id === "CLOSING"
+      ? null
+      : dueBadgeFromDate(nextActionDueDate, new Date());
 
   const projects = client?.projects ?? [];
   const revenue = projects.reduce((sum, p) => sum + paidTotal(p.invoices), 0);

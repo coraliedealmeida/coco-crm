@@ -274,3 +274,18 @@ model Bundle {
   active          Boolean  @default(true)
   createdAt       DateTime @default(now())
 }
+
+// Espace personnel sur le Dashboard, indépendant de tout client/projet : liste de tâches
+// libres (pense-bête) + un bloc de notes en texte libre.
+model DashboardTask {
+  id        String   @id @default(cuid())
+  label     String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model DashboardNote {
+  id        String   @id @default("singleton")
+  content   String   @default("")
+  updatedAt DateTime @updatedAt
+}
