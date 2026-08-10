@@ -113,6 +113,15 @@ export const platformBadge: Record<string, { bg: string; text: string; icon: str
   BOTH: { bg: "#EDE9FE", text: "#7C3AED", icon: "in/ig" },
 };
 
+/** Lien vers le profil LinkedIn/Instagram d'une marque : celui récupéré à l'import si connu
+ * (discoveryNotes.profileUrl), sinon une recherche ciblée sur le bon réseau — pour toujours
+ * pouvoir cliquer et aller engager, même sur les marques créées manuellement. */
+export function brandProfileLink(brand: { name: string; platform: string; profileUrl: string | null }): string {
+  if (brand.profileUrl) return brand.profileUrl;
+  const network = brand.platform === "INSTAGRAM" ? "Instagram" : "LinkedIn";
+  return `https://www.google.com/search?q=${encodeURIComponent(`${brand.name} ${network}`)}`;
+}
+
 const avatarPalette = ["#8B5CF6", "#7C3AED", "#A78BFA", "#60A5FA", "#34D399", "#FB923C", "#DB2777"];
 
 export function avatarColor(seed: string): string {

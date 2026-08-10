@@ -16,6 +16,15 @@ import DashboardNotesWidget from "@/components/DashboardNotesWidget";
 
 export const dynamic = "force-dynamic";
 
+/** Lien de profil récupéré à l'import (activation prospect), quand il existe. */
+function profileUrlFromDiscoveryNotes(discoveryNotes: unknown): string | null {
+  if (discoveryNotes && typeof discoveryNotes === "object" && "profileUrl" in discoveryNotes) {
+    const value = (discoveryNotes as { profileUrl?: unknown }).profileUrl;
+    return typeof value === "string" ? value : null;
+  }
+  return null;
+}
+
 /**
  * Première lecture jamais faite sur ce singleton : deux requêtes concurrentes (double rendu
  * React en dev, prefetch...) peuvent toutes les deux tenter la création et l'une échoue alors
@@ -167,6 +176,7 @@ export default async function DashboardPage() {
     contactName: b.contactName,
     sector: b.sector,
     notes: b.notes,
+    profileUrl: profileUrlFromDiscoveryNotes(b.discoveryNotes),
   }));
 
   const projectsEnCours = projects.filter(isProjectActive);

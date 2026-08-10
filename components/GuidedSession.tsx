@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { messageTemplates } from "@/lib/messages";
-import { platformBadge } from "@/lib/pipeline";
+import { platformBadge, brandProfileLink } from "@/lib/pipeline";
 import ProfileLink from "@/components/ProfileLink";
 import type { PipelineStatus } from "@prisma/client";
 import { bestProfileLink, type QualificationProspect } from "@/lib/prospectImport";
@@ -17,6 +17,7 @@ export type SessionBrand = {
   contactName: string | null;
   sector: string;
   notes: string | null;
+  profileUrl?: string | null;
 };
 
 type Props = {
@@ -545,7 +546,9 @@ function Step4({
               </p>
               <p className="text-xs font-light text-ink/50">{brand.sector}</p>
             </div>
-            <span
+            <ProfileLink
+              href={brandProfileLink({ name: brand.name, platform: brand.platform, profileUrl: brand.profileUrl ?? null })}
+              title="Voir le profil"
               className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
               style={
                 brand.platform === "LINKEDIN"
@@ -556,7 +559,7 @@ function Step4({
               }
             >
               {brand.platform === "LINKEDIN" ? "in" : brand.platform === "INSTAGRAM" ? "ig" : "in/ig"}
-            </span>
+            </ProfileLink>
           </div>
         ))}
       </div>
