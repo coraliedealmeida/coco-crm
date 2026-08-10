@@ -546,6 +546,15 @@ function Step4({
               </p>
               <p className="text-xs font-light text-ink/50">{brand.sector}</p>
             </div>
+            <a
+              href={`/marques/${brand.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Ouvrir la fiche dans un nouvel onglet pour y noter des infos"
+              className="shrink-0 rounded-full bg-soft px-2.5 py-1 text-[11px] font-semibold text-ink/60 transition hover:bg-accent-light/40 hover:text-accent"
+            >
+              📝 Fiche
+            </a>
             <ProfileLink
               href={brandProfileLink({ name: brand.name, platform: brand.platform, profileUrl: brand.profileUrl ?? null })}
               title="Voir le profil"
