@@ -12,6 +12,7 @@ import RemindersPanel from "@/components/RemindersPanel";
 import NewProjectButton from "@/components/NewProjectButton";
 import ClientProjectsCard from "@/components/ClientProjectsCard";
 import QuoteRequestsCard from "@/components/QuoteRequestsCard";
+import BrandContactsPanel from "@/components/BrandContactsPanel";
 import { formatRevenue } from "@/lib/format";
 import BackButton from "@/components/BackButton";
 
@@ -24,6 +25,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
       include: {
         contactHistory: { orderBy: { date: "desc" } },
         reminders: { orderBy: { date: "asc" } },
+        contacts: { orderBy: { createdAt: "asc" } },
       },
     }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
@@ -197,6 +199,16 @@ export default async function BrandDetailPage({ params }: { params: { id: string
               />
             </div>
           </div>
+          <BrandContactsPanel
+            brandId={brand.id}
+            contacts={brand.contacts.map((c) => ({
+              id: c.id,
+              name: c.name,
+              role: c.role,
+              profileUrl: c.profileUrl,
+              platform: c.platform,
+            }))}
+          />
           <RemindersPanel
             createUrl={`/api/brands/${brand.id}/reminders`}
             reminders={brand.reminders.map((r) => ({

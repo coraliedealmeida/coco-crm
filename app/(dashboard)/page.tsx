@@ -13,7 +13,8 @@ import { formatRevenue } from "@/lib/format";
 import { dueBadgeFromDate, dueBadgeFromThreshold, dueSortKey } from "@/lib/dueStatus";
 import { getDailyQualificationBatch } from "@/lib/prospectImport";
 import DashboardNotesWidget from "@/components/DashboardNotesWidget";
-import { isEngagementDue, nextEngagementContact, type EngagementContact } from "@/lib/pipeline";
+import TodayTaskRow from "@/components/TodayTaskRow";
+import { isEngagementDue, nextEngagementContact, contactProfileLink, type EngagementContact } from "@/lib/pipeline";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,23 @@ function contactsFromDiscoveryNotes(discoveryNotes: unknown): EngagementContact[
     return Array.isArray(value) ? (value as EngagementContact[]) : [];
   }
   return [];
+}
+
+/** Contacts d'intérêt d'une marque pour la rotation en routine d'engagement : ceux notés
+ * à la main sur la fiche en priorité, sinon ceux récupérés à l'import LinkedIn/Instagram. */
+function engagementContactsFor(brand: {
+  contacts: { name: string; role: string | null; profileUrl: string | null; platform: string }[];
+  discoveryNotes: unknown;
+}): EngagementContact[] {
+  if (brand.contacts.length > 0) {
+    return brand.contacts.map((c) => ({
+      name: c.name,
+      position: c.role ?? "",
+      profileUrl: contactProfileLink(c),
+      platform: c.platform,
+    }));
+  }
+  return contactsFromDiscoveryNotes(brand.discoveryNotes);
 }
 
 /**
@@ -85,6 +103,7 @@ export default async function DashboardPage() {
     // { not: "DIRECT" } exclurait aussi les marques sans acquisitionPath renseigné (NULL) — OR explicite.
     prisma.brand.findMany({
       where: { archivedAt: null, OR: [{ acquisitionPath: null }, { acquisitionPath: { not: "DIRECT" } }] },
+      include: { contacts: { orderBy: { createdAt: "asc" } } },
     }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
     // Rappels programmés sur une marque OU sur un projet (jamais les deux) — on exclut les
@@ -185,7 +204,7 @@ export default async function DashboardPage() {
   // Déduplique (greenLight est déjà dans routineBrands mais pipelineStatus ROUTINE_ENGAGEMENT)
   // — seules les marques dues aujourd'hui (cf. dueForEngagement) apparaissent ici.
   const sessionRoutineBrands: SessionBrand[] = dueForEngagement.map((b) => {
-    const contacts = contactsFromDiscoveryNotes(b.discoveryNotes);
+    const contacts = engagementContactsFor(b);
     const engagement = nextEngagementContact(contacts, b.lastEngagementContactIndex);
     return {
       id: b.id,
@@ -204,8 +223,11 @@ export default async function DashboardPage() {
   const projectsEnCours = projects.filter(isProjectActive);
   const aFacturer = projects.filter((p) => p.currentStep === "Facture à faire");
 
-  // Les 3 sources de "Relances du jour" (marques, rappels, demandes de devis) sont fusionnées
-  // et triées ensemble par gravité de retard, pour un seul ordre cohérent dans le bloc.
+  // Tâches personnelles datées d'aujourd'hui ou en retard, non terminées.
+  const dueTasks = dashboardTasks.filter((t) => !t.completed && t.dueDate && t.dueDate <= now);
+
+  // Les sources de "Relances du jour" (marques, rappels, demandes de devis, tâches datées) sont
+  // fusionnées et triées ensemble par gravité de retard, pour un seul ordre cohérent dans le bloc.
   const relanceItems = [
     ...relanceBrands.map((b) => ({
       key: `relance-${b.id}`,
@@ -291,6 +313,16 @@ export default async function DashboardPage() {
         ),
       };
     }),
+    // Tâches personnelles datées d'aujourd'hui ou en retard — fusionnées dans Relances du jour,
+    // comme demandé, plutôt que dans une section séparée.
+    ...dueTasks.map((t) => {
+      const dueBadge = dueBadgeFromDate(t.dueDate, now);
+      return {
+        key: `task-${t.id}`,
+        sortKey: dueSortKey(dueBadge),
+        node: <TodayTaskRow key={`task-${t.id}`} id={t.id} label={t.label} dueBadge={dueBadge} />,
+      };
+    }),
   ].sort((a, b) => a.sortKey - b.sortKey);
 
   return (
@@ -351,8 +383,8 @@ export default async function DashboardPage() {
             title="Relances du jour"
             icon="⏰"
             accent="#8B5CF6"
-            count={relanceBrands.length + dueReminders.length + quoteRequests.length + reconsiderBrands.length}
-            isEmpty={relanceBrands.length === 0 && dueReminders.length === 0 && quoteRequests.length === 0 && reconsiderBrands.length === 0}
+            count={relanceItems.length}
+            isEmpty={relanceItems.length === 0}
             emptyLabel="Aucune relance aujourd'hui."
           >
             {relanceItems.map((item) => item.node)}
@@ -465,7 +497,12 @@ export default async function DashboardPage() {
           <div className="h-1.5" style={{ backgroundColor: "#8B5CF6" }} />
           <div className="p-6">
             <DashboardNotesWidget
-              initialTasks={dashboardTasks.map((t) => ({ id: t.id, label: t.label, completed: t.completed }))}
+              initialTasks={dashboardTasks.map((t) => ({
+                id: t.id,
+                label: t.label,
+                completed: t.completed,
+                dueDate: t.dueDate ? t.dueDate.toISOString() : null,
+              }))}
               initialNote={dashboardNote.content}
             />
           </div>

@@ -101,6 +101,14 @@ export function isEngagementDue(lastEngagementAt: Date | null, now: Date, minDay
 
 export type EngagementContact = { name: string; position: string; profileUrl: string; platform: string };
 
+/** Lien vers le profil d'un contact : celui renseigné s'il existe, sinon une recherche
+ * ciblée sur le bon réseau — pour toujours pouvoir cliquer, même sans lien noté. */
+export function contactProfileLink(contact: { name: string; profileUrl?: string | null; platform: string }): string {
+  if (contact.profileUrl) return contact.profileUrl;
+  const network = contact.platform === "INSTAGRAM" ? "Instagram" : "LinkedIn";
+  return `https://www.google.com/search?q=${encodeURIComponent(`${contact.name} ${network}`)}`;
+}
+
 /**
  * Marque avec plusieurs contacts identifiés (import LinkedIn) : fait tourner automatiquement
  * la personne ciblée d'un passage à l'autre, plutôt que de toujours pointer vers la même —

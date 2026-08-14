@@ -77,6 +77,21 @@ model Brand {
   reminders      Reminder[]
   client         Client?
   prospectImport ProspectImport?
+  contacts       BrandContact[]
+}
+
+// Personne d'intérêt identifiée pour une marque (ex : notée dans le Suivi, ou repérée sur
+// LinkedIn) — gérée directement depuis la fiche, alimente la rotation en routine d'engagement
+// (une personne différente ciblée à chaque passage plutôt que toujours la même).
+model BrandContact {
+  id         String   @id @default(cuid())
+  brandId    String
+  brand      Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  name       String
+  role       String?
+  profileUrl String?
+  platform   String   @default("LINKEDIN") // "LINKEDIN" | "INSTAGRAM"
+  createdAt  DateTime @default(now())
 }
 
 model ProspectImport {
@@ -287,10 +302,13 @@ model Bundle {
 // Espace personnel sur le Dashboard, indépendant de tout client/projet : liste de tâches
 // libres (pense-bête) + un bloc de notes en texte libre.
 model DashboardTask {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   label     String
-  completed Boolean  @default(false)
-  createdAt DateTime @default(now())
+  completed Boolean   @default(false)
+  // Optionnelle : une tâche datée d'aujourd'hui (ou en retard) apparaît aussi dans
+  // "Relances du jour", à côté des autres relances.
+  dueDate   DateTime?
+  createdAt DateTime  @default(now())
 }
 
 model DashboardNote {
