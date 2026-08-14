@@ -388,7 +388,6 @@ function CardBody({
           {item.nextActionDate && (
             <p>Prochaine action : {new Date(item.nextActionDate).toLocaleDateString("fr-FR")}</p>
           )}
-          {!item.lastContactDate && !item.nextActionDate && <p className="text-ink/30">⠿ Glisser ici</p>}
         </div>
       }
     />
