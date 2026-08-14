@@ -8,6 +8,11 @@ import ProfileLink from "@/components/ProfileLink";
 import type { PipelineStatus } from "@prisma/client";
 import { bestProfileLink, type QualificationProspect } from "@/lib/prospectImport";
 
+export type EngagementContact = {
+  index: number;
+  contact: { name: string; position: string; profileUrl: string; platform: string };
+};
+
 export type SessionBrand = {
   id: string;
   name: string;
@@ -18,6 +23,9 @@ export type SessionBrand = {
   sector: string;
   notes: string | null;
   profileUrl?: string | null;
+  /** Personne à cibler aujourd'hui parmi les contacts identifiés de la marque (rotation
+   * automatique) — absent si la marque n'a qu'un contact générique ou aucun contact connu. */
+  engagementContact?: EngagementContact | null;
 };
 
 type Props = {
@@ -501,6 +509,23 @@ function Step4({
   const [done, setDone] = useState<Record<string, boolean>>({});
   const doneCount = Object.values(done).filter(Boolean).length;
 
+  async function handleToggle(brand: SessionBrand) {
+    const nowDone = !done[brand.id];
+    setDone((prev) => ({ ...prev, [brand.id]: nowDone }));
+    // On ne persiste qu'à la coche (pas au décochage) : ça avance la cadence de 2-3x/semaine
+    // et fait tourner vers le prochain contact identifié la prochaine fois.
+    if (nowDone) {
+      await fetch(`/api/brands/${brand.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lastEngagementAt: new Date().toISOString(),
+          lastEngagementContactIndex: brand.engagementContact?.index ?? null,
+        }),
+      });
+    }
+  }
+
   if (brands.length === 0) {
     return (
       <div className="flex flex-col gap-6">
@@ -523,54 +548,75 @@ function Step4({
         Like, commente ou interagis avec chaque marque aujourd&apos;hui. Coche une fois fait.
       </p>
       <div className="flex flex-col gap-3">
-        {brands.map((brand) => (
-          <div
-            key={brand.id}
-            className={`flex items-center gap-3 rounded-2xl p-4 transition ${
-              done[brand.id] ? "bg-green-50" : "bg-white shadow-soft"
-            }`}
-          >
-            <button
-              onClick={() => setDone((prev) => ({ ...prev, [brand.id]: !prev[brand.id] }))}
-              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition ${
-                done[brand.id]
-                  ? "border-green-500 bg-green-500 text-white"
-                  : "border-ink/30 hover:border-accent"
+        {brands.map((brand) => {
+          const target = brand.engagementContact;
+          const targetLink = target
+            ? target.contact.profileUrl
+            : brandProfileLink({ name: brand.name, platform: brand.platform, profileUrl: brand.profileUrl ?? null });
+          const targetBadgeStyle =
+            (target ? target.contact.platform : brand.platform) === "LINKEDIN"
+              ? { backgroundColor: "#E0ECFF", color: "#2563EB" }
+              : (target ? target.contact.platform : brand.platform) === "INSTAGRAM"
+              ? { backgroundColor: "#FCE7F3", color: "#DB2777" }
+              : { backgroundColor: "#EDE9FE", color: "#7C3AED" };
+          const targetBadgeIcon =
+            (target ? target.contact.platform : brand.platform) === "LINKEDIN"
+              ? "in"
+              : (target ? target.contact.platform : brand.platform) === "INSTAGRAM"
+              ? "ig"
+              : "in/ig";
+
+          return (
+            <div
+              key={brand.id}
+              className={`flex flex-col gap-2 rounded-2xl p-4 transition ${
+                done[brand.id] ? "bg-green-50" : "bg-white shadow-soft"
               }`}
             >
-              {done[brand.id] && "✓"}
-            </button>
-            <div className="flex-1">
-              <p className={`text-sm font-extrabold ${done[brand.id] ? "text-ink/40 line-through" : "text-ink"}`}>
-                {brand.emoji && `${brand.emoji} `}{brand.name}
-              </p>
-              <p className="text-xs font-light text-ink/50">{brand.sector}</p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => handleToggle(brand)}
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition ${
+                    done[brand.id]
+                      ? "border-green-500 bg-green-500 text-white"
+                      : "border-ink/30 hover:border-accent"
+                  }`}
+                >
+                  {done[brand.id] && "✓"}
+                </button>
+                <div className="flex-1">
+                  <p className={`text-sm font-extrabold ${done[brand.id] ? "text-ink/40 line-through" : "text-ink"}`}>
+                    {brand.emoji && `${brand.emoji} `}{brand.name}
+                  </p>
+                  <p className="text-xs font-light text-ink/50">{brand.sector}</p>
+                </div>
+                <a
+                  href={`/marques/${brand.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Ouvrir la fiche dans un nouvel onglet pour y noter des infos"
+                  className="shrink-0 rounded-full bg-soft px-2.5 py-1 text-[11px] font-semibold text-ink/60 transition hover:bg-accent-light/40 hover:text-accent"
+                >
+                  📝 Fiche
+                </a>
+                <ProfileLink
+                  href={targetLink}
+                  title={target ? `Voir le profil de ${target.contact.name}` : "Voir le profil"}
+                  className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                  style={targetBadgeStyle}
+                >
+                  {targetBadgeIcon}
+                </ProfileLink>
+              </div>
+              {target && (
+                <p className="ml-9 text-xs font-semibold text-accent">
+                  🎯 Aujourd&apos;hui : {target.contact.name}
+                  {target.contact.position && <span className="font-light text-ink/50"> — {target.contact.position}</span>}
+                </p>
+              )}
             </div>
-            <a
-              href={`/marques/${brand.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Ouvrir la fiche dans un nouvel onglet pour y noter des infos"
-              className="shrink-0 rounded-full bg-soft px-2.5 py-1 text-[11px] font-semibold text-ink/60 transition hover:bg-accent-light/40 hover:text-accent"
-            >
-              📝 Fiche
-            </a>
-            <ProfileLink
-              href={brandProfileLink({ name: brand.name, platform: brand.platform, profileUrl: brand.profileUrl ?? null })}
-              title="Voir le profil"
-              className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
-              style={
-                brand.platform === "LINKEDIN"
-                  ? { backgroundColor: "#E0ECFF", color: "#2563EB" }
-                  : brand.platform === "INSTAGRAM"
-                  ? { backgroundColor: "#FCE7F3", color: "#DB2777" }
-                  : { backgroundColor: "#EDE9FE", color: "#7C3AED" }
-              }
-            >
-              {brand.platform === "LINKEDIN" ? "in" : brand.platform === "INSTAGRAM" ? "ig" : "in/ig"}
-            </ProfileLink>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <button
         onClick={() => onDone(doneCount)}

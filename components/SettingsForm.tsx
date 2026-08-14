@@ -11,6 +11,7 @@ type Settings = {
   daysBeforeDevisRelance2: number;
   daysBeforeFactureRelance1: number;
   daysBeforeFactureRelance2: number;
+  daysBetweenEngagements: number;
   emailNotifications: boolean;
 };
 
@@ -23,6 +24,7 @@ const groups: { title: string; fields: { key: NumKey; label: string }[] }[] = [
       { key: "daysBeforeGreenLight", label: "Feu vert DM" },
       { key: "daysBeforeRelance1", label: "Relance 1" },
       { key: "daysBeforeRelance2", label: "Relance 2" },
+      { key: "daysBetweenEngagements", label: "Entre 2 passages en routine" },
     ],
   },
   {

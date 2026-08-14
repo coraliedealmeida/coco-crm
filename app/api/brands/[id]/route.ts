@@ -75,6 +75,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   if ("lastContactDate" in body) data.lastContactDate = body.lastContactDate ? new Date(body.lastContactDate) : null;
   if ("nextActionDate" in body) data.nextActionDate = body.nextActionDate ? new Date(body.nextActionDate) : null;
   if ("reconsiderDate" in body) data.reconsiderDate = body.reconsiderDate ? new Date(body.reconsiderDate) : null;
+  if ("lastEngagementAt" in body) data.lastEngagementAt = body.lastEngagementAt ? new Date(body.lastEngagementAt) : null;
+  if ("lastEngagementContactIndex" in body) data.lastEngagementContactIndex = body.lastEngagementContactIndex;
 
   const now = new Date();
   let logType: string | null = null;

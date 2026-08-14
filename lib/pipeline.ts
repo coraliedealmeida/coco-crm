@@ -1,4 +1,5 @@
 import { PipelineStatus } from "@prisma/client";
+import { countBusinessDays } from "@/lib/business-days";
 
 export const pipelineColumns: { status: PipelineStatus; label: string; color: string }[] = [
   { status: "ROUTINE_ENGAGEMENT", label: "Routine d'engagement", color: "#C4B5FD" },
@@ -86,6 +87,32 @@ export const archivingStatuses: PipelineStatus[] = ["ARCHIVE", "DEVIS_REFUSE"];
  */
 export function showsEngagementDays(status: PipelineStatus, days: number, greenLightThreshold: number): boolean {
   return status === "ROUTINE_ENGAGEMENT" && days <= greenLightThreshold;
+}
+
+/**
+ * Une marque en routine d'engagement ne doit revenir dans la liste "à engager" qu'après un
+ * nombre minimum de jours ouvrés depuis le dernier passage (like/commentaire) — il est rare
+ * qu'une marque ou une personne publie tous les jours, pas la peine de la relancer aussi souvent.
+ */
+export function isEngagementDue(lastEngagementAt: Date | null, now: Date, minDays: number): boolean {
+  if (!lastEngagementAt) return true;
+  return countBusinessDays(lastEngagementAt, now) >= minDays;
+}
+
+export type EngagementContact = { name: string; position: string; profileUrl: string; platform: string };
+
+/**
+ * Marque avec plusieurs contacts identifiés (import LinkedIn) : fait tourner automatiquement
+ * la personne ciblée d'un passage à l'autre, plutôt que de toujours pointer vers la même —
+ * ou vers la page générique de la marque.
+ */
+export function nextEngagementContact(
+  contacts: EngagementContact[],
+  lastIndex: number | null
+): { index: number; contact: EngagementContact } | null {
+  if (contacts.length === 0) return null;
+  const nextIndex = lastIndex === null || lastIndex === undefined ? 0 : (lastIndex + 1) % contacts.length;
+  return { index: nextIndex, contact: contacts[nextIndex] };
 }
 
 const nextAutomaticAction: Partial<Record<PipelineStatus, string>> = {

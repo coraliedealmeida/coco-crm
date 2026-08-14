@@ -28,6 +28,7 @@ export default async function ParametresPage() {
             daysBeforeDevisRelance2: settings.daysBeforeDevisRelance2,
             daysBeforeFactureRelance1: settings.daysBeforeFactureRelance1,
             daysBeforeFactureRelance2: settings.daysBeforeFactureRelance2,
+            daysBetweenEngagements: settings.daysBetweenEngagements,
             emailNotifications: settings.emailNotifications,
           }}
         />

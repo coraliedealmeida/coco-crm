@@ -21,6 +21,7 @@ export async function PATCH(request: NextRequest) {
     "daysBeforeDevisRelance2",
     "daysBeforeFactureRelance1",
     "daysBeforeFactureRelance2",
+    "daysBetweenEngagements",
     "emailNotifications",
   ]) {
     if (key in body) data[key] = body[key];

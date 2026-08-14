@@ -13,6 +13,7 @@ import { formatRevenue } from "@/lib/format";
 import { dueBadgeFromDate, dueBadgeFromThreshold, dueSortKey } from "@/lib/dueStatus";
 import { getDailyQualificationBatch } from "@/lib/prospectImport";
 import DashboardNotesWidget from "@/components/DashboardNotesWidget";
+import { isEngagementDue, nextEngagementContact, type EngagementContact } from "@/lib/pipeline";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,15 @@ function profileUrlFromDiscoveryNotes(discoveryNotes: unknown): string | null {
     return typeof value === "string" ? value : null;
   }
   return null;
+}
+
+/** Contacts identifiés à l'import (discoveryNotes.allContacts), quand ils existent. */
+function contactsFromDiscoveryNotes(discoveryNotes: unknown): EngagementContact[] {
+  if (discoveryNotes && typeof discoveryNotes === "object" && "allContacts" in discoveryNotes) {
+    const value = (discoveryNotes as { allContacts?: unknown }).allContacts;
+    return Array.isArray(value) ? (value as EngagementContact[]) : [];
+  }
+  return [];
 }
 
 /**
@@ -131,6 +141,12 @@ export default async function DashboardPage() {
 
   const greenLightBrands = routineBrands.filter((b) => b.days >= settings.daysBeforeGreenLight);
 
+  // Marques réellement "à engager" aujourd'hui : espacées d'au moins daysBetweenEngagements
+  // jours ouvrés depuis le dernier passage, pour ne pas relancer une marque tous les jours.
+  const dueForEngagement = routineBrands.filter((b) =>
+    isEngagementDue(b.lastEngagementAt, now, settings.daysBetweenEngagements)
+  );
+
   const relanceBrands = brands
     .filter(
       (b) =>
@@ -167,17 +183,23 @@ export default async function DashboardPage() {
       })),
   ];
   // Déduplique (greenLight est déjà dans routineBrands mais pipelineStatus ROUTINE_ENGAGEMENT)
-  const sessionRoutineBrands: SessionBrand[] = routineBrands.map((b) => ({
-    id: b.id,
-    name: b.name,
-    emoji: b.emoji,
-    platform: b.platform,
-    pipelineStatus: b.pipelineStatus,
-    contactName: b.contactName,
-    sector: b.sector,
-    notes: b.notes,
-    profileUrl: profileUrlFromDiscoveryNotes(b.discoveryNotes),
-  }));
+  // — seules les marques dues aujourd'hui (cf. dueForEngagement) apparaissent ici.
+  const sessionRoutineBrands: SessionBrand[] = dueForEngagement.map((b) => {
+    const contacts = contactsFromDiscoveryNotes(b.discoveryNotes);
+    const engagement = nextEngagementContact(contacts, b.lastEngagementContactIndex);
+    return {
+      id: b.id,
+      name: b.name,
+      emoji: b.emoji,
+      platform: b.platform,
+      pipelineStatus: b.pipelineStatus,
+      contactName: b.contactName,
+      sector: b.sector,
+      notes: b.notes,
+      profileUrl: profileUrlFromDiscoveryNotes(b.discoveryNotes),
+      engagementContact: engagement,
+    };
+  });
 
   const projectsEnCours = projects.filter(isProjectActive);
   const aFacturer = projects.filter((p) => p.currentStep === "Facture à faire");
@@ -292,10 +314,11 @@ export default async function DashboardPage() {
             title="Routine d'engagement"
             icon="🌱"
             accent="#C4B5FD"
-            count={routineBrands.length}
-            isEmpty={routineBrands.length === 0}
+            count={dueForEngagement.length}
+            isEmpty={dueForEngagement.length === 0}
+            emptyLabel="Aucune marque à engager aujourd'hui."
           >
-            {routineBrands.map((b) => (
+            {dueForEngagement.map((b) => (
               <BrandCard
                 key={b.id}
                 compact
