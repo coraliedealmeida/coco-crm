@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { scheduleProspects } from "@/lib/prospectScheduling";
 
-// Réglage simple : cadence max de nouvelles marques programmées par semaine.
-// (Deviendra un champ Settings si besoin de le rendre réglable depuis l'interface.)
-const MAX_PER_WEEK = 3;
+// Réglage simple : espacement (en jours ouvrés) entre deux nouvelles marques activées,
+// pour ne jamais faire arriver plusieurs nouvelles marques le même jour en routine
+// d'engagement (l'objectif est ~10 min max par jour). (Deviendra un champ Settings si
+// besoin de le rendre réglable depuis l'interface.)
+const SPACING_DAYS = 2;
 
 // Aucune marque ne doit démarrer avant cette date (reprise après l'été, pas d'intérêt à s'y
 // mettre trop tôt). Si programmé avant cette date, tout se cale automatiquement dessus.
@@ -31,14 +33,10 @@ export async function POST() {
   });
 
   const lastScheduledDate = lastScheduled?.scheduledDate ?? null;
-  const countAtLastScheduledDate = lastScheduledDate
-    ? await prisma.prospectImport.count({ where: { scheduledDate: lastScheduledDate } })
-    : 0;
 
   const plan = scheduleProspects(toSchedule, {
     lastScheduledDate,
-    countAtLastScheduledDate,
-    maxPerWeek: MAX_PER_WEEK,
+    spacingDays: SPACING_DAYS,
     minStartDate: MIN_START_DATE,
   });
 

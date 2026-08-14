@@ -44,16 +44,20 @@ function firstWorkdayFrom(d: Date): Date {
   return cursor;
 }
 
-function nextMonday(from: Date): Date {
-  const d = startOfDay(from);
-  const dow = d.getDay();
-  const daysUntilMonday = dow === 1 ? 0 : (8 - dow) % 7;
-  return addDays(d, daysUntilMonday);
-}
-
 function categoryRank(cat: string | null): number {
   const idx = CATEGORY_ORDER.indexOf(cat ?? "INDEPENDANT");
   return idx === -1 ? CATEGORY_ORDER.length - 1 : idx;
+}
+
+function nextWorkday(d: Date): Date {
+  return firstWorkdayFrom(addDays(startOfDay(d), 1));
+}
+
+/** Avance de n jours ouvrés (jours fériés français exclus) à partir de `from`. */
+function addWorkdays(from: Date, n: number): Date {
+  let cursor = startOfDay(from);
+  for (let i = 0; i < n; i++) cursor = nextWorkday(cursor);
+  return cursor;
 }
 
 export interface ScheduleInput {
@@ -64,18 +68,17 @@ export interface ScheduleInput {
 export interface ScheduleContext {
   /** Dernière date déjà programmée toutes marques confondues (null si aucune). */
   lastScheduledDate: Date | null;
-  /** Nombre de marques déjà programmées exactement à lastScheduledDate. */
-  countAtLastScheduledDate: number;
-  /** Cadence maximale de nouvelles marques par semaine. */
-  maxPerWeek: number;
+  /** Nombre de jours ouvrés à laisser entre deux nouvelles marques activées. */
+  spacingDays: number;
   /** Aucune date programmée ne peut être antérieure à cette date (ex : reprise après l'été). */
   minStartDate: Date;
 }
 
 /**
  * Programme une liste de prospects validés ("Oui") : ordre = priorité de catégorie
- * (Grande marque > PME/Startup > Indépendant), en respectant la cadence max/semaine,
- * les jours ouvrés (jours fériés français exclus), une date plancher (minStartDate),
+ * (Grande marque > PME/Startup > Indépendant), une marque par jour ouvré programmé
+ * (jamais plusieurs le même jour), espacées de `spacingDays` jours ouvrés pour éviter
+ * de surcharger la routine d'engagement quotidienne, avec une date plancher (minStartDate)
  * et en continuant après la dernière date déjà attribuée (jamais de reset sur une date fixe).
  */
 export function scheduleProspects(
@@ -87,27 +90,13 @@ export function scheduleProspects(
   const floor = startOfDay(ctx.minStartDate);
   const lastPastFloor = ctx.lastScheduledDate && startOfDay(ctx.lastScheduledDate) >= floor ? startOfDay(ctx.lastScheduledDate) : null;
 
-  let currentDate: Date;
-  let countThisSlot: number;
-
-  if (lastPastFloor && ctx.countAtLastScheduledDate < ctx.maxPerWeek) {
-    currentDate = lastPastFloor;
-    countThisSlot = ctx.countAtLastScheduledDate;
-  } else {
-    const base = lastPastFloor ? addDays(lastPastFloor, 7) : floor;
-    currentDate = firstWorkdayFrom(nextMonday(base));
-    countThisSlot = 0;
-  }
+  let currentDate = lastPastFloor ? addWorkdays(lastPastFloor, ctx.spacingDays) : firstWorkdayFrom(floor);
 
   const result = new Map<string, Date>();
 
   for (const p of sorted) {
-    if (countThisSlot >= ctx.maxPerWeek) {
-      currentDate = firstWorkdayFrom(addDays(currentDate, 7));
-      countThisSlot = 0;
-    }
     result.set(p.id, currentDate);
-    countThisSlot++;
+    currentDate = addWorkdays(currentDate, ctx.spacingDays);
   }
 
   return result;
