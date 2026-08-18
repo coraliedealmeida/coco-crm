@@ -17,8 +17,9 @@ export async function GET(request: NextRequest) {
   const activated: string[] = [];
 
   for (const p of due) {
-    const contacts = (p.contacts ?? []) as { name: string; position: string; profileUrl: string }[];
+    const contacts = (p.contacts ?? []) as { name: string; position: string; profileUrl: string; platform?: string }[];
     const primaryContact = contacts[0] ?? null;
+    const namedContacts = contacts.filter((c) => c.name?.trim());
 
     const brand = await prisma.brand.create({
       data: {
@@ -36,6 +37,20 @@ export async function GET(request: NextRequest) {
           allContacts: contacts,
         },
         prospectImport: { connect: { id: p.id } },
+        // Les personnes identifiées à l'import (ex : contacts LinkedIn/Instagram repérés) doivent
+        // apparaître directement dans l'encart "Contacts d'intérêt" de la fiche, pas seulement
+        // dans discoveryNotes (invisible côté UI, utilisé uniquement en repli pour la rotation).
+        contacts:
+          namedContacts.length > 0
+            ? {
+                create: namedContacts.map((c) => ({
+                  name: c.name.trim(),
+                  role: c.position?.trim() || null,
+                  profileUrl: c.profileUrl?.trim() || null,
+                  platform: c.platform === "INSTAGRAM" ? "INSTAGRAM" : "LINKEDIN",
+                })),
+              }
+            : undefined,
       },
     });
 
