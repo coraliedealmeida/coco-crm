@@ -153,6 +153,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
             status: q.status,
             potentialRevenue: q.potentialRevenue,
             lastContactDate: q.lastContactDate ? q.lastContactDate.toISOString() : null,
+            reconsiderDate: q.reconsiderDate ? q.reconsiderDate.toISOString() : null,
           }))}
         />
       )}

@@ -5,24 +5,24 @@ import { useRouter } from "next/navigation";
 import { pipelineColumns } from "@/lib/pipeline";
 import type { PipelineStatus } from "@prisma/client";
 
-const RELAUNCH_STATUSES: PipelineStatus[] = [
-  "ROUTINE_ENGAGEMENT",
-  "PREMIER_DM",
-  "RELANCE_1",
-  "RELANCE_2",
-];
+const RELAUNCH_STATUSES: Record<"brand" | "quoteRequest", PipelineStatus[]> = {
+  brand: ["ROUTINE_ENGAGEMENT", "PREMIER_DM", "RELANCE_1", "RELANCE_2"],
+  quoteRequest: ["DEVIS_A_FAIRE", "DEVIS_ENVOYE", "RELANCE_DEVIS_1", "RELANCE_DEVIS_2"],
+};
 
-export default function RelaunchButton({ brandId }: { brandId: string }) {
+export default function RelaunchButton({ id, kind = "brand" }: { id: string; kind?: "brand" | "quoteRequest" }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   async function handleRelaunch(status: PipelineStatus) {
     setSaving(true);
-    await fetch(`/api/brands/${brandId}`, {
+    const endpoint = kind === "brand" ? `/api/brands/${id}` : `/api/quote-requests/${id}`;
+    const body = kind === "brand" ? { pipelineStatus: status, reconsiderDate: null } : { status, reconsiderDate: null };
+    await fetch(endpoint, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pipelineStatus: status, reconsiderDate: null }),
+      body: JSON.stringify(body),
     });
     setSaving(false);
     setOpen(false);
@@ -42,7 +42,7 @@ export default function RelaunchButton({ brandId }: { brandId: string }) {
 
   return (
     <div className="mt-2 flex flex-wrap gap-1.5">
-      {RELAUNCH_STATUSES.map((s) => (
+      {RELAUNCH_STATUSES[kind].map((s) => (
         <button
           key={s}
           onClick={() => handleRelaunch(s)}

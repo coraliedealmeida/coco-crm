@@ -98,7 +98,7 @@ function ProjectRow({
 }
 
 export default async function DashboardPage() {
-  const [brands, settings, dueReminders, projects, pendingInvoices, quoteRequests, reconsiderBrands, qualificationBatch, dashboardTasks, dashboardNote] = await Promise.all([
+  const [brands, settings, dueReminders, projects, pendingInvoices, quoteRequests, reconsiderBrands, reconsiderQuoteRequests, qualificationBatch, dashboardTasks, dashboardNote] = await Promise.all([
     // Les clients créés directement (sans prospection) ne doivent alimenter aucun bloc prospection.
     // { not: "DIRECT" } exclurait aussi les marques sans acquisitionPath renseigné (NULL) — OR explicite.
     prisma.brand.findMany({
@@ -141,6 +141,13 @@ export default async function DashboardPage() {
         reconsiderDate: { lte: new Date() },
         archivedAt: null,
       },
+      orderBy: { reconsiderDate: "asc" },
+    }),
+    // Demandes de devis mises "Pas maintenant" (indépendamment du statut de la marque
+    // elle-même, cf. cas d'un client existant avec une nouvelle demande en parallèle).
+    prisma.quoteRequest.findMany({
+      where: { status: "PAS_MAINTENANT", reconsiderDate: { lte: new Date() } },
+      include: { client: { include: { brand: true } } },
       orderBy: { reconsiderDate: "asc" },
     }),
     getDailyQualificationBatch(),
@@ -308,7 +315,37 @@ export default async function DashboardPage() {
                 ⏸ rappel du {b.reconsiderDate ? new Date(b.reconsiderDate).toLocaleDateString("fr-FR") : ""}
               </span>
             }
-            footer={<RelaunchButton brandId={b.id} />}
+            footer={<RelaunchButton id={b.id} kind="brand" />}
+          />
+        ),
+      };
+    }),
+    // Demandes de devis "Pas maintenant" dont la date de rappel est atteinte — même logique
+    // que les marques en pause, mais indépendante du statut de la marque elle-même.
+    ...reconsiderQuoteRequests.map((q) => {
+      const dueBadge = dueBadgeFromDate(q.reconsiderDate, now);
+      return {
+        key: `reconsider-quote-${q.id}`,
+        sortKey: dueSortKey(dueBadge),
+        node: (
+          <BrandCard
+            key={`reconsider-quote-${q.id}`}
+            compact
+            brand={{
+              id: q.client.brand.id,
+              name: q.client.brand.name,
+              emoji: q.client.brand.emoji,
+              engagementDays: null,
+              potentialRevenue: q.potentialRevenue,
+              serviceType: q.label || "Demande de devis",
+            }}
+            dueBadge={dueBadge}
+            statusContent={
+              <span style={{ color: "#C4B5FD" }}>
+                ⏸ rappel du {q.reconsiderDate ? new Date(q.reconsiderDate).toLocaleDateString("fr-FR") : ""}
+              </span>
+            }
+            footer={<RelaunchButton id={q.id} kind="quoteRequest" />}
           />
         ),
       };

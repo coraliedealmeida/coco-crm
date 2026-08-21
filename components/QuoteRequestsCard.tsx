@@ -15,10 +15,17 @@ type QuoteRequest = {
   status: PipelineStatus;
   potentialRevenue: number | null;
   lastContactDate: string | null;
+  reconsiderDate: string | null;
 };
 
 function toDateInputValue(iso: string): string {
   return new Date(iso).toISOString().slice(0, 10);
+}
+
+function addMonths(date: Date, months: number): string {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().slice(0, 10);
 }
 
 export default function QuoteRequestsCard({
@@ -60,6 +67,18 @@ export default function QuoteRequestsCard({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lastContactDate: isoDate }),
+    });
+    router.refresh();
+  }
+
+  async function handlePause(id: string, reconsiderDate: string) {
+    setQuoteRequests((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, status: "PAS_MAINTENANT", reconsiderDate } : q))
+    );
+    await fetch(`/api/quote-requests/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "PAS_MAINTENANT", reconsiderDate }),
     });
     router.refresh();
   }
@@ -113,6 +132,7 @@ export default function QuoteRequestsCard({
             onStatusChange={handleStatusChange}
             onDateChange={handleDateChange}
             onDelete={handleDelete}
+            onPause={handlePause}
           />
         ))}
 
@@ -132,6 +152,7 @@ export default function QuoteRequestsCard({
                   onStatusChange={handleStatusChange}
                   onDateChange={handleDateChange}
                   onDelete={handleDelete}
+                  onPause={handlePause}
                 />
               ))}
           </>
@@ -197,21 +218,38 @@ function QuoteRequestRow({
   onStatusChange,
   onDateChange,
   onDelete,
+  onPause,
 }: {
   q: QuoteRequest;
   onStatusChange: (id: string, status: PipelineStatus) => void;
   onDateChange: (id: string, isoDate: string) => void;
   onDelete: (id: string) => void;
+  onPause: (id: string, reconsiderDate: string) => void;
 }) {
   const [editingDate, setEditingDate] = useState(false);
+  const [showPauseModal, setShowPauseModal] = useState(false);
+  const [pauseDate, setPauseDate] = useState("");
   const title = q.label || q.serviceTypes.map((t) => serviceTypeLabel[t]).join(", ") || "Demande de devis";
 
+  function confirmPause() {
+    if (!pauseDate) return;
+    onPause(q.id, new Date(pauseDate).toISOString());
+    setShowPauseModal(false);
+    setPauseDate("");
+  }
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-soft px-4 py-3">
+    <div className="flex flex-col gap-2 rounded-xl bg-soft px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
       <div>
         <p className="text-sm font-semibold text-ink">{title}</p>
         {q.potentialRevenue != null && (
           <p className="text-xs font-light text-ink/50">{formatRevenue(q.potentialRevenue)}</p>
+        )}
+        {q.status === "PAS_MAINTENANT" && q.reconsiderDate && (
+          <p className="text-xs font-semibold" style={{ color: "#8B5CF6" }}>
+            ⏸ rappel du {new Date(q.reconsiderDate).toLocaleDateString("fr-FR")}
+          </p>
         )}
         {q.lastContactDate &&
           (editingDate ? (
@@ -250,10 +288,65 @@ function QuoteRequestRow({
             </option>
           ))}
         </select>
+        <button
+          onClick={() => setShowPauseModal((v) => !v)}
+          title="Pas maintenant : mettre cette demande en pause avec un rappel"
+          className="text-ink/30 hover:text-accent"
+          aria-label="Pas maintenant"
+        >
+          ⏸
+        </button>
         <button onClick={() => onDelete(q.id)} className="text-ink/30 hover:text-red-500" aria-label="Supprimer">
           ×
         </button>
       </div>
+      </div>
+
+      {showPauseModal && (
+        <div className="rounded-xl bg-white p-3">
+          <p className="mb-2 text-xs font-semibold text-ink">Rappel dans combien de temps ?</p>
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {[
+              { label: "3 mois", months: 3 },
+              { label: "6 mois", months: 6 },
+              { label: "1 an", months: 12 },
+            ].map(({ label, months }) => (
+              <button
+                key={months}
+                onClick={() => setPauseDate(addMonths(new Date(), months))}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  pauseDate === addMonths(new Date(), months)
+                    ? "bg-accent text-white"
+                    : "bg-soft text-ink hover:bg-accent-light/30"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+            <input
+              type="date"
+              value={pauseDate}
+              onChange={(e) => setPauseDate(e.target.value)}
+              className="rounded-lg border border-accent-light bg-soft px-2 py-1.5 text-xs text-ink outline-none focus:border-accent"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={confirmPause}
+              disabled={!pauseDate}
+              className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+            >
+              Confirmer
+            </button>
+            <button
+              onClick={() => { setShowPauseModal(false); setPauseDate(""); }}
+              className="rounded-lg bg-soft px-4 py-1.5 text-xs font-semibold text-ink/50 hover:text-ink"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

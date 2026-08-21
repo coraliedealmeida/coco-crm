@@ -14,6 +14,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     data.potentialRevenue = body.potentialRevenue != null ? Number(body.potentialRevenue) : null;
   }
   if ("serviceTypes" in body) data.serviceTypes = body.serviceTypes;
+  if ("reconsiderDate" in body) data.reconsiderDate = body.reconsiderDate ? new Date(body.reconsiderDate) : null;
 
   const now = new Date();
   let logType: string | null = null;

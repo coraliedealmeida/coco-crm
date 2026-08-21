@@ -215,6 +215,10 @@ model QuoteRequest {
   potentialRevenue Float?
   lastContactDate  DateTime?
   nextActionDate   DateTime?
+  // Date de rappel choisie quand le statut passe à "Pas maintenant" — indépendante de celle
+  // de la marque elle-même (une marque peut avoir un historique clos pendant qu'une nouvelle
+  // demande de devis est mise en pause séparément).
+  reconsiderDate   DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 }

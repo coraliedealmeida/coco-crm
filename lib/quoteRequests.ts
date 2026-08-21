@@ -12,6 +12,7 @@ export const quoteRequestStatuses: PipelineStatus[] = [
   "RELANCE_DEVIS_2",
   "DEVIS_ACCEPTE",
   "DEVIS_REFUSE",
+  "PAS_MAINTENANT",
 ];
 
 export function isQuoteRequestClosed(status: PipelineStatus): boolean {
