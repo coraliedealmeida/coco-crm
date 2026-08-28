@@ -228,7 +228,41 @@ export default async function DashboardPage() {
   });
 
   const projectsEnCours = projects.filter(isProjectActive);
-  const aFacturer = projects.filter((p) => p.currentStep === "Facture à faire");
+
+  // "À facturer" = chaque facture saisie mais pas encore envoyée (peu importe l'étape du
+  // projet — un acompte ou un solde 2/3 déjà noté doit apparaître même si le projet est
+  // encore "En cours"), complété par les projets arrivés à "Facture à faire" qui n'ont
+  // encore aucune facture détaillée (repli sur l'ancien calcul global reste-à-facturer).
+  const aFacturer = projects.flatMap((p) => {
+    const unsentInvoices = p.invoices.filter((inv) => !inv.sentAt);
+    if (unsentInvoices.length > 0) {
+      return unsentInvoices.map((inv) => ({
+        key: `invoice-${inv.id}`,
+        id: p.id,
+        clientId: p.clientId,
+        brandName: p.client.brand.name,
+        brandEmoji: p.client.brand.emoji,
+        serviceType: p.serviceType,
+        name: `${projectLabel(p)} · ${inv.label}`,
+        amount: inv.amount as number | null,
+      }));
+    }
+    if (p.currentStep === "Facture à faire") {
+      return [
+        {
+          key: `project-${p.id}`,
+          id: p.id,
+          clientId: p.clientId,
+          brandName: p.client.brand.name,
+          brandEmoji: p.client.brand.emoji,
+          serviceType: p.serviceType,
+          name: p.name,
+          amount: p.quoteAmount != null ? remainingToInvoice(p.quoteAmount, p.invoices) : null,
+        },
+      ];
+    }
+    return [];
+  });
 
   // Tâches personnelles datées d'aujourd'hui ou en retard, non terminées.
   const dueTasks = dashboardTasks.filter((t) => !t.completed && t.dueDate && t.dueDate <= now);
@@ -464,22 +498,20 @@ export default async function DashboardPage() {
             isEmpty={aFacturer.length === 0}
             emptyLabel="Rien à facturer pour le moment."
           >
-            {aFacturer.map((p) => (
+            {aFacturer.map((item) => (
               <ProjectRow
-                key={p.id}
+                key={item.key}
                 project={{
-                  id: p.id,
-                  clientId: p.clientId,
-                  brandName: p.client.brand.name,
-                  brandEmoji: p.client.brand.emoji,
-                  serviceType: p.serviceType,
-                  name: p.name,
+                  id: item.id,
+                  clientId: item.clientId,
+                  brandName: item.brandName,
+                  brandEmoji: item.brandEmoji,
+                  serviceType: item.serviceType,
+                  name: item.name,
                 }}
                 statusContent={
-                  p.quoteAmount != null ? (
-                    <span className="text-xs font-semibold text-ink/60">
-                      {formatRevenue(remainingToInvoice(p.quoteAmount, p.invoices))}
-                    </span>
+                  item.amount != null ? (
+                    <span className="text-xs font-semibold text-ink/60">{formatRevenue(item.amount)}</span>
                   ) : null
                 }
               />
