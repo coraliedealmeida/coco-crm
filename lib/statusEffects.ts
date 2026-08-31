@@ -12,7 +12,7 @@ import { addBusinessDays } from "@/lib/business-days";
  * doit rester une validation explicite via Commentaires.
  */
 export const statusActionType: Partial<Record<PipelineStatus, string>> = {
-  PREMIER_DM: "Premier DM",
+  PREMIER_DM: "Premier contact",
   RELANCE_1: "Relance 1",
   RELANCE_2: "Relance 2",
   EN_DISCUSSION: "Réponse reçue",
@@ -23,8 +23,10 @@ export const statusActionType: Partial<Record<PipelineStatus, string>> = {
   DEVIS_REFUSE: "Devis refusé",
 };
 
-/** Mapping inverse : à partir d'un libellé d'action loggé (Suivi/Commentaires), quel statut a-t-il déclenché. */
+/** Mapping inverse : à partir d'un libellé d'action loggé (Suivi/Commentaires), quel statut a-t-il déclenché.
+ * "Premier DM" reste mappé pour les entrées enregistrées avant le renommage en "Premier contact". */
 export const statusForActionType: Partial<Record<string, PipelineStatus>> = {
+  "Premier contact": "PREMIER_DM",
   "Premier DM": "PREMIER_DM",
   "Relance 1": "RELANCE_1",
   "Relance 2": "RELANCE_2",

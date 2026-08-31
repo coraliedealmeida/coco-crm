@@ -74,7 +74,7 @@ function nextStatusFor(status: PipelineStatus): PipelineStatus {
 }
 
 function templateLabel(status: PipelineStatus): string {
-  if (status === "ROUTINE_ENGAGEMENT") return "Premier DM";
+  if (status === "ROUTINE_ENGAGEMENT") return "Premier contact";
   if (status === "PREMIER_DM") return "Relance 1";
   return "Relance 2";
 }

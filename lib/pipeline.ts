@@ -3,7 +3,7 @@ import { countBusinessDays } from "@/lib/business-days";
 
 export const pipelineColumns: { status: PipelineStatus; label: string; color: string }[] = [
   { status: "ROUTINE_ENGAGEMENT", label: "Routine d'engagement", color: "#C4B5FD" },
-  { status: "PREMIER_DM", label: "Premier DM", color: "#8B5CF6" },
+  { status: "PREMIER_DM", label: "Premier contact", color: "#8B5CF6" },
   { status: "RELANCE_1", label: "Relance 1", color: "#A78BFA" },
   { status: "RELANCE_2", label: "Relance 2", color: "#7C3AED" },
   { status: "GHOSTE", label: "Ghosté", color: "#9CA3AF" },

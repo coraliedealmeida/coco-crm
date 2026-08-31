@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const actionTypes = [
-  "Premier DM",
+  "Premier contact",
   "Relance 1",
   "Relance 2",
   "Réponse reçue",
