@@ -21,7 +21,7 @@ const groups: { title: string; fields: { key: NumKey; label: string }[] }[] = [
   {
     title: "Prospection",
     fields: [
-      { key: "daysBeforeGreenLight", label: "Feu vert DM" },
+      { key: "daysBeforeGreenLight", label: "Prise de contact" },
       { key: "daysBeforeRelance1", label: "Relance 1" },
       { key: "daysBeforeRelance2", label: "Relance 2" },
       { key: "daysBetweenEngagements", label: "Entre 2 passages en routine" },

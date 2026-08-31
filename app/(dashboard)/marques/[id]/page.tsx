@@ -88,7 +88,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
         </div>
         {greenLight && (
           <span className="rounded-full bg-cta px-4 py-2 text-sm font-semibold text-ink shadow-soft">
-            🟢 Feu vert DM
+            🟢 Prise de contact
           </span>
         )}
       </header>
