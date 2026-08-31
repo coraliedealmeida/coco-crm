@@ -13,7 +13,16 @@ type Entry = {
   type: string;
   content: string | null;
   date: string;
+  channel?: string | null;
 };
+
+/** N'affiche un libellé de canal que pour Email/Formulaire : le DM LinkedIn/Instagram reste
+ * le cas implicite (canal historique), pas la peine de le préciser à chaque entrée. */
+function channelSuffix(channel: string | null | undefined): string | null {
+  if (channel === "EMAIL") return "via Email";
+  if (channel === "FORMULAIRE") return "via Formulaire";
+  return null;
+}
 
 function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
   const router = useRouter();
@@ -60,6 +69,9 @@ function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
           <span className="text-sm font-semibold text-ink">
             {highlighted && <span className="mr-1">💬</span>}
             {entry.type}
+            {channelSuffix(entry.channel) && (
+              <span className="ml-1 font-light text-ink/40"> · {channelSuffix(entry.channel)}</span>
+            )}
           </span>
         )}
         <div className="flex items-center gap-2">

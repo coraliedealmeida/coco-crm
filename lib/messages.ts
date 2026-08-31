@@ -2,7 +2,7 @@ export type MessageTemplate = {
   id: string;
   title: string;
   content: string;
-  platform: "LINKEDIN" | "INSTAGRAM";
+  platform: "LINKEDIN" | "INSTAGRAM" | "EMAIL" | "FORMULAIRE";
 };
 
 export const messageTemplates: MessageTemplate[] = [
@@ -85,6 +85,34 @@ Tu peux découvrir mes réalisations sur coraliedealmeida.com ✨
 À bientôt peut-être !
 
 Coralie & Swan 🐶`,
+  },
+  {
+    id: "email-standard",
+    title: "Email — premier contact",
+    platform: "EMAIL",
+    content: `Objet : Collaboration créative — [Marque]
+
+Bonjour,
+
+Je suis Coralie, graphiste et directrice artistique freelance, spécialisée dans le secteur animalier 🐾
+
+J'ai accompagné plus de 30 marques dans la création de leur identité visuelle et de leurs supports de communication, pour valoriser leur image et rayonner auprès de leur communauté de passionnés d'animaux.
+
+[Marque] fait partie des marques que j'admire dans le secteur. Je me permets de vous contacter pour vous proposer mon expertise en freelance, avec toute la flexibilité et la réactivité que ce format permet, que ce soit en renfort ponctuel ou de façon plus régulière selon vos besoins.
+
+Vous pouvez découvrir mes réalisations sur coraliedealmeida.com — je serais ravie d'échanger si cela peut répondre à un besoin chez [Marque].
+
+Belle journée,
+
+Coralie de Almeida
+(& Swan 🐶)
+coraliedealmeida.com`,
+  },
+  {
+    id: "formulaire-standard",
+    title: "Formulaire de contact du site",
+    platform: "FORMULAIRE",
+    content: `Bonjour, je suis Coralie, graphiste et directrice artistique freelance spécialisée dans le secteur animalier. J'ai accompagné plus de 30 marques dans la création de leur identité visuelle et de leurs supports de communication. [Marque] fait partie des marques que j'admire dans le secteur — je me permets de vous contacter pour vous proposer mon expertise en freelance, de façon ponctuelle ou plus régulière selon vos besoins. Vous pouvez découvrir mes réalisations sur coraliedealmeida.com. Je reste disponible pour en discuter si cela peut vous intéresser. Belle journée, Coralie de Almeida.`,
   },
   {
     id: "relance-1-linkedin",

@@ -13,6 +13,10 @@ export type EngagementContact = {
   contact: { name: string; position: string; profileUrl: string; platform: string };
 };
 
+/** Canal utilisé pour une action de prospection. LINKEDIN/INSTAGRAM = DM sur le réseau ;
+ * EMAIL/FORMULAIRE = hors réseaux sociaux, mais tracé de la même façon dans le Suivi. */
+export type Channel = "LINKEDIN" | "INSTAGRAM" | "EMAIL" | "FORMULAIRE";
+
 export type SessionBrand = {
   id: string;
   name: string;
@@ -42,18 +46,17 @@ const CATEGORY_LABELS: Record<string, string> = {
   INDEPENDANT: "Indépendant",
 };
 
-/** Seul le premier DM existe en deux versions (standard / compliment d'abord) — les relances
- * n'ont qu'une seule formulation, le choix de version n'a donc de sens que là. */
-function hasVersionChoice(status: PipelineStatus): boolean {
-  return status === "ROUTINE_ENGAGEMENT";
+/** Seul le premier DM (LinkedIn/Instagram) existe en deux versions (standard / compliment
+ * d'abord) — les relances et les canaux Email/Formulaire n'ont qu'une seule formulation. */
+function hasVersionChoice(status: PipelineStatus, channel: Channel): boolean {
+  return status === "ROUTINE_ENGAGEMENT" && (channel === "LINKEDIN" || channel === "INSTAGRAM");
 }
 
-function getTemplate(
-  brand: SessionBrand,
-  platform: "LINKEDIN" | "INSTAGRAM",
-  version: "standard" | "compliment"
-): string {
-  const p = platform.toLowerCase() as "linkedin" | "instagram";
+function getTemplate(brand: SessionBrand, channel: Channel, version: "standard" | "compliment"): string {
+  if (channel === "EMAIL") return messageTemplates.find((t) => t.id === "email-standard")?.content ?? "";
+  if (channel === "FORMULAIRE") return messageTemplates.find((t) => t.id === "formulaire-standard")?.content ?? "";
+
+  const p = channel.toLowerCase() as "linkedin" | "instagram";
   if (brand.pipelineStatus === "ROUTINE_ENGAGEMENT") {
     return messageTemplates.find((t) => t.id === `dm-${p}-${version}`)?.content ?? "";
   }
@@ -73,6 +76,13 @@ function templateLabel(status: PipelineStatus): string {
   if (status === "ROUTINE_ENGAGEMENT") return "Premier DM";
   if (status === "PREMIER_DM") return "Relance 1";
   return "Relance 2";
+}
+
+function channelLabel(channel: Channel | undefined): string {
+  if (channel === "EMAIL") return "par Email";
+  if (channel === "FORMULAIRE") return "par Formulaire";
+  if (channel === "INSTAGRAM") return "Instagram";
+  return "LinkedIn";
 }
 
 // ─── Step 1 : Vue d'ensemble ────────────────────────────────────────────────
@@ -145,46 +155,71 @@ function Step1({
 
 // ─── Step 2 : Préparation des messages ──────────────────────────────────────
 
+/** Canal(aux) social(aux) disponibles pour une marque, dans l'ordre d'affichage — Email et
+ * Formulaire sont toujours proposés en plus, quelle que soit la présence de la marque sur
+ * les réseaux (parfois plus pertinent d'écrire directement que de passer par un DM). */
+function channelOptionsFor(brand: SessionBrand): { id: Channel; label: string }[] {
+  const social: { id: Channel; label: string }[] =
+    brand.platform === "BOTH"
+      ? [
+          { id: "LINKEDIN", label: "in" },
+          { id: "INSTAGRAM", label: "ig" },
+        ]
+      : [{ id: brand.platform, label: brand.platform === "LINKEDIN" ? "in" : "ig" }];
+  return [...social, { id: "EMAIL", label: "✉️ Email" }, { id: "FORMULAIRE", label: "📝 Formulaire" }];
+}
+
 function Step2({
   brands,
   onDone,
 }: {
   brands: SessionBrand[];
-  onDone: (prepared: Record<string, string>) => void;
+  onDone: (prepared: Record<string, string>, channelByBrand: Record<string, Channel>) => void;
 }) {
   const [index, setIndex] = useState(0);
   const [prepared, setPrepared] = useState<Record<string, string>>({});
-  const [platformOverride, setPlatformOverride] = useState<Record<string, "LINKEDIN" | "INSTAGRAM">>({});
+  const [channelOverride, setChannelOverride] = useState<Record<string, Channel>>({});
   const [versionOverride, setVersionOverride] = useState<Record<string, "standard" | "compliment">>({});
   const [copied, setCopied] = useState(false);
 
   const brand = brands[index];
-  const effectivePlatform: "LINKEDIN" | "INSTAGRAM" =
-    brand.platform === "BOTH"
-      ? (platformOverride[brand.id] ?? "LINKEDIN")
-      : brand.platform;
+  const defaultChannel: Channel = brand.platform === "BOTH" ? "LINKEDIN" : brand.platform;
+  const effectiveChannel: Channel = channelOverride[brand.id] ?? defaultChannel;
+  const isSocial = effectiveChannel === "LINKEDIN" || effectiveChannel === "INSTAGRAM";
   const effectiveVersion: "standard" | "compliment" = versionOverride[brand.id] ?? "standard";
-  const templateContent = getTemplate(brand, effectivePlatform, effectiveVersion);
+  const templateContent = getTemplate(brand, effectiveChannel, effectiveVersion);
   const currentText = prepared[brand.id] ?? templateContent;
 
   // Le contact ciblé ne sert de lien que s'il correspond au réseau actuellement sélectionné
   // (une marque "Les deux" peut avoir un contact LinkedIn connu mais être composée pour
   // Instagram — dans ce cas on retombe sur le lien générique de la marque sur ce réseau).
+  // Hors DM (Email/Formulaire), pas de profil à proposer.
   const target =
-    brand.engagementContact && brand.engagementContact.contact.platform === effectivePlatform
+    isSocial && brand.engagementContact && brand.engagementContact.contact.platform === effectiveChannel
       ? brand.engagementContact
       : null;
-  const targetLink = target
-    ? target.contact.profileUrl
-    : brandProfileLink({ name: brand.name, platform: effectivePlatform, profileUrl: brand.profileUrl ?? null });
+  const targetLink = isSocial
+    ? target
+      ? target.contact.profileUrl
+      : brandProfileLink({ name: brand.name, platform: effectiveChannel, profileUrl: brand.profileUrl ?? null })
+    : null;
   const targetBadgeStyle =
-    effectivePlatform === "LINKEDIN"
+    effectiveChannel === "LINKEDIN"
       ? { backgroundColor: "#E0ECFF", color: "#2563EB" }
       : { backgroundColor: "#FCE7F3", color: "#DB2777" };
-  const targetBadgeIcon = effectivePlatform === "LINKEDIN" ? "in" : "ig";
+  const targetBadgeIcon = effectiveChannel === "LINKEDIN" ? "in" : "ig";
 
   function setText(text: string) {
     setPrepared((prev) => ({ ...prev, [brand.id]: text }));
+  }
+
+  function setChannel(channel: Channel) {
+    setChannelOverride((prev) => ({ ...prev, [brand.id]: channel }));
+    setPrepared((prev) => {
+      const next = { ...prev };
+      delete next[brand.id];
+      return next;
+    });
   }
 
   async function handleCopy() {
@@ -198,7 +233,11 @@ function Step2({
     if (index < brands.length - 1) {
       setIndex(index + 1);
     } else {
-      onDone(prepared);
+      const channelByBrand: Record<string, Channel> = {};
+      for (const b of brands) {
+        channelByBrand[b.id] = channelOverride[b.id] ?? (b.platform === "BOTH" ? "LINKEDIN" : b.platform);
+      }
+      onDone(prepared, channelByBrand);
     }
   }
 
@@ -207,8 +246,8 @@ function Step2({
     setIndex(index - 1);
   }
 
-  // Reset textarea when brand, platform or version changes
-  const textareaKey = `${brand.id}-${effectivePlatform}-${effectiveVersion}`;
+  // Reset textarea when brand, channel or version changes
+  const textareaKey = `${brand.id}-${effectiveChannel}-${effectiveVersion}`;
 
   return (
     <div className="flex flex-col gap-5">
@@ -228,35 +267,15 @@ function Step2({
             <p className="font-sans text-base font-extrabold text-ink">{brand.name}</p>
             <p className="text-xs font-light text-ink/50">{brand.sector}{brand.contactName ? ` · ${brand.contactName}` : ""}</p>
           </div>
-          <ProfileLink
-            href={targetLink}
-            title={target ? `Voir le profil de ${target.contact.name}` : "Voir le profil"}
-            className="ml-auto shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
-            style={targetBadgeStyle}
-          >
-            {targetBadgeIcon}
-          </ProfileLink>
-          {brand.platform === "BOTH" && (
-            <div className="flex overflow-hidden rounded-xl border border-accent-light">
-              {(["LINKEDIN", "INSTAGRAM"] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => {
-                    setPlatformOverride((prev) => ({ ...prev, [brand.id]: p }));
-                    setPrepared((prev) => {
-                      const next = { ...prev };
-                      delete next[brand.id];
-                      return next;
-                    });
-                  }}
-                  className={`px-3 py-1.5 text-xs font-semibold transition ${
-                    effectivePlatform === p ? "bg-accent text-white" : "bg-white text-ink/60 hover:bg-soft"
-                  }`}
-                >
-                  {p === "LINKEDIN" ? "in" : "ig"}
-                </button>
-              ))}
-            </div>
+          {isSocial && targetLink && (
+            <ProfileLink
+              href={targetLink}
+              title={target ? `Voir le profil de ${target.contact.name}` : "Voir le profil"}
+              className="ml-auto shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+              style={targetBadgeStyle}
+            >
+              {targetBadgeIcon}
+            </ProfileLink>
           )}
         </div>
         {brand.notes && (
@@ -264,7 +283,21 @@ function Step2({
             💬 {brand.notes}
           </p>
         )}
-        {hasVersionChoice(brand.pipelineStatus) && (
+        <p className="mb-1.5 text-xs font-semibold text-ink/40">Canal</p>
+        <div className="mb-3 flex flex-wrap overflow-hidden rounded-xl border border-accent-light">
+          {channelOptionsFor(brand).map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setChannel(c.id)}
+              className={`flex-1 px-3 py-1.5 text-xs font-semibold transition ${
+                effectiveChannel === c.id ? "bg-accent text-white" : "bg-white text-ink/60 hover:bg-soft"
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+        {hasVersionChoice(brand.pipelineStatus, effectiveChannel) && (
           <div className="flex overflow-hidden rounded-xl border border-accent-light">
             {(
               [
@@ -339,9 +372,11 @@ function Step2({
 
 function Step3({
   brands,
+  channelByBrand,
   onDone,
 }: {
   brands: SessionBrand[];
+  channelByBrand: Record<string, Channel>;
   onDone: (sentCount: number) => void;
 }) {
   const router = useRouter();
@@ -354,7 +389,10 @@ function Step3({
     await fetch(`/api/brands/${brand.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pipelineStatus: nextStatusFor(brand.pipelineStatus) }),
+      body: JSON.stringify({
+        pipelineStatus: nextStatusFor(brand.pipelineStatus),
+        channel: channelByBrand[brand.id] ?? null,
+      }),
     });
     setSaving((prev) => ({ ...prev, [brand.id]: false }));
     setSent((prev) => ({ ...prev, [brand.id]: true }));
@@ -392,7 +430,9 @@ function Step3({
               <p className={`text-sm font-extrabold ${sent[brand.id] ? "text-ink/40 line-through" : "text-ink"}`}>
                 {brand.emoji && `${brand.emoji} `}{brand.name}
               </p>
-              <p className="text-xs font-light text-ink/50">{templateLabel(brand.pipelineStatus)}</p>
+              <p className="text-xs font-light text-ink/50">
+                {templateLabel(brand.pipelineStatus)} · {channelLabel(channelByBrand[brand.id])}
+              </p>
             </div>
             {sent[brand.id] && (
               <span className="text-xs font-semibold text-green-600">
@@ -782,6 +822,7 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
   const [sentCount, setSentCount] = useState(0);
   const [engagedCount, setEngagedCount] = useState(0);
   const [qualifiedCount, setQualifiedCount] = useState(0);
+  const [channelByBrand, setChannelByBrand] = useState<Record<string, Channel>>({});
   // Données gelées au démarrage de la session pour éviter que router.refresh() les vide en cours de route
   const [frozen, setFrozen] = useState<{
     msg: SessionBrand[];
@@ -811,6 +852,7 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
     setSentCount(0);
     setEngagedCount(0);
     setQualifiedCount(0);
+    setChannelByBrand({});
     setFrozen(null);
   }
 
@@ -818,9 +860,13 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
     goToStep(skipMessages ? 4 : 2);
   }, [skipMessages, goToStep]);
 
-  const handleStep2Done = useCallback(() => {
-    goToStep(3);
-  }, [goToStep]);
+  const handleStep2Done = useCallback(
+    (_prepared: Record<string, string>, channels: Record<string, Channel>) => {
+      setChannelByBrand(channels);
+      goToStep(3);
+    },
+    [goToStep]
+  );
 
   const handleStep3Done = useCallback((count: number) => {
     setSentCount(count);
@@ -901,7 +947,7 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
         )}
         {maxStepReached >= 3 && (
           <div className={step === 3 ? "" : "hidden"}>
-            <Step3 brands={activeMsg} onDone={handleStep3Done} />
+            <Step3 brands={activeMsg} channelByBrand={channelByBrand} onDone={handleStep3Done} />
           </div>
         )}
         {maxStepReached >= 4 && (

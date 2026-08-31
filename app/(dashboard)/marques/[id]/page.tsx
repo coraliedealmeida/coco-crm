@@ -196,6 +196,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
                   type: e.type,
                   content: e.content,
                   date: e.date.toISOString(),
+                  channel: e.channel,
                 }))}
               />
             </div>

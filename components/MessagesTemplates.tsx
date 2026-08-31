@@ -7,10 +7,12 @@ import MessageCard from "@/components/MessageCard";
 const tabs = [
   { id: "LINKEDIN" as const, label: "LinkedIn" },
   { id: "INSTAGRAM" as const, label: "Instagram" },
+  { id: "EMAIL" as const, label: "Email" },
+  { id: "FORMULAIRE" as const, label: "Formulaire" },
 ];
 
 export default function MessagesTemplates() {
-  const [tab, setTab] = useState<"LINKEDIN" | "INSTAGRAM">("LINKEDIN");
+  const [tab, setTab] = useState<"LINKEDIN" | "INSTAGRAM" | "EMAIL" | "FORMULAIRE">("LINKEDIN");
   const filtered = messageTemplates.filter((t) => t.platform === tab);
 
   return (

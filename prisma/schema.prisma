@@ -148,6 +148,10 @@ model ContactHistoryEntry {
   date      DateTime
   type      String
   content   String?
+  // Canal utilisé pour cette action de prospection : "LINKEDIN" | "INSTAGRAM" | "EMAIL" |
+  // "FORMULAIRE". Absent (null) = historique d'avant ce champ, ou action sans canal
+  // pertinent (ex : note libre) — on suppose alors le DM classique de la marque.
+  channel   String?
   createdAt DateTime @default(now())
 }
 
