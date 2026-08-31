@@ -14,8 +14,9 @@ export type EngagementContact = {
 };
 
 /** Canal utilisé pour une action de prospection. LINKEDIN/INSTAGRAM = DM sur le réseau ;
- * EMAIL/FORMULAIRE = hors réseaux sociaux, mais tracé de la même façon dans le Suivi. */
-export type Channel = "LINKEDIN" | "INSTAGRAM" | "EMAIL" | "FORMULAIRE";
+ * EMAIL/FORMULAIRE = hors réseaux sociaux ; AUTRE = tout canal non listé (ex : une plateforme
+ * de recrutement) — précisé dans le commentaire, sans message type associé. */
+export type Channel = "LINKEDIN" | "INSTAGRAM" | "EMAIL" | "FORMULAIRE" | "AUTRE";
 
 export type SessionBrand = {
   id: string;
@@ -53,6 +54,7 @@ function hasVersionChoice(status: PipelineStatus, channel: Channel): boolean {
 }
 
 function getTemplate(brand: SessionBrand, channel: Channel, version: "standard" | "compliment"): string {
+  if (channel === "AUTRE") return "";
   if (channel === "EMAIL") return messageTemplates.find((t) => t.id === "email-standard")?.content ?? "";
   if (channel === "FORMULAIRE") return messageTemplates.find((t) => t.id === "formulaire-standard")?.content ?? "";
 
@@ -81,6 +83,7 @@ function templateLabel(status: PipelineStatus): string {
 function channelLabel(channel: Channel | undefined): string {
   if (channel === "EMAIL") return "par Email";
   if (channel === "FORMULAIRE") return "par Formulaire";
+  if (channel === "AUTRE") return "autre canal";
   if (channel === "INSTAGRAM") return "Instagram";
   return "LinkedIn";
 }
@@ -166,7 +169,12 @@ function channelOptionsFor(brand: SessionBrand): { id: Channel; label: string }[
           { id: "INSTAGRAM", label: "ig" },
         ]
       : [{ id: brand.platform, label: brand.platform === "LINKEDIN" ? "in" : "ig" }];
-  return [...social, { id: "EMAIL", label: "Email" }, { id: "FORMULAIRE", label: "Formulaire" }];
+  return [
+    ...social,
+    { id: "EMAIL", label: "Email" },
+    { id: "FORMULAIRE", label: "Formulaire" },
+    { id: "AUTRE", label: "Autre" },
+  ];
 }
 
 function Step2({
@@ -174,40 +182,27 @@ function Step2({
   onDone,
 }: {
   brands: SessionBrand[];
-  onDone: (prepared: Record<string, string>, channelByBrand: Record<string, Channel>) => void;
+  onDone: (
+    prepared: Record<string, string>,
+    channelByBrand: Record<string, Channel>,
+    commentByBrand: Record<string, string>
+  ) => void;
 }) {
   const [index, setIndex] = useState(0);
   const [prepared, setPrepared] = useState<Record<string, string>>({});
   const [channelOverride, setChannelOverride] = useState<Record<string, Channel>>({});
   const [versionOverride, setVersionOverride] = useState<Record<string, "standard" | "compliment">>({});
+  const [comment, setComment] = useState<Record<string, string>>({});
+  const [messageExpanded, setMessageExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const brand = brands[index];
   const defaultChannel: Channel = brand.platform === "BOTH" ? "LINKEDIN" : brand.platform;
   const effectiveChannel: Channel = channelOverride[brand.id] ?? defaultChannel;
-  const isSocial = effectiveChannel === "LINKEDIN" || effectiveChannel === "INSTAGRAM";
   const effectiveVersion: "standard" | "compliment" = versionOverride[brand.id] ?? "standard";
   const templateContent = getTemplate(brand, effectiveChannel, effectiveVersion);
   const currentText = prepared[brand.id] ?? templateContent;
-
-  // Le contact ciblé ne sert de lien que s'il correspond au réseau actuellement sélectionné
-  // (une marque "Les deux" peut avoir un contact LinkedIn connu mais être composée pour
-  // Instagram — dans ce cas on retombe sur le lien générique de la marque sur ce réseau).
-  // Hors DM (Email/Formulaire), pas de profil à proposer.
-  const target =
-    isSocial && brand.engagementContact && brand.engagementContact.contact.platform === effectiveChannel
-      ? brand.engagementContact
-      : null;
-  const targetLink = isSocial
-    ? target
-      ? target.contact.profileUrl
-      : brandProfileLink({ name: brand.name, platform: effectiveChannel, profileUrl: brand.profileUrl ?? null })
-    : null;
-  const targetBadgeStyle =
-    effectiveChannel === "LINKEDIN"
-      ? { backgroundColor: "#E0ECFF", color: "#2563EB" }
-      : { backgroundColor: "#FCE7F3", color: "#DB2777" };
-  const targetBadgeIcon = effectiveChannel === "LINKEDIN" ? "in" : "ig";
+  const hasMessage = effectiveChannel !== "AUTRE";
 
   function setText(text: string) {
     setPrepared((prev) => ({ ...prev, [brand.id]: text }));
@@ -237,7 +232,7 @@ function Step2({
       for (const b of brands) {
         channelByBrand[b.id] = channelOverride[b.id] ?? (b.platform === "BOTH" ? "LINKEDIN" : b.platform);
       }
-      onDone(prepared, channelByBrand);
+      onDone(prepared, channelByBrand, comment);
     }
   }
 
@@ -265,7 +260,7 @@ function Step2({
           {brand.emoji && <span className="text-lg">{brand.emoji}</span>}
           <div>
             <p className="font-sans text-base font-extrabold text-ink">{brand.name}</p>
-            <p className="text-xs font-light text-ink/50">{brand.sector}{brand.contactName ? ` · ${brand.contactName}` : ""}</p>
+            <p className="text-xs font-light text-ink/50">{brand.sector}</p>
           </div>
           <a
             href={`/marques/${brand.id}`}
@@ -276,16 +271,6 @@ function Step2({
           >
             📝 Fiche
           </a>
-          {isSocial && targetLink && (
-            <ProfileLink
-              href={targetLink}
-              title={target ? `Voir le profil de ${target.contact.name}` : "Voir le profil"}
-              className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
-              style={targetBadgeStyle}
-            >
-              {targetBadgeIcon}
-            </ProfileLink>
-          )}
         </div>
         {brand.notes && (
           <p className="mb-3 rounded-xl bg-soft px-3 py-2 text-xs font-light text-ink/60">
@@ -336,26 +321,46 @@ function Step2({
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-xs font-semibold text-ink/40">Message · personnalise les crochets ↓</p>
         <textarea
-          key={textareaKey}
-          value={currentText}
-          onChange={(e) => setText(e.target.value)}
-          rows={10}
-          className="w-full rounded-2xl border border-accent-light bg-white px-4 py-3 font-sans text-sm text-ink outline-none focus:border-accent"
+          value={comment[brand.id] ?? ""}
+          onChange={(e) => setComment((prev) => ({ ...prev, [brand.id]: e.target.value }))}
+          rows={2}
+          placeholder={
+            effectiveChannel === "AUTRE"
+              ? "Précise le canal utilisé (ex : plateforme de recrutement X)…"
+              : "Commentaire (facultatif)…"
+          }
+          className="w-full rounded-2xl border border-accent-light bg-white px-4 py-2.5 font-sans text-sm text-ink outline-none focus:border-accent"
         />
       </div>
 
-      <div className="flex items-center gap-3">
-        <button
-          onClick={handleCopy}
-          className={`flex-1 rounded-2xl py-3 text-sm font-extrabold transition ${
-            copied ? "bg-green-100 text-green-700" : "bg-cta text-ink hover:opacity-90"
-          }`}
-        >
-          {copied ? "✓ Copié !" : "Copier le message"}
-        </button>
-      </div>
+      {hasMessage && (
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => setMessageExpanded((v) => !v)}
+            className="flex items-center justify-between text-xs font-semibold text-ink/40 hover:text-accent"
+          >
+            <span>{messageExpanded ? "▾" : "▸"} Message · personnalise les crochets</span>
+          </button>
+          {messageExpanded && (
+            <textarea
+              key={textareaKey}
+              value={currentText}
+              onChange={(e) => setText(e.target.value)}
+              rows={10}
+              className="w-full rounded-2xl border border-accent-light bg-white px-4 py-3 font-sans text-sm text-ink outline-none focus:border-accent"
+            />
+          )}
+          <button
+            onClick={handleCopy}
+            className={`rounded-2xl py-3 text-sm font-extrabold transition ${
+              copied ? "bg-green-100 text-green-700" : "bg-cta text-ink hover:opacity-90"
+            }`}
+          >
+            {copied ? "✓ Copié !" : "Copier le message"}
+          </button>
+        </div>
+      )}
 
       <div className="flex gap-3">
         {index > 0 && (
@@ -382,10 +387,12 @@ function Step2({
 function Step3({
   brands,
   channelByBrand,
+  commentByBrand,
   onDone,
 }: {
   brands: SessionBrand[];
   channelByBrand: Record<string, Channel>;
+  commentByBrand: Record<string, string>;
   onDone: (sentCount: number) => void;
 }) {
   const router = useRouter();
@@ -401,6 +408,7 @@ function Step3({
       body: JSON.stringify({
         pipelineStatus: nextStatusFor(brand.pipelineStatus),
         channel: channelByBrand[brand.id] ?? null,
+        content: commentByBrand[brand.id]?.trim() || null,
       }),
     });
     setSaving((prev) => ({ ...prev, [brand.id]: false }));
@@ -442,6 +450,9 @@ function Step3({
               <p className="text-xs font-light text-ink/50">
                 {templateLabel(brand.pipelineStatus)} · {channelLabel(channelByBrand[brand.id])}
               </p>
+              {commentByBrand[brand.id]?.trim() && (
+                <p className="mt-0.5 text-xs font-light italic text-ink/40">💬 {commentByBrand[brand.id]}</p>
+              )}
             </div>
             {sent[brand.id] && (
               <span className="text-xs font-semibold text-green-600">
@@ -832,6 +843,7 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
   const [engagedCount, setEngagedCount] = useState(0);
   const [qualifiedCount, setQualifiedCount] = useState(0);
   const [channelByBrand, setChannelByBrand] = useState<Record<string, Channel>>({});
+  const [commentByBrand, setCommentByBrand] = useState<Record<string, string>>({});
   // Données gelées au démarrage de la session pour éviter que router.refresh() les vide en cours de route
   const [frozen, setFrozen] = useState<{
     msg: SessionBrand[];
@@ -862,6 +874,7 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
     setEngagedCount(0);
     setQualifiedCount(0);
     setChannelByBrand({});
+    setCommentByBrand({});
     setFrozen(null);
   }
 
@@ -870,8 +883,13 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
   }, [skipMessages, goToStep]);
 
   const handleStep2Done = useCallback(
-    (_prepared: Record<string, string>, channels: Record<string, Channel>) => {
+    (
+      _prepared: Record<string, string>,
+      channels: Record<string, Channel>,
+      comments: Record<string, string>
+    ) => {
       setChannelByBrand(channels);
+      setCommentByBrand(comments);
       goToStep(3);
     },
     [goToStep]
@@ -956,7 +974,12 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
         )}
         {maxStepReached >= 3 && (
           <div className={step === 3 ? "" : "hidden"}>
-            <Step3 brands={activeMsg} channelByBrand={channelByBrand} onDone={handleStep3Done} />
+            <Step3
+              brands={activeMsg}
+              channelByBrand={channelByBrand}
+              commentByBrand={commentByBrand}
+              onDone={handleStep3Done}
+            />
           </div>
         )}
         {maxStepReached >= 4 && (

@@ -183,9 +183,8 @@ export default async function DashboardPage() {
     .map((b) => ({ ...b, dueBadge: dueBadgeFromDate(b.nextActionDate, now) }))
     .sort((a, b) => dueSortKey(a.dueBadge) - dueSortKey(b.dueBadge));
 
-  // Données pour la session guidée. Le contact cliquable est le premier identifié pour la
-  // marque (pas de rotation ici, contrairement à la routine d'engagement : un DM/relance est
-  // une action ponctuelle, pas un passage répété où alterner les personnes a du sens).
+  // Données pour la session guidée. Le choix de l'interlocuteur se fait depuis la fiche
+  // (lien direct dans la Session du jour), pas ici : pas besoin de résoudre un contact.
   const sessionMessageBrands: SessionBrand[] = [
     ...greenLightBrands.map((b) => ({
       id: b.id,
@@ -196,8 +195,6 @@ export default async function DashboardPage() {
       contactName: b.contactName,
       sector: b.sector,
       notes: b.notes,
-      profileUrl: profileUrlFromDiscoveryNotes(b.discoveryNotes),
-      engagementContact: nextEngagementContact(engagementContactsFor(b), null),
     })),
     ...relanceBrands
       .filter((b) => ["PREMIER_DM", "RELANCE_1"].includes(b.pipelineStatus))
@@ -210,8 +207,6 @@ export default async function DashboardPage() {
         contactName: b.contactName,
         sector: b.sector,
         notes: b.notes,
-        profileUrl: profileUrlFromDiscoveryNotes(b.discoveryNotes),
-        engagementContact: nextEngagementContact(engagementContactsFor(b), null),
       })),
   ];
   // Déduplique (greenLight est déjà dans routineBrands mais pipelineStatus ROUTINE_ENGAGEMENT)

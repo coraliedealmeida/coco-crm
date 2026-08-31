@@ -105,7 +105,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
   if (logType) {
     await prisma.contactHistoryEntry.create({
-      data: { brandId: brand.id, date: now, type: logType, channel: body.channel ?? null },
+      data: { brandId: brand.id, date: now, type: logType, channel: body.channel ?? null, content: body.content ?? null },
     });
   }
 
