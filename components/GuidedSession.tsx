@@ -166,7 +166,7 @@ function channelOptionsFor(brand: SessionBrand): { id: Channel; label: string }[
           { id: "INSTAGRAM", label: "ig" },
         ]
       : [{ id: brand.platform, label: brand.platform === "LINKEDIN" ? "in" : "ig" }];
-  return [...social, { id: "EMAIL", label: "✉️ Email" }, { id: "FORMULAIRE", label: "📝 Formulaire" }];
+  return [...social, { id: "EMAIL", label: "Email" }, { id: "FORMULAIRE", label: "Formulaire" }];
 }
 
 function Step2({
@@ -267,11 +267,20 @@ function Step2({
             <p className="font-sans text-base font-extrabold text-ink">{brand.name}</p>
             <p className="text-xs font-light text-ink/50">{brand.sector}{brand.contactName ? ` · ${brand.contactName}` : ""}</p>
           </div>
+          <a
+            href={`/marques/${brand.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Ouvrir la fiche dans un nouvel onglet pour choisir l'interlocuteur"
+            className="ml-auto shrink-0 rounded-full bg-soft px-2.5 py-1 text-[11px] font-semibold text-ink/60 transition hover:bg-accent-light/40 hover:text-accent"
+          >
+            📝 Fiche
+          </a>
           {isSocial && targetLink && (
             <ProfileLink
               href={targetLink}
               title={target ? `Voir le profil de ${target.contact.name}` : "Voir le profil"}
-              className="ml-auto shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+              className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
               style={targetBadgeStyle}
             >
               {targetBadgeIcon}
