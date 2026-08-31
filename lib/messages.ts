@@ -14,7 +14,7 @@ export const messageTemplates: MessageTemplate[] = [
 
 Je suis Coralie, graphiste et directrice artistique spécialisée dans le secteur animalier 🐾
 
-J'ai accompagné plus de 20 marques dans la création de leur identité visuelle et de leurs supports de communication, pour valoriser leur image et rayonner auprès de leur communauté de passionnés d'animaux.
+J'ai accompagné plus de 30 marques dans la création de leur identité visuelle et de leurs supports de communication, pour valoriser leur image et rayonner auprès de leur communauté de passionnés d'animaux.
 
 [Marque] fait partie des marques que j'admire dans le secteur. C'est pourquoi je me permets de vous contacter pour vous proposer mon expertise en freelance, avec toute la flexibilité et la réactivité que ce format permet, que ce soit en renfort ponctuel ou de façon plus régulière selon vos besoins.
 
@@ -36,7 +36,7 @@ Coralie
 
 [Marque] fait partie des marques que j'admire dans le secteur animalier — [observation spécifique] me parle vraiment.
 
-Je suis Coralie, graphiste et directrice artistique spécialisée dans le secteur animalier 🐾 J'ai accompagné plus de 20 marques dans la création de leur identité visuelle et de leurs supports de communication, pour valoriser leur image et rayonner auprès de leur communauté de passionnés d'animaux.
+Je suis Coralie, graphiste et directrice artistique spécialisée dans le secteur animalier 🐾 J'ai accompagné plus de 30 marques dans la création de leur identité visuelle et de leurs supports de communication, pour valoriser leur image et rayonner auprès de leur communauté de passionnés d'animaux.
 
 Je me permets de vous contacter pour vous proposer mon expertise en freelance, avec toute la flexibilité et la réactivité que ce format permet, que ce soit en renfort ponctuel ou de façon plus régulière selon vos besoins.
 
@@ -58,7 +58,7 @@ Coralie
 
 Je suis Coralie, graphiste et directrice artistique spécialisée dans le secteur animalier 🐾
 
-J'ai accompagné plus de 20 marques dans la création de leur identité visuelle et de leurs supports de communication, pour valoriser leur image et rayonner auprès de leur communauté.
+J'ai accompagné plus de 30 marques dans la création de leur identité visuelle et de leurs supports de communication, pour valoriser leur image et rayonner auprès de leur communauté.
 
 J'adore l'univers de [Marque] et je me demandais si mes services pourraient correspondre à un besoin de ton côté — serais-tu ouverte à en discuter ? ☺️
 
@@ -76,7 +76,7 @@ Coralie & Swan 🐶`,
 
 J'adore l'univers de [Marque] — [observation spécifique] me parle vraiment 🐾
 
-Je suis Coralie, graphiste et directrice artistique spécialisée dans le secteur animalier. J'ai accompagné plus de 20 marques dans la création de leur identité visuelle et de leurs supports de communication, pour valoriser leur image et rayonner auprès de leur communauté.
+Je suis Coralie, graphiste et directrice artistique spécialisée dans le secteur animalier. J'ai accompagné plus de 30 marques dans la création de leur identité visuelle et de leurs supports de communication, pour valoriser leur image et rayonner auprès de leur communauté.
 
 Je me demandais si mes services pourraient correspondre à un besoin de ton côté — serais-tu ouverte à en discuter ? ☺️
 

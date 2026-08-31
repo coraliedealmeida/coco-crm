@@ -42,12 +42,20 @@ const CATEGORY_LABELS: Record<string, string> = {
   INDEPENDANT: "Indépendant",
 };
 
-function getTemplate(brand: SessionBrand, platform: "LINKEDIN" | "INSTAGRAM"): string {
+/** Seul le premier DM existe en deux versions (standard / compliment d'abord) — les relances
+ * n'ont qu'une seule formulation, le choix de version n'a donc de sens que là. */
+function hasVersionChoice(status: PipelineStatus): boolean {
+  return status === "ROUTINE_ENGAGEMENT";
+}
+
+function getTemplate(
+  brand: SessionBrand,
+  platform: "LINKEDIN" | "INSTAGRAM",
+  version: "standard" | "compliment"
+): string {
   const p = platform.toLowerCase() as "linkedin" | "instagram";
   if (brand.pipelineStatus === "ROUTINE_ENGAGEMENT") {
-    return (
-      messageTemplates.find((t) => t.id === `dm-${p}-standard`)?.content ?? ""
-    );
+    return messageTemplates.find((t) => t.id === `dm-${p}-${version}`)?.content ?? "";
   }
   if (brand.pipelineStatus === "PREMIER_DM") {
     return messageTemplates.find((t) => t.id === `relance-1-${p}`)?.content ?? "";
@@ -147,6 +155,7 @@ function Step2({
   const [index, setIndex] = useState(0);
   const [prepared, setPrepared] = useState<Record<string, string>>({});
   const [platformOverride, setPlatformOverride] = useState<Record<string, "LINKEDIN" | "INSTAGRAM">>({});
+  const [versionOverride, setVersionOverride] = useState<Record<string, "standard" | "compliment">>({});
   const [copied, setCopied] = useState(false);
 
   const brand = brands[index];
@@ -154,8 +163,25 @@ function Step2({
     brand.platform === "BOTH"
       ? (platformOverride[brand.id] ?? "LINKEDIN")
       : brand.platform;
-  const templateContent = getTemplate(brand, effectivePlatform);
+  const effectiveVersion: "standard" | "compliment" = versionOverride[brand.id] ?? "standard";
+  const templateContent = getTemplate(brand, effectivePlatform, effectiveVersion);
   const currentText = prepared[brand.id] ?? templateContent;
+
+  // Le contact ciblé ne sert de lien que s'il correspond au réseau actuellement sélectionné
+  // (une marque "Les deux" peut avoir un contact LinkedIn connu mais être composée pour
+  // Instagram — dans ce cas on retombe sur le lien générique de la marque sur ce réseau).
+  const target =
+    brand.engagementContact && brand.engagementContact.contact.platform === effectivePlatform
+      ? brand.engagementContact
+      : null;
+  const targetLink = target
+    ? target.contact.profileUrl
+    : brandProfileLink({ name: brand.name, platform: effectivePlatform, profileUrl: brand.profileUrl ?? null });
+  const targetBadgeStyle =
+    effectivePlatform === "LINKEDIN"
+      ? { backgroundColor: "#E0ECFF", color: "#2563EB" }
+      : { backgroundColor: "#FCE7F3", color: "#DB2777" };
+  const targetBadgeIcon = effectivePlatform === "LINKEDIN" ? "in" : "ig";
 
   function setText(text: string) {
     setPrepared((prev) => ({ ...prev, [brand.id]: text }));
@@ -181,8 +207,8 @@ function Step2({
     setIndex(index - 1);
   }
 
-  // Reset textarea when brand or platform changes
-  const textareaKey = `${brand.id}-${effectivePlatform}`;
+  // Reset textarea when brand, platform or version changes
+  const textareaKey = `${brand.id}-${effectivePlatform}-${effectiveVersion}`;
 
   return (
     <div className="flex flex-col gap-5">
@@ -202,8 +228,16 @@ function Step2({
             <p className="font-sans text-base font-extrabold text-ink">{brand.name}</p>
             <p className="text-xs font-light text-ink/50">{brand.sector}{brand.contactName ? ` · ${brand.contactName}` : ""}</p>
           </div>
+          <ProfileLink
+            href={targetLink}
+            title={target ? `Voir le profil de ${target.contact.name}` : "Voir le profil"}
+            className="ml-auto shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+            style={targetBadgeStyle}
+          >
+            {targetBadgeIcon}
+          </ProfileLink>
           {brand.platform === "BOTH" && (
-            <div className="ml-auto flex overflow-hidden rounded-xl border border-accent-light">
+            <div className="flex overflow-hidden rounded-xl border border-accent-light">
               {(["LINKEDIN", "INSTAGRAM"] as const).map((p) => (
                 <button
                   key={p}
@@ -229,6 +263,33 @@ function Step2({
           <p className="mb-3 rounded-xl bg-soft px-3 py-2 text-xs font-light text-ink/60">
             💬 {brand.notes}
           </p>
+        )}
+        {hasVersionChoice(brand.pipelineStatus) && (
+          <div className="flex overflow-hidden rounded-xl border border-accent-light">
+            {(
+              [
+                { id: "standard" as const, label: "Standard" },
+                { id: "compliment" as const, label: "Compliment d'abord" },
+              ]
+            ).map((v) => (
+              <button
+                key={v.id}
+                onClick={() => {
+                  setVersionOverride((prev) => ({ ...prev, [brand.id]: v.id }));
+                  setPrepared((prev) => {
+                    const next = { ...prev };
+                    delete next[brand.id];
+                    return next;
+                  });
+                }}
+                className={`flex-1 px-3 py-1.5 text-xs font-semibold transition ${
+                  effectiveVersion === v.id ? "bg-accent text-white" : "bg-white text-ink/60 hover:bg-soft"
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
