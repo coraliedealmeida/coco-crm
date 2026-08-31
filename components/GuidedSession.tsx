@@ -163,10 +163,10 @@ function channelOptionsFor(brand: SessionBrand): { id: Channel; label: string }[
   const social: { id: Channel; label: string }[] =
     brand.platform === "BOTH"
       ? [
-          { id: "LINKEDIN", label: "in" },
-          { id: "INSTAGRAM", label: "ig" },
+          { id: "LINKEDIN", label: "In" },
+          { id: "INSTAGRAM", label: "IG" },
         ]
-      : [{ id: brand.platform, label: brand.platform === "LINKEDIN" ? "in" : "ig" }];
+      : [{ id: brand.platform, label: brand.platform === "LINKEDIN" ? "In" : "IG" }];
   return [...social, { id: "EMAIL", label: "Email" }, { id: "AUTRE", label: "Autre" }];
 }
 

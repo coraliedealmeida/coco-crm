@@ -433,12 +433,12 @@ export default async function DashboardPage() {
           </DashboardSection>
 
           <DashboardSection
-            title="Feux verts DM"
+            title="Prise de contact"
             icon="🟢"
             accent="#CCFF00"
             count={greenLightBrands.length}
             isEmpty={greenLightBrands.length === 0}
-            emptyLabel="Aucun feu vert pour le moment."
+            emptyLabel="Rien à prendre en contact pour le moment."
           >
             {greenLightBrands.map((b) => (
               <BrandCard
