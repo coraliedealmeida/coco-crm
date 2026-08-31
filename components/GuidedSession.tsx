@@ -14,9 +14,9 @@ export type EngagementContact = {
 };
 
 /** Canal utilisé pour une action de prospection. LINKEDIN/INSTAGRAM = DM sur le réseau ;
- * EMAIL/FORMULAIRE = hors réseaux sociaux ; AUTRE = tout canal non listé (ex : une plateforme
- * de recrutement) — précisé dans le commentaire, sans message type associé. */
-export type Channel = "LINKEDIN" | "INSTAGRAM" | "EMAIL" | "FORMULAIRE" | "AUTRE";
+ * EMAIL = hors réseaux sociaux ; AUTRE = tout autre canal (formulaire du site, plateforme
+ * de recrutement...) — précisé dans le commentaire, sans message type associé. */
+export type Channel = "LINKEDIN" | "INSTAGRAM" | "EMAIL" | "AUTRE";
 
 export type SessionBrand = {
   id: string;
@@ -48,7 +48,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 /** Seul le premier DM (LinkedIn/Instagram) existe en deux versions (standard / compliment
- * d'abord) — les relances et les canaux Email/Formulaire n'ont qu'une seule formulation. */
+ * d'abord) — les relances et le canal Email n'ont qu'une seule formulation. */
 function hasVersionChoice(status: PipelineStatus, channel: Channel): boolean {
   return status === "ROUTINE_ENGAGEMENT" && (channel === "LINKEDIN" || channel === "INSTAGRAM");
 }
@@ -56,7 +56,6 @@ function hasVersionChoice(status: PipelineStatus, channel: Channel): boolean {
 function getTemplate(brand: SessionBrand, channel: Channel, version: "standard" | "compliment"): string {
   if (channel === "AUTRE") return "";
   if (channel === "EMAIL") return messageTemplates.find((t) => t.id === "email-standard")?.content ?? "";
-  if (channel === "FORMULAIRE") return messageTemplates.find((t) => t.id === "formulaire-standard")?.content ?? "";
 
   const p = channel.toLowerCase() as "linkedin" | "instagram";
   if (brand.pipelineStatus === "ROUTINE_ENGAGEMENT") {
@@ -82,7 +81,6 @@ function templateLabel(status: PipelineStatus): string {
 
 function channelLabel(channel: Channel | undefined): string {
   if (channel === "EMAIL") return "par Email";
-  if (channel === "FORMULAIRE") return "par Formulaire";
   if (channel === "AUTRE") return "autre canal";
   if (channel === "INSTAGRAM") return "Instagram";
   return "LinkedIn";
@@ -159,8 +157,8 @@ function Step1({
 // ─── Step 2 : Préparation des messages ──────────────────────────────────────
 
 /** Canal(aux) social(aux) disponibles pour une marque, dans l'ordre d'affichage — Email et
- * Formulaire sont toujours proposés en plus, quelle que soit la présence de la marque sur
- * les réseaux (parfois plus pertinent d'écrire directement que de passer par un DM). */
+ * Autre sont toujours proposés en plus, quelle que soit la présence de la marque sur les
+ * réseaux (parfois plus pertinent d'écrire directement que de passer par un DM). */
 function channelOptionsFor(brand: SessionBrand): { id: Channel; label: string }[] {
   const social: { id: Channel; label: string }[] =
     brand.platform === "BOTH"
@@ -169,12 +167,7 @@ function channelOptionsFor(brand: SessionBrand): { id: Channel; label: string }[
           { id: "INSTAGRAM", label: "ig" },
         ]
       : [{ id: brand.platform, label: brand.platform === "LINKEDIN" ? "in" : "ig" }];
-  return [
-    ...social,
-    { id: "EMAIL", label: "Email" },
-    { id: "FORMULAIRE", label: "Formulaire" },
-    { id: "AUTRE", label: "Autre" },
-  ];
+  return [...social, { id: "EMAIL", label: "Email" }, { id: "AUTRE", label: "Autre" }];
 }
 
 function Step2({

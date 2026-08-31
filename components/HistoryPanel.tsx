@@ -16,11 +16,11 @@ type Entry = {
   channel?: string | null;
 };
 
-/** N'affiche un libellé de canal que pour Email/Formulaire : le DM LinkedIn/Instagram reste
- * le cas implicite (canal historique), pas la peine de le préciser à chaque entrée. */
+/** N'affiche un libellé de canal que pour Email/Autre : le DM LinkedIn/Instagram reste le
+ * cas implicite (canal historique), pas la peine de le préciser à chaque entrée. */
 function channelSuffix(channel: string | null | undefined): string | null {
   if (channel === "EMAIL") return "via Email";
-  if (channel === "FORMULAIRE") return "via Formulaire";
+  if (channel === "AUTRE") return "via un autre canal";
   return null;
 }
 
