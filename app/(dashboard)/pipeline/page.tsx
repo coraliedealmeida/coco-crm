@@ -4,7 +4,12 @@ import KanbanBoard from "@/components/KanbanBoard";
 import StatsGrid from "@/components/StatsGrid";
 import { formatRevenue } from "@/lib/format";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isQuoteRequestClosed } from "@/lib/quoteRequests";
+import { macroGroupForStatus } from "@/lib/pipeline";
+
+// Le revenu potentiel "en cours" ne doit compter que les cartes activement en négociation :
+// pas les prospects froids pas encore contactés (À contacter), ni les dossiers clos ou en
+// pause (Closing, En pause) qui n'ont plus rien "en cours".
+const REVENUE_MACRO_GROUPS = new Set(["A_RELANCER", "EN_DISCUSSION"]);
 
 export const dynamic = "force-dynamic";
 
@@ -53,9 +58,11 @@ export default async function PipelinePage() {
   // sur des marques créées directement, sans potentialRevenue propre) — sinon leur montant
   // n'apparaît nulle part dans ce total, même tant qu'elles sont activement en négociation.
   const potentialRevenue =
-    brands.filter((b) => !b.archivedAt).reduce((sum, b) => sum + (b.potentialRevenue ?? 0), 0) +
+    brands
+      .filter((b) => REVENUE_MACRO_GROUPS.has(macroGroupForStatus(b.pipelineStatus).id))
+      .reduce((sum, b) => sum + (b.potentialRevenue ?? 0), 0) +
     quoteRequests
-      .filter((q) => !isQuoteRequestClosed(q.status))
+      .filter((q) => REVENUE_MACRO_GROUPS.has(macroGroupForStatus(q.status).id))
       .reduce((sum, q) => sum + (q.potentialRevenue ?? 0), 0);
 
   const serialized = brands.map((b) => ({
