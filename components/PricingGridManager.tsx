@@ -43,6 +43,7 @@ export default function PricingGridManager({
   const [services, setServices] = useState(initialServices);
   const [bundles, setBundles] = useState(initialBundles);
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  const [showInactive, setShowInactive] = useState<Set<string>>(new Set());
   const [newService, setNewService] = useState(emptyNewService);
   const [showAddService, setShowAddService] = useState(false);
   const [bundleForm, setBundleForm] = useState<{
@@ -68,10 +69,28 @@ export default function PricingGridManager({
     });
   }
 
-  const groups = GROUP_ORDER.map((title) => ({
-    title,
-    items: services.filter((s) => groupFor(s) === title),
-  }));
+  function toggleInactive(key: string) {
+    setShowInactive((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  // Actives en premier, désactivées repliées derrière un lien "Voir X offres désactivées"
+  // — pour ne pas polluer visuellement la grille avec des offres retirées de la vente.
+  const groups = GROUP_ORDER.map((title) => {
+    const items = services.filter((s) => groupFor(s) === title);
+    return {
+      title,
+      active: items.filter((s) => s.active),
+      inactive: items.filter((s) => !s.active),
+    };
+  });
+
+  const activeBundles = bundles.filter((b) => b.active);
+  const inactiveBundles = bundles.filter((b) => !b.active);
 
   async function updateService(id: string, data: Partial<ServiceRow>) {
     setServices((prev) => prev.map((s) => (s.id === id ? { ...s, ...data } : s)));
@@ -153,18 +172,18 @@ export default function PricingGridManager({
       {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
       {groups.map(
-        ({ title, items }) =>
-          items.length > 0 && (
+        ({ title, active, inactive }) =>
+          active.length + inactive.length > 0 && (
             <AccordionSection
               key={title}
               title={title}
-              count={items.length}
+              count={active.length + inactive.length}
               open={openGroups.has(title)}
               onToggle={() => toggleGroup(title)}
             >
               <ColumnHeaders />
               <div className="flex flex-col divide-y divide-soft">
-                {items.map((s) => (
+                {active.map((s) => (
                   <ServiceRowEditor
                     key={s.id}
                     service={s}
@@ -173,6 +192,30 @@ export default function PricingGridManager({
                   />
                 ))}
               </div>
+              {inactive.length > 0 && (
+                <div className="border-t border-soft">
+                  <button
+                    onClick={() => toggleInactive(title)}
+                    className="w-full px-6 py-3 text-left text-xs font-semibold text-ink/50 hover:text-accent"
+                  >
+                    {showInactive.has(title)
+                      ? "Réduire"
+                      : `Voir les offres désactivées (${inactive.length})`}
+                  </button>
+                  {showInactive.has(title) && (
+                    <div className="flex flex-col divide-y divide-soft border-t border-soft">
+                      {inactive.map((s) => (
+                        <ServiceRowEditor
+                          key={s.id}
+                          service={s}
+                          onUpdate={(data) => updateService(s.id, data)}
+                          onDelete={() => deleteService(s.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </AccordionSection>
           )
       )}
@@ -184,49 +227,44 @@ export default function PricingGridManager({
         onToggle={() => toggleGroup("Bundles")}
       >
         <div className="flex flex-col divide-y divide-soft">
-          {bundles.map((b) => {
-            const included = b.serviceIds.map((id) => services.find((s) => s.id === id)?.name).filter(Boolean);
-            const base = b.serviceIds.reduce((sum, id) => sum + (services.find((s) => s.id === id)?.price ?? 0), 0);
-            const bundlePrice = base * (1 - b.discountPercent / 100);
-            return (
-              <div key={b.id} className={`grid grid-cols-1 gap-3 px-6 py-4 sm:grid-cols-[1fr_2fr_140px] sm:gap-4 ${b.active ? "" : "opacity-40"}`}>
-                <div>
-                  <input
-                    value={b.name}
-                    onChange={(e) => updateBundle(b.id, { name: e.target.value })}
-                    className="w-full rounded-lg border border-transparent bg-transparent py-1 font-sans text-sm font-extrabold text-ink outline-none hover:border-accent-light focus:border-accent"
-                  />
-                  <p className="mt-0.5 text-xs font-light text-ink/50">{included.join(" + ")}</p>
-                </div>
-                <textarea
-                  value={b.description ?? ""}
-                  onChange={(e) => updateBundle(b.id, { description: e.target.value })}
-                  placeholder="Description du bundle"
-                  rows={2}
-                  className="w-full resize-none rounded-lg border border-transparent bg-transparent py-1 text-sm font-light leading-relaxed text-ink/70 outline-none hover:border-accent-light focus:border-accent"
-                />
-                <div className="flex flex-col items-start gap-1 sm:items-end">
-                  <span className="text-xs text-ink/40 line-through">{formatPrice(base)}</span>
-                  <span className="font-sans text-base font-extrabold text-accent">{formatPrice(bundlePrice)}</span>
-                  <div className="flex items-center gap-1 text-xs text-ink/60">
-                    −
-                    <input
-                      type="number"
-                      value={b.discountPercent}
-                      onChange={(e) => updateBundle(b.id, { discountPercent: Number(e.target.value) })}
-                      className="w-10 rounded-lg border border-transparent bg-soft px-1 py-0.5 text-center outline-none hover:border-accent-light focus:border-accent"
-                    />
-                    %
-                  </div>
-                  <button onClick={() => deleteBundle(b.id)} className="text-xs text-ink/40 hover:text-red-500">
-                    Supprimer
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          {bundles.length === 0 && <p className="px-6 py-4 text-sm font-light text-ink/40">Aucun bundle.</p>}
+          {activeBundles.map((b) => (
+            <BundleRowEditor
+              key={b.id}
+              bundle={b}
+              services={services}
+              onUpdate={(data) => updateBundle(b.id, data)}
+              onDelete={() => deleteBundle(b.id)}
+            />
+          ))}
+          {activeBundles.length === 0 && inactiveBundles.length === 0 && (
+            <p className="px-6 py-4 text-sm font-light text-ink/40">Aucun bundle.</p>
+          )}
         </div>
+        {inactiveBundles.length > 0 && (
+          <div className="border-t border-soft">
+            <button
+              onClick={() => toggleInactive("Bundles")}
+              className="w-full px-6 py-3 text-left text-xs font-semibold text-ink/50 hover:text-accent"
+            >
+              {showInactive.has("Bundles")
+                ? "Réduire"
+                : `Voir les bundles désactivés (${inactiveBundles.length})`}
+            </button>
+            {showInactive.has("Bundles") && (
+              <div className="flex flex-col divide-y divide-soft border-t border-soft">
+                {inactiveBundles.map((b) => (
+                  <BundleRowEditor
+                    key={b.id}
+                    bundle={b}
+                    services={services}
+                    onUpdate={(data) => updateBundle(b.id, data)}
+                    onDelete={() => deleteBundle(b.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </AccordionSection>
 
       <div className="mt-2 flex flex-col gap-3 text-sm">
@@ -397,6 +435,64 @@ function AccordionSection({
         <span className={`text-accent transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
       </button>
       {open && <div className="border-t border-soft">{children}</div>}
+    </div>
+  );
+}
+
+function BundleRowEditor({
+  bundle,
+  services,
+  onUpdate,
+  onDelete,
+}: {
+  bundle: BundleRow;
+  services: ServiceRow[];
+  onUpdate: (data: Partial<BundleRow>) => void;
+  onDelete: () => void;
+}) {
+  const included = bundle.serviceIds.map((id) => services.find((s) => s.id === id)?.name).filter(Boolean);
+  const base = bundle.serviceIds.reduce((sum, id) => sum + (services.find((s) => s.id === id)?.price ?? 0), 0);
+  const bundlePrice = base * (1 - bundle.discountPercent / 100);
+  return (
+    <div className={`grid grid-cols-1 gap-3 px-6 py-4 sm:grid-cols-[1fr_2fr_140px] sm:gap-4 ${bundle.active ? "" : "opacity-40"}`}>
+      <div>
+        <input
+          value={bundle.name}
+          onChange={(e) => onUpdate({ name: e.target.value })}
+          className="w-full rounded-lg border border-transparent bg-transparent py-1 font-sans text-sm font-extrabold text-ink outline-none hover:border-accent-light focus:border-accent"
+        />
+        <p className="mt-0.5 text-xs font-light text-ink/50">{included.join(" + ")}</p>
+      </div>
+      <textarea
+        value={bundle.description ?? ""}
+        onChange={(e) => onUpdate({ description: e.target.value })}
+        placeholder="Description du bundle"
+        rows={2}
+        className="w-full resize-none rounded-lg border border-transparent bg-transparent py-1 text-sm font-light leading-relaxed text-ink/70 outline-none hover:border-accent-light focus:border-accent"
+      />
+      <div className="flex flex-col items-start gap-1 sm:items-end">
+        <span className="text-xs text-ink/40 line-through">{formatPrice(base)}</span>
+        <span className="font-sans text-base font-extrabold text-accent">{formatPrice(bundlePrice)}</span>
+        <div className="flex items-center gap-1 text-xs text-ink/60">
+          −
+          <input
+            type="number"
+            value={bundle.discountPercent}
+            onChange={(e) => onUpdate({ discountPercent: Number(e.target.value) })}
+            className="w-10 rounded-lg border border-transparent bg-soft px-1 py-0.5 text-center outline-none hover:border-accent-light focus:border-accent"
+          />
+          %
+        </div>
+        <div className="flex items-center gap-2 text-xs text-ink/40">
+          <label className="flex items-center gap-1">
+            <input type="checkbox" checked={bundle.active} onChange={(e) => onUpdate({ active: e.target.checked })} />
+            Active
+          </label>
+          <button onClick={onDelete} className="hover:text-red-500">
+            Supprimer
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
