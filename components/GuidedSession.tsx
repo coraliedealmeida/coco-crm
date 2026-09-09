@@ -93,11 +93,13 @@ function Step1({
   routineBrands,
   qualificationBrands,
   onStart,
+  onSkipMessages,
 }: {
   messageBrands: SessionBrand[];
   routineBrands: SessionBrand[];
   qualificationBrands: QualificationProspect[];
   onStart: () => void;
+  onSkipMessages: () => void;
 }) {
   const totalMessages = messageBrands.length;
   const totalRoutine = routineBrands.length;
@@ -150,6 +152,14 @@ function Step1({
       >
         Commencer →
       </button>
+      {totalMessages > 0 && (
+        <button
+          onClick={onSkipMessages}
+          className="mx-auto text-sm font-semibold text-ink/40 underline-offset-2 hover:text-accent hover:underline"
+        >
+          Pas aujourd&apos;hui pour la prise de contact — passer à la suite →
+        </button>
+      )}
     </div>
   );
 }
@@ -837,6 +847,10 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
   const [qualifiedCount, setQualifiedCount] = useState(0);
   const [channelByBrand, setChannelByBrand] = useState<Record<string, Channel>>({});
   const [commentByBrand, setCommentByBrand] = useState<Record<string, string>>({});
+  // Choix explicite de repousser la prise de contact du jour (cf. bouton "Pas aujourd'hui" sur
+  // l'étape 1) — distinct du cas où il n'y a simplement aucun message à envoyer : dans les deux
+  // cas on saute directement à la qualification, sans toucher au statut des marques concernées.
+  const [messagesSkippedByUser, setMessagesSkippedByUser] = useState(false);
   // Données gelées au démarrage de la session pour éviter que router.refresh() les vide en cours de route
   const [frozen, setFrozen] = useState<{
     msg: SessionBrand[];
@@ -847,7 +861,7 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
   const activeMsg = frozen?.msg ?? [];
   const activeRoutine = frozen?.routine ?? [];
   const activeQualification = frozen?.qualification ?? [];
-  const skipMessages = activeMsg.length === 0;
+  const skipMessages = activeMsg.length === 0 || messagesSkippedByUser;
 
   const goToStep = useCallback((next: number) => {
     setStep(next);
@@ -868,12 +882,18 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
     setQualifiedCount(0);
     setChannelByBrand({});
     setCommentByBrand({});
+    setMessagesSkippedByUser(false);
     setFrozen(null);
   }
 
   const handleStart = useCallback(() => {
     goToStep(skipMessages ? 4 : 2);
   }, [skipMessages, goToStep]);
+
+  const handleSkipMessages = useCallback(() => {
+    setMessagesSkippedByUser(true);
+    goToStep(4);
+  }, [goToStep]);
 
   const handleStep2Done = useCallback(
     (
@@ -958,6 +978,7 @@ export default function GuidedSession({ messageBrands, routineBrands, qualificat
             routineBrands={activeRoutine}
             qualificationBrands={activeQualification}
             onStart={handleStart}
+            onSkipMessages={handleSkipMessages}
           />
         )}
         {activeMsg.length > 0 && (
