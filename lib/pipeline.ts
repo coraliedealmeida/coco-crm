@@ -99,6 +99,35 @@ export function isEngagementDue(lastEngagementAt: Date | null, now: Date, minDay
   return countBusinessDays(lastEngagementAt, now) >= minDays;
 }
 
+/** Plafond de marques proposées par jour en routine d'engagement (les plus en retard d'abord). */
+export const MAX_ENGAGEMENTS_PER_DAY = 3;
+
+/** Au-delà de ce retard (jours ouvrés) sur au moins une marque, aucune nouvelle marque n'est activée. */
+export const PAUSE_ACTIVATION_OVERDUE_DAYS = 7;
+
+/** Jours ouvrés de retard d'une marque en routine : depuis son dernier passage (ou son début)
+ * moins l'espacement normal entre deux passages. */
+export function engagementOverdueDays(
+  brand: { lastEngagementAt: Date | null; engagementStartDate: Date },
+  now: Date,
+  minDays: number
+): number {
+  const ref = brand.lastEngagementAt ?? brand.engagementStartDate;
+  return Math.max(0, countBusinessDays(ref, now) - minDays);
+}
+
+/** Prise de contact : seuil de jours écoulés ET nombre de passages réellement faits (le seuil de
+ * jours divisé par l'espacement entre passages), pour qu'une routine sautée ne fasse pas avancer la marque. */
+export function isReadyForContact(
+  brand: { engagementStartDate: Date; engagementCount: number },
+  now: Date,
+  settings: { daysBeforeGreenLight: number; daysBetweenEngagements: number }
+): boolean {
+  const days = countBusinessDays(brand.engagementStartDate, now);
+  const requiredPasses = Math.max(1, Math.ceil(settings.daysBeforeGreenLight / Math.max(1, settings.daysBetweenEngagements)));
+  return days >= settings.daysBeforeGreenLight && brand.engagementCount >= requiredPasses;
+}
+
 export type EngagementContact = { name: string; position: string; profileUrl: string; platform: string };
 
 /** Lien vers le profil d'un contact : celui renseigné s'il existe, sinon une recherche

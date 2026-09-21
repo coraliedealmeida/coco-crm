@@ -70,6 +70,9 @@ model Brand {
   // Index du contact ciblé lors du dernier passage (discoveryNotes.allContacts), pour faire
   // tourner automatiquement entre les différentes personnes d'intérêt d'une même marque.
   lastEngagementContactIndex Int?
+  // Nombre de passages en routine réellement effectués : la "Prise de contact" en dépend (pas des
+  // seuls jours écoulés), pour qu'une routine sautée ne fasse pas avancer la marque.
+  engagementCount            Int            @default(0)
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 

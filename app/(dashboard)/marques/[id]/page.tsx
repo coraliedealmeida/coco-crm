@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
-import { avatarColor, initials, statusLabel, nextAutomaticActionLabel, macroGroupForStatus } from "@/lib/pipeline";
+import { avatarColor, initials, statusLabel, nextAutomaticActionLabel, macroGroupForStatus, isReadyForContact } from "@/lib/pipeline";
 import { paidTotal } from "@/lib/projects";
 import { dueBadgeFromDate } from "@/lib/dueStatus";
 import DueBadge from "@/components/DueBadge";
@@ -41,7 +41,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
   if (!brand) notFound();
 
   const days = countBusinessDays(brand.engagementStartDate, new Date());
-  const greenLight = days >= settings.daysBeforeGreenLight && brand.pipelineStatus === "ROUTINE_ENGAGEMENT";
+  const greenLight = isReadyForContact(brand, new Date(), settings) && brand.pipelineStatus === "ROUTINE_ENGAGEMENT";
   const firstContactDate =
     brand.contactHistory.length > 0
       ? brand.contactHistory[brand.contactHistory.length - 1].date

@@ -14,7 +14,16 @@ import { dueBadgeFromDate, dueBadgeFromThreshold, dueSortKey } from "@/lib/dueSt
 import { getDailyQualificationBatch } from "@/lib/prospectImport";
 import DashboardNotesWidget from "@/components/DashboardNotesWidget";
 import TodayTaskRow from "@/components/TodayTaskRow";
-import { isEngagementDue, nextEngagementContact, contactProfileLink, type EngagementContact } from "@/lib/pipeline";
+import {
+  isEngagementDue,
+  isReadyForContact,
+  engagementOverdueDays,
+  MAX_ENGAGEMENTS_PER_DAY,
+  PAUSE_ACTIVATION_OVERDUE_DAYS,
+  nextEngagementContact,
+  contactProfileLink,
+  type EngagementContact,
+} from "@/lib/pipeline";
 
 export const dynamic = "force-dynamic";
 
@@ -165,12 +174,24 @@ export default async function DashboardPage() {
     })
     .sort((a, b) => dueSortKey(a.dueBadge) - dueSortKey(b.dueBadge) || b.days - a.days);
 
-  const greenLightBrands = routineBrands.filter((b) => b.days >= settings.daysBeforeGreenLight);
+  // Prise de contact : jours écoulés ET passages réellement faits (une routine sautée ne fait pas avancer).
+  const greenLightBrands = routineBrands.filter((b) => isReadyForContact(b, now, settings));
 
   // Marques réellement "à engager" aujourd'hui : espacées d'au moins daysBetweenEngagements
   // jours ouvrés depuis le dernier passage, pour ne pas relancer une marque tous les jours.
-  const dueForEngagement = routineBrands.filter((b) =>
-    isEngagementDue(b.lastEngagementAt, now, settings.daysBetweenEngagements)
+  const allDueForEngagement = routineBrands
+    .filter((b) => isEngagementDue(b.lastEngagementAt, now, settings.daysBetweenEngagements))
+    .sort(
+      (a, b) =>
+        engagementOverdueDays(b, now, settings.daysBetweenEngagements) -
+        engagementOverdueDays(a, now, settings.daysBetweenEngagements)
+    );
+  // Plafond quotidien : les plus en retard d'abord, les autres attendent les jours suivants.
+  const dueForEngagement = allDueForEngagement.slice(0, MAX_ENGAGEMENTS_PER_DAY);
+  const waitingForEngagement = allDueForEngagement.length - dueForEngagement.length;
+  // Nouvelles marques en pause tant qu'au moins une marque a trop de retard (cf. cron d'activation).
+  const activationPaused = routineBrands.some(
+    (b) => engagementOverdueDays(b, now, settings.daysBetweenEngagements) >= PAUSE_ACTIVATION_OVERDUE_DAYS
   );
 
   const relanceBrands = brands
@@ -430,6 +451,16 @@ export default async function DashboardPage() {
                 dueBadge={b.dueBadge}
               />
             ))}
+            {waitingForEngagement > 0 && (
+              <p className="px-1 text-xs font-light text-ink/50">
+                + {waitingForEngagement} autre{waitingForEngagement > 1 ? "s" : ""} en attente — 3 par jour maximum.
+              </p>
+            )}
+            {activationPaused && (
+              <p className="px-1 text-xs font-semibold text-accent">
+                ⏸ Nouvelles marques en pause tant que le retard dépasse {PAUSE_ACTIVATION_OVERDUE_DAYS} jours.
+              </p>
+            )}
           </DashboardSection>
 
           <DashboardSection
