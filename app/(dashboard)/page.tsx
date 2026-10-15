@@ -286,6 +286,10 @@ export default async function DashboardPage() {
     return [];
   });
 
+  // Montants totaux affichés dans l'en-tête des encarts de facturation (à la place du nombre de lignes).
+  const aFacturerTotal = aFacturer.reduce((sum, item) => sum + (item.amount ?? 0), 0);
+  const pendingInvoicesTotal = pendingInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+
   // Tâches personnelles datées d'aujourd'hui ou en retard, non terminées.
   const dueTasks = dashboardTasks.filter((t) => !t.completed && t.dueDate && t.dueDate <= now);
 
@@ -526,7 +530,7 @@ export default async function DashboardPage() {
             title="À facturer"
             icon="🧾"
             accent="#FBBF24"
-            count={aFacturer.length}
+            badge={formatRevenue(aFacturerTotal)}
             isEmpty={aFacturer.length === 0}
             emptyLabel="Rien à facturer pour le moment."
           >
@@ -554,7 +558,7 @@ export default async function DashboardPage() {
             title="Factures en attente"
             icon="⏳"
             accent="#FB923C"
-            count={pendingInvoices.length}
+            badge={formatRevenue(pendingInvoicesTotal)}
             isEmpty={pendingInvoices.length === 0}
             emptyLabel="Aucune facture en attente de paiement."
           >

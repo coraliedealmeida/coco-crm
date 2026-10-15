@@ -3,6 +3,7 @@ export default function DashboardSection({
   icon,
   accent = "#8B5CF6",
   count,
+  badge,
   children,
   emptyLabel,
   isEmpty,
@@ -11,6 +12,8 @@ export default function DashboardSection({
   icon?: string;
   accent?: string;
   count?: number;
+  /** Texte du badge à la place du nombre (ex : un montant total). */
+  badge?: string;
   children?: React.ReactNode;
   emptyLabel?: string;
   isEmpty?: boolean;
@@ -22,12 +25,12 @@ export default function DashboardSection({
         <div className="mb-4 flex items-center gap-2">
           {icon && <span className="text-lg">{icon}</span>}
           <h2 className="font-sans text-base font-extrabold text-ink">{title}</h2>
-          {count != null && (
+          {(badge != null || count != null) && (
             <span
               className="ml-auto rounded-full px-2.5 py-0.5 text-xs font-bold"
               style={{ backgroundColor: `${accent}26`, color: accent }}
             >
-              {count}
+              {badge ?? count}
             </span>
           )}
         </div>
