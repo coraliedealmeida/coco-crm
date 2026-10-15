@@ -249,7 +249,18 @@ export default async function DashboardPage() {
     };
   });
 
-  const projectsEnCours = projects.filter(isProjectActive);
+  // Encarts de suivi projets : ordre alphabétique des marques, puis montant décroissant au sein d'une même marque.
+  const byBrandThenAmount = (a: { brand: string; amount: number | null }, b: { brand: string; amount: number | null }) =>
+    a.brand.localeCompare(b.brand, "fr", { sensitivity: "base" }) || (b.amount ?? -1) - (a.amount ?? -1);
+
+  const projectsEnCours = projects
+    .filter(isProjectActive)
+    .sort((a, b) =>
+      byBrandThenAmount(
+        { brand: a.client.brand.name, amount: a.quoteAmount },
+        { brand: b.client.brand.name, amount: b.quoteAmount }
+      )
+    );
 
   // "À facturer" = chaque facture saisie mais pas encore envoyée (peu importe l'étape du
   // projet — un acompte ou un solde 2/3 déjà noté doit apparaître même si le projet est
@@ -285,9 +296,16 @@ export default async function DashboardPage() {
     }
     return [];
   });
+  aFacturer.sort((a, b) => byBrandThenAmount({ brand: a.brandName, amount: a.amount }, { brand: b.brandName, amount: b.amount }));
 
   // Montants totaux affichés dans l'en-tête des encarts de facturation (à la place du nombre de lignes).
   const aFacturerTotal = aFacturer.reduce((sum, item) => sum + (item.amount ?? 0), 0);
+  pendingInvoices.sort((a, b) =>
+    byBrandThenAmount(
+      { brand: a.project.client.brand.name, amount: a.amount },
+      { brand: b.project.client.brand.name, amount: b.amount }
+    )
+  );
   const pendingInvoicesTotal = pendingInvoices.reduce((sum, inv) => sum + inv.amount, 0);
 
   // Tâches personnelles datées d'aujourd'hui ou en retard, non terminées.
