@@ -70,6 +70,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
           serviceType,
           name: quoteRequest.label,
           currentStep: projectSteps[serviceType][0],
+          startDate: now,
           quoteAmount: index === 0 ? quoteRequest.potentialRevenue : null,
         },
       });

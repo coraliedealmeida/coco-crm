@@ -35,6 +35,7 @@ export async function ensureClientAndProjects(
           clientId: client.id,
           serviceType,
           currentStep: projectSteps[serviceType][0],
+          startDate: new Date(),
           quoteAmount: index === 0 ? potentialRevenue : null,
         },
       });

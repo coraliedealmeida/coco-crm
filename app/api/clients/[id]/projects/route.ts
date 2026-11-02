@@ -15,6 +15,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       serviceType,
       name: name?.trim() || null,
       currentStep: projectSteps[serviceType][0],
+      startDate: new Date(), // par défaut : date de création de la fiche (modifiable ensuite)
     },
   });
 
