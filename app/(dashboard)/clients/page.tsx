@@ -13,10 +13,10 @@ export default async function ProjectsPage() {
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
   ]);
 
-  // Du plus ancien au plus récent dans chaque colonne : date de début (modifiable, donc antidatable),
-  // sinon date de signature, sinon création.
+  // Le plus récent en haut de chaque colonne, le plus ancien en bas : date de début (modifiable,
+  // donc antidatable), sinon date de signature, sinon création.
   const projectDate = (p: (typeof projects)[number]) => (p.startDate ?? p.signedAt ?? p.createdAt).getTime();
-  projects.sort((a, b) => projectDate(a) - projectDate(b));
+  projects.sort((a, b) => projectDate(b) - projectDate(a));
 
   const now = new Date();
   const projectsEnCours = projects.filter(isProjectActive).length;
