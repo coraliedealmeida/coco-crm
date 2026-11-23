@@ -22,11 +22,17 @@ const MONTH_LABELS = [
   "Décembre",
 ];
 
+// Montant réel : total des factures saisies dans l'encart Facturation ; à défaut de facture, le montant du devis.
+function amountFor(p: { quoteAmount: number | null; invoices: { amount: number }[] }): number | null {
+  if (p.invoices.length > 0) return p.invoices.reduce((sum, i) => sum + i.amount, 0);
+  return p.quoteAmount;
+}
+
 export default async function AnneeProjetsPage({ searchParams }: { searchParams: { year?: string } }) {
   const now = new Date();
   const projects = await prisma.project.findMany({
     where: { currentStep: "Terminé" },
-    include: { client: { include: { brand: true } } },
+    include: { client: { include: { brand: true } }, invoices: true },
   });
 
   const years = Array.from(new Set(projects.map((p) => (p.completedAt ?? p.createdAt).getFullYear())));
@@ -105,8 +111,8 @@ export default async function AnneeProjetsPage({ searchParams }: { searchParams:
                     <p className="truncate text-sm font-semibold text-ink">{p.client.brand.name}</p>
                   </div>
                   <p className="truncate text-xs font-light text-ink/50">{projectLabel(p)}</p>
-                  {p.quoteAmount != null && (
-                    <p className="text-xs font-semibold text-accent">{formatRevenue(p.quoteAmount)}</p>
+                  {amountFor(p) != null && (
+                    <p className="text-xs font-semibold text-accent">{formatRevenue(amountFor(p)!)}</p>
                   )}
                 </Link>
               ))}
