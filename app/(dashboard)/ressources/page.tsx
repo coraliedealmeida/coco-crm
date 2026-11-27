@@ -10,7 +10,8 @@ const tabs = [
   { id: "messages", label: "Messages types" },
 ];
 
-export default async function RessourcesPage({ searchParams }: { searchParams: { tab?: string } }) {
+export default async function RessourcesPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ tab?: string }> }) {
+  const searchParams = await searchParamsPromise;
   const activeTab = searchParams.tab === "messages" ? "messages" : "offres";
 
   const [services, bundles] =

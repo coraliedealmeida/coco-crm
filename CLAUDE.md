@@ -5,7 +5,8 @@ CRM de prospection, suivi clients et projets, facturation. Utilisatrice unique, 
 toujours expliquer en français simple, donner les commandes exactes, détailler quoi tester.
 
 ## Stack
-- Next.js 14 (App Router) + React 18 + Tailwind 3 · Prisma 5 + Postgres Neon (région us-east-1)
+- Next.js 15.5.29 (App Router) + React 19.2 + Tailwind 3 (Next 15 : `params` et `searchParams` sont des
+  Promises → `const params = await paramsPromise;` en tête de fonction ; `cookies()` toujours avec `await`) · Prisma 5 + Postgres Neon (région us-east-1)
 - Déployé sur Vercel (branche `main` = production) · Emails : Resend · Crons Vercel (`vercel.json`)
 - Abby reste l'outil de devis, factures et comptabilité. COCO est la source de vérité du **temps**.
 
@@ -138,7 +139,7 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
   6 colonnes `deletedAt`, nombres de marques/clients/projets/factures/devis/prospects et CA encaissé
   identiques avant/après. Puis fusion de `phase-0bis-corrections` dans `main`.
 - 2026-11-27 — Contrôle des montants (lecture seule) : 2 projets dont le total des factures ≠ devis,
-  signalés à Coralie (détail non noté ici : données clients).
+  signalés à Coralie (détail non noté ici : données clients). Décision de Coralie : on ne change rien.
 - Ne jamais écrire de noms de clients, montants ou chiffre d'affaires dans les fichiers du dépôt.
 - 2026-11-27 — `lib/prisma.ts` importe `server-only` : un écran (« use client ») ne doit jamais importer
   un fichier de `lib/` qui accède à la base (sinon page blanche après connexion). Les outils utiles à
@@ -149,7 +150,7 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
 |---|---|---|
 | 0 | Audit, CLAUDE.md | ✅ validé le 27/11/2026 |
 | infra | Outil Vercel ✅, sauvegarde Neon ✅, prévisualisations isolées ✅, base de dev locale (à faire) | ⏳ en cours |
-| 0 bis | ✅ **en production le 27/11/2026** (validée par Coralie) : sauvegarde complète + restauration, sécurité, enregistrements fiables, dates Paris + fériés, anti-doublons, corbeille + devis accepté annulable, étapes centralisées, montants vérifiés, tests. Reste : Next 15 (branche dédiée) | ✅ (Next 15 à faire) |
+| 0 bis | ✅ **en production le 27/11/2026** (validée par Coralie) : sauvegarde complète + restauration, sécurité, enregistrements fiables, dates Paris + fériés, anti-doublons, corbeille + devis accepté annulable, étapes centralisées, montants vérifiés, tests. Next 15.5.29 + React 19 en production le 27/11/2026 (testé et validé par Coralie, 0 faille connue côté site ; retour arrière : tag `avant-next-15-2026-11-27`) | ✅ |
 | 1 | Système de design (fondations, composants, guide de style, application à toutes les pages) | à faire |
 | 2 | Suivi du temps, feuille de mois (clients à l'heure), changement de type de projet | à faire |
 | 3 | Dashboard « quoi faire aujourd'hui », vue annuelle heures/CA, rappel fin de mois, saisie rapide | à faire |

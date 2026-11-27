@@ -10,7 +10,8 @@ import BackButton from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProjectDetailPage({ params }: { params: { id: string; projectId: string } }) {
+export default async function ProjectDetailPage({ params: paramsPromise }: { params: Promise<{ id: string; projectId: string }> }) {
+  const params = await paramsPromise;
   const project = await prisma.project.findUnique({
     where: { id: params.projectId },
     include: {

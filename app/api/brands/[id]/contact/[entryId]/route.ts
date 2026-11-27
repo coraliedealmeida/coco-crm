@@ -6,8 +6,9 @@ import { getSettings } from "@/lib/settings";
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; entryId: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string; entryId: string }> }
 ) {
+  const params = await paramsPromise;
   const denied = await requireSession();
   if (denied) return denied;
 
@@ -54,8 +55,9 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string; entryId: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string; entryId: string }> }
 ) {
+  const params = await paramsPromise;
   const denied = await requireSession();
   if (denied) return denied;
 

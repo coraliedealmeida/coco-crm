@@ -6,7 +6,8 @@ import { STEP } from "@/lib/steps";
 
 const DATE_FIELDS = ["signedAt", "startDate", "estimatedDeliveryDate", "completedAt"] as const;
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const denied = await requireSession();
   if (denied) return denied;
 
@@ -34,7 +35,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   return NextResponse.json(project);
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const denied = await requireSession();
   if (denied) return denied;
 

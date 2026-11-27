@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/apiAuth";
 import { trashInvoice } from "@/lib/trash";
 
-export async function PATCH(request: NextRequest, { params }: { params: { invoiceId: string } }) {
+export async function PATCH(request: NextRequest, { params: paramsPromise }: { params: Promise<{ invoiceId: string }> }) {
+  const params = await paramsPromise;
   const denied = await requireSession();
   if (denied) return denied;
 
@@ -18,7 +19,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { invoic
   return NextResponse.json(invoice);
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: { invoiceId: string } }) {
+export async function DELETE(_request: NextRequest, { params: paramsPromise }: { params: Promise<{ invoiceId: string }> }) {
+  const params = await paramsPromise;
   const denied = await requireSession();
   if (denied) return denied;
 

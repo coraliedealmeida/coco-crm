@@ -30,7 +30,8 @@ function amountFor(p: { quoteAmount: number | null; invoices: { amount: number }
   return p.quoteAmount;
 }
 
-export default async function AnneeProjetsPage({ searchParams }: { searchParams: { year?: string } }) {
+export default async function AnneeProjetsPage({ searchParams: searchParamsPromise }: { searchParams: Promise<{ year?: string }> }) {
+  const searchParams = await searchParamsPromise;
   const now = new Date();
   const projects = await prisma.project.findMany({
     where: { currentStep: STEP.TERMINE },

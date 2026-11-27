@@ -10,7 +10,8 @@ import { getSettings } from "@/lib/settings";
  * Journalise un contact (premier DM, relance, appel, etc.) et fait avancer
  * automatiquement le statut + calcule la prochaine date d'action.
  */
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const denied = await requireSession();
   if (denied) return denied;
 

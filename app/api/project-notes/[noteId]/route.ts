@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/apiAuth";
 
-export async function PATCH(request: NextRequest, { params }: { params: { noteId: string } }) {
+export async function PATCH(request: NextRequest, { params: paramsPromise }: { params: Promise<{ noteId: string }> }) {
+  const params = await paramsPromise;
   const denied = await requireSession();
   if (denied) return denied;
 
@@ -15,7 +16,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { noteId
   return NextResponse.json(note);
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: { noteId: string } }) {
+export async function DELETE(_request: NextRequest, { params: paramsPromise }: { params: Promise<{ noteId: string }> }) {
+  const params = await paramsPromise;
   const denied = await requireSession();
   if (denied) return denied;
 
