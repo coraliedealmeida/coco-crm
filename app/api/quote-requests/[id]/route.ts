@@ -23,8 +23,13 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   const now = new Date();
   let logType: string | null = null;
 
+  // Statut avant modification : sert au garde-fou anti-doublons de projets (plus bas).
+  let previousStatus: PipelineStatus | null = null;
+
   if ("status" in body) {
     const newStatus = body.status as PipelineStatus;
+    const before = await prisma.quoteRequest.findUnique({ where: { id: params.id }, select: { status: true } });
+    previousStatus = before?.status ?? null;
     data.status = newStatus;
     data.lastContactDate = now;
     logType = statusActionType[newStatus] ?? `Statut → ${statusLabel(newStatus)}`;
@@ -65,20 +70,38 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     });
   }
 
-  if (body.status === "DEVIS_ACCEPTE") {
+  // Garde-fou anti-doublons : les projets ne sont créés qu'au PASSAGE à « Devis accepté »
+  // (pas si la demande y était déjà), et jamais pour un type de prestation dont le projet
+  // existe déjà (même client, même nom, créé depuis cette demande). Avant, repasser une demande
+  // à « Devis accepté » après une erreur de statut recréait tous ses projets.
+  if (body.status === "DEVIS_ACCEPTE" && previousStatus !== "DEVIS_ACCEPTE") {
     const serviceTypes = (quoteRequest.serviceTypes ?? []) as ServiceType[];
-    for (const [index, serviceType] of serviceTypes.entries()) {
-      await prisma.project.create({
-        data: {
+    await prisma.$transaction(async (tx) => {
+      const existing = await tx.project.findMany({
+        where: {
           clientId: quoteRequest.clientId,
-          serviceType,
           name: quoteRequest.label,
-          currentStep: projectSteps[serviceType][0],
-          startDate: now,
-          quoteAmount: index === 0 ? quoteRequest.potentialRevenue : null,
+          createdAt: { gte: quoteRequest.createdAt },
+          serviceType: { in: serviceTypes },
         },
+        select: { serviceType: true },
       });
-    }
+      const alreadyCreated = new Set(existing.map((p) => p.serviceType));
+      const hasAnyProject = alreadyCreated.size > 0;
+      for (const [index, serviceType] of serviceTypes.entries()) {
+        if (alreadyCreated.has(serviceType)) continue;
+        await tx.project.create({
+          data: {
+            clientId: quoteRequest.clientId,
+            serviceType,
+            name: quoteRequest.label,
+            currentStep: projectSteps[serviceType][0],
+            startDate: now,
+            quoteAmount: index === 0 && !hasAnyProject ? quoteRequest.potentialRevenue : null,
+          },
+        });
+      }
+    });
   }
 
   return NextResponse.json(quoteRequest);

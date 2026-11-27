@@ -31,8 +31,15 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
 - **Montant d'un projet** (vue annuelle) = total de ses factures, sinon montant du devis.
 - **Revenu potentiel en cours** (Pipeline) = `potentialRevenue` des marques + demandes de devis en
   « À relancer » ou « En discussion ».
-- **Relances** : jours **ouvrés** (`lib/business-days.ts`), délais réglables dans Paramètres ;
+- **Dates** : une date « jour » = un jour du calendrier **à Paris** (`lib/dates.ts`, source unique) ;
+  « dû aujourd'hui » = jusqu'à 23h59 à Paris (`parisEndOfToday`). Affichage via `formatDateFr`.
+- **Relances** : jours **ouvrés** = lundi-vendredi hors jours fériés français calculés pour toute année
+  (`lib/dates.ts`, `lib/business-days.ts`), délais réglables dans Paramètres ;
   `computeNextActionDate` (`lib/statusEffects.ts`).
+- **Sauvegarde** : toutes les tables listées dans `lib/backup.ts` (un test échoue si une table manque) ;
+  restauration : `docs/restauration-sauvegarde.md`.
+- **Appels API depuis l'interface** : toujours `apiFetch` (`lib/apiClient.ts`), jamais `fetch` direct.
+  Chaque route API commence par `requireSession()` (`lib/apiAuth.ts`). Tests : `npm test`.
 - **Routine d'engagement** : 3 marques max/jour, espacement `daysBetweenEngagements`, « Prise de contact »
   quand jours écoulés ≥ seuil ET nombre de passages suffisant. Activation des prospects en pause si une
   marque a ≥ 7 jours ouvrés de retard.
@@ -120,7 +127,7 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
 |---|---|---|
 | 0 | Audit, CLAUDE.md | ✅ validé le 27/11/2026 |
 | infra | Outil Vercel ✅, sauvegarde Neon ✅, prévisualisations isolées ✅, base de dev locale (à faire) | ⏳ en cours |
-| 0 bis | Corrections prioritaires (sauvegarde, sécurité + Next 15, enregistrements, dates Paris/fériés, montants, doublons, archivage, centralisation, tests) | ⏳ à lancer (sauvegarde Neon faite) |
+| 0 bis | Partie 1 ✅ (branche `phase-0bis-corrections`) : sauvegarde complète + restauration, sécurité connexion/API/cron, enregistrements fiables, dates Paris + fériés, anti-doublons, tests. Reste : archivage (migration), centralisation des étapes, vérification des montants, Next 15 (branche dédiée) | ⏳ en cours |
 | 1 | Système de design (fondations, composants, guide de style, application à toutes les pages) | à faire |
 | 2 | Suivi du temps, feuille de mois (clients à l'heure), changement de type de projet | à faire |
 | 3 | Dashboard « quoi faire aujourd'hui », vue annuelle heures/CA, rappel fin de mois, saisie rapide | à faire |
