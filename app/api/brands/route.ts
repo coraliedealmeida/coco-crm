@@ -3,8 +3,12 @@ import { PipelineStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { computeNextActionDate } from "@/lib/statusEffects";
 import { ensureClientAndProjects } from "@/lib/clientTransition";
+import { requireSession } from "@/lib/apiAuth";
 
 export async function GET() {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const brands = await prisma.brand.findMany({
     orderBy: { createdAt: "desc" },
     include: { contactHistory: { orderBy: { date: "desc" } } },
@@ -13,6 +17,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const body = await request.json();
   const pipelineStatus = (body.pipelineStatus ?? "ROUTINE_ENGAGEMENT") as PipelineStatus;
   const now = new Date();

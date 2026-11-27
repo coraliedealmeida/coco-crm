@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
 import { parse as csvParse } from "csv-parse/sync";
+import { requireSession } from "@/lib/apiAuth";
 
 const ROOT = process.cwd();
 
@@ -146,6 +147,9 @@ function tryMatch(linkedinKey: string, instagramBrands: Map<string, BrandEntry>)
 }
 
 export async function POST() {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   try {
     const existing = await prisma.prospectImport.count();
     if (existing > 0) {

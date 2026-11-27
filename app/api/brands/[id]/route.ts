@@ -4,8 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { archivingStatuses, statusLabel } from "@/lib/pipeline";
 import { computeNextActionDate, statusActionType } from "@/lib/statusEffects";
 import { ensureClientAndProjects } from "@/lib/clientTransition";
+import { requireSession } from "@/lib/apiAuth";
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const brand = await prisma.brand.findUnique({
     where: { id: params.id },
     include: { contactHistory: { orderBy: { date: "desc" } } },
@@ -16,6 +20,9 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const force = request.nextUrl.searchParams.get("force") === "true";
 
   const client = await prisma.client.findUnique({
@@ -50,6 +57,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const body = await request.json();
 
   const data: Record<string, unknown> = {};

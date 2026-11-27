@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireSession } from "@/lib/apiAuth";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const { id } = await params;
   const { name, role, profileUrl, platform } = (await req.json()) as {
     name?: string;

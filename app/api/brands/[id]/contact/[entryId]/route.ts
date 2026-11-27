@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { computeNextActionDate, statusForActionType } from "@/lib/statusEffects";
+import { requireSession } from "@/lib/apiAuth";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string; entryId: string } }
 ) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const { date } = await request.json();
   if (!date) return NextResponse.json({ error: "Date requise." }, { status: 400 });
 
@@ -55,6 +59,9 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: { id: string; entryId: string } }
 ) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   await prisma.contactHistoryEntry.delete({ where: { id: params.entryId } });
   return NextResponse.json({ ok: true });
 }

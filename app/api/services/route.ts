@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireSession } from "@/lib/apiAuth";
 
 export async function GET() {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const services = await prisma.service.findMany({ orderBy: { order: "asc" } });
   return NextResponse.json(services);
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const body = await request.json();
   const { name, category, price, priceType, content } = body;
   if (!name || !category || typeof price !== "number") {

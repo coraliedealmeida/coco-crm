@@ -14,16 +14,24 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+    } catch {
+      setLoading(false);
+      setError("Connexion impossible : vérifie ta connexion internet.");
+      return;
+    }
 
     setLoading(false);
 
     if (!res.ok) {
-      setError("Mot de passe incorrect.");
+      const data = await res.json().catch(() => null);
+      setError(data?.error ?? "Mot de passe incorrect.");
       return;
     }
 

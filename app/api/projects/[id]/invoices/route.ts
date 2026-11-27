@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireSession } from "@/lib/apiAuth";
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const { label, amount } = await request.json();
   if (!label || typeof amount !== "number") {
     return NextResponse.json({ error: "Libellé et montant requis." }, { status: 400 });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PipelineStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { computeNextActionDate } from "@/lib/statusEffects";
+import { requireSession } from "@/lib/apiAuth";
 
 // Statuts dont la prochaine relance (nextActionDate) est calculée à partir d'un nombre de
 // jours réglable dans les Paramètres. Les autres statuts ne dépendent d'aucun réglage
@@ -9,6 +10,9 @@ import { computeNextActionDate } from "@/lib/statusEffects";
 const RECOMPUTE_STATUSES: PipelineStatus[] = ["PREMIER_DM", "RELANCE_1", "DEVIS_ENVOYE", "RELANCE_DEVIS_1"];
 
 export async function GET() {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const settings = await prisma.settings.upsert({
     where: { id: "singleton" },
     update: {},
@@ -18,6 +22,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: NextRequest) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const body = await request.json();
   const data: Record<string, unknown> = {};
   for (const key of [

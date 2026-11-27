@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireSession } from "@/lib/apiAuth";
 
 export async function PATCH(request: NextRequest, { params }: { params: { invoiceId: string } }) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const body = await request.json();
   const data: Record<string, unknown> = {};
   if ("label" in body) data.label = body.label;
@@ -14,6 +18,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { invoic
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: { invoiceId: string } }) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   await prisma.invoice.delete({ where: { id: params.invoiceId } });
   return NextResponse.json({ ok: true });
 }

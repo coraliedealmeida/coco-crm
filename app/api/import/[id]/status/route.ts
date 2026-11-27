@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireSession } from "@/lib/apiAuth";
 
 const VALID_STATUSES = ["PENDING", "OUI", "NON", "PLUS_TARD"];
 const VALID_CATEGORIES = ["GRANDE_MARQUE", "PME_STARTUP", "INDEPENDANT"];
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const { id } = await params;
   const body = await req.json();
   const { status, brandCategory } = body as { status?: string; brandCategory?: string | null };

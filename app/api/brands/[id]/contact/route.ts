@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { archivingStatuses } from "@/lib/pipeline";
 import { computeNextActionDate, statusForActionType } from "@/lib/statusEffects";
+import { requireSession } from "@/lib/apiAuth";
 
 /**
  * Journalise un contact (premier DM, relance, appel, etc.) et fait avancer
  * automatiquement le statut + calcule la prochaine date d'action.
  */
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const body = await request.json();
   const { type, content } = body as { type: string; content?: string };
 
