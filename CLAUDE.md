@@ -76,8 +76,18 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
   - **Neon / Vercel** (constaté le 27/11/2026) : projet Neon `coco-crm-db` (Free, rétention d'historique 6 h),
     géré via l'intégration Vercel (Storage). Branche `main` = production. Branche `main_old_2026-07-23…` =
     ancienne copie, ne pas toucher. **Sauvegarde créée : branche `sauvegarde-2026-11-27-avant-phase-0bis`**
-    (copie de `main`, n'expire jamais). L'option « Create Database Branch For Deployment → Preview » est
-    **décochée** : les prévisualisations ET le `.env` local utilisent la base de production.
+    (copie de `main`, n'expire jamais).
+  - **27/11/2026 — prévisualisations isolées** (accord de Coralie) : Vercel → Storage → coco-crm-db → Projects
+    → coco → « Create Database Branch For Deployment » : **Preview coché**, Production décoché. Chaque
+    prévisualisation reçoit sa propre branche Neon `preview/<branche-git>` (copie des données de `main`).
+    Vérifié : les 24 variables Production et Preview sont inchangées (mêmes dates de modification) ; la
+    prévisualisation de `phase-0-audit` a bien créé `preview/phase-0-audit`.
+    Attention : `DIRECT_URL` (ajoutée à la main) pointe toujours sur la production pour toutes les
+    prévisualisations → à remplacer par `DATABASE_URL_UNPOOLED` dans `schema.prisma` (Phase 0 bis).
+    Plan Free = nombre de branches limité : supprimer les branches `preview/*` des branches fusionnées
+    (bouton « Clean up branches » de Neon, avec accord).
+  - Le `.env` local pointe encore sur la production (et le port 5432 est bloqué sur ce réseau) : créer une
+    branche Neon de développement avant tout travail local sur la base.
     Vercel CLI : `npx vercel@67.0.0` (dossier relié au projet `coco`).
   - **Next.js** : aucune version 14.x corrigée (14.2.35 = dernière). Cible : **15.5.29** (corrige toutes les
     failles listées), sur une branche dédiée, testée avec la base de test. Next 15 impose React 19.
@@ -109,8 +119,8 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
 | Phase | Contenu | État |
 |---|---|---|
 | 0 | Audit, CLAUDE.md | ✅ validé le 27/11/2026 |
-| infra | Outil Vercel, base de test Neon branchée aux prévisualisations + local | ⏳ en cours |
-| 0 bis | Corrections prioritaires (sauvegarde, sécurité + Next 15, enregistrements, dates Paris/fériés, montants, doublons, archivage, centralisation, tests) | ⏸ attend la confirmation de sauvegarde Neon |
+| infra | Outil Vercel ✅, sauvegarde Neon ✅, prévisualisations isolées ✅, base de dev locale (à faire) | ⏳ en cours |
+| 0 bis | Corrections prioritaires (sauvegarde, sécurité + Next 15, enregistrements, dates Paris/fériés, montants, doublons, archivage, centralisation, tests) | ⏳ à lancer (sauvegarde Neon faite) |
 | 1 | Système de design (fondations, composants, guide de style, application à toutes les pages) | à faire |
 | 2 | Suivi du temps, feuille de mois (clients à l'heure), changement de type de projet | à faire |
 | 3 | Dashboard « quoi faire aujourd'hui », vue annuelle heures/CA, rappel fin de mois, saisie rapide | à faire |
