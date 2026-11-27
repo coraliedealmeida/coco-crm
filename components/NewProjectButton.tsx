@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ServiceType } from "@prisma/client";
 import { serviceTypeOptions } from "@/lib/serviceTypes";
+import { apiFetch } from "@/lib/apiClient";
 
 export default function NewProjectButton({ clientId }: { clientId: string }) {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function NewProjectButton({ clientId }: { clientId: string }) {
 
   async function handleCreate() {
     setSaving(true);
-    const res = await fetch(`/api/clients/${clientId}/projects`, {
+    const res = await apiFetch(`/api/clients/${clientId}/projects`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ serviceType, name }),

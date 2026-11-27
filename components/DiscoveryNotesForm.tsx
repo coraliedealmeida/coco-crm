@@ -6,6 +6,7 @@ import { ServiceType } from "@prisma/client";
 import { serviceTypeOptions } from "@/lib/serviceTypes";
 import { GROUP_ORDER, groupFor } from "@/lib/serviceGroups";
 import { formatRevenue as formatPrice } from "@/lib/format";
+import { apiFetch } from "@/lib/apiClient";
 
 type ServiceOption = {
   id: string;
@@ -136,12 +137,13 @@ export default function DiscoveryNotesForm({
 
   async function handleSave() {
     setSaving(true);
-    await fetch(`/api/brands/${brandId}/discovery-notes`, {
+    const res = await apiFetch(`/api/brands/${brandId}/discovery-notes`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...notes, computedTotal: totalHT }),
     });
     setSaving(false);
+    if (!res.ok) return;
     setSaved(true);
     router.refresh();
     setTimeout(() => setSaved(false), 2000);

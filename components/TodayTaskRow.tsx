@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DueBadge from "@/components/DueBadge";
 import type { DueBadge as DueBadgeData } from "@/lib/dueStatus";
+import { apiFetch } from "@/lib/apiClient";
 
 export default function TodayTaskRow({
   id,
@@ -19,7 +20,7 @@ export default function TodayTaskRow({
 
   async function handleComplete() {
     setLoading(true);
-    await fetch(`/api/dashboard-tasks/${id}`, {
+    await apiFetch(`/api/dashboard-tasks/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ completed: true }),

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import DatePicker from "@/components/DatePicker";
 import CreatableSelect from "@/components/CreatableSelect";
+import { apiFetch } from "@/lib/apiClient";
 
 type Path = "routine" | "contact";
 
@@ -47,10 +48,10 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
   const isNew = !initial?.id;
 
   useEffect(() => {
-    fetch("/api/options/sectors")
+    apiFetch("/api/options/sectors")
       .then((r) => r.json())
       .then((data) => setSectors(data.map((d: { label: string }) => d.label)));
-    fetch("/api/options/sources")
+    apiFetch("/api/options/sources")
       .then((r) => r.json())
       .then((data) => setSources(data.map((d: { label: string }) => d.label)));
   }, []);
@@ -73,7 +74,7 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
           }
       : brand;
 
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -123,7 +124,7 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
           value={brand.sector}
           onChange={(v) => setBrand({ ...brand, sector: v })}
           onCreate={async (v) => {
-            await fetch("/api/options/sectors", {
+            await apiFetch("/api/options/sectors", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ label: v }),
@@ -204,7 +205,7 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
                   value={brand.source}
                   onChange={(v) => setBrand({ ...brand, source: v })}
                   onCreate={async (v) => {
-                    await fetch("/api/options/sources", {
+                    await apiFetch("/api/options/sources", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ label: v }),
@@ -248,7 +249,7 @@ export default function BrandForm({ initial }: { initial?: Partial<Brand> & { id
                 value={brand.source}
                 onChange={(v) => setBrand({ ...brand, source: v })}
                 onCreate={async (v) => {
-                  await fetch("/api/options/sources", {
+                  await apiFetch("/api/options/sources", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ label: v }),

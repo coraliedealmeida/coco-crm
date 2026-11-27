@@ -7,6 +7,7 @@ import { platformBadge, brandProfileLink } from "@/lib/pipeline";
 import ProfileLink from "@/components/ProfileLink";
 import type { PipelineStatus } from "@prisma/client";
 import { bestProfileLink, type QualificationProspect } from "@/lib/prospectImport";
+import { apiFetch } from "@/lib/apiClient";
 
 export type EngagementContact = {
   index: number;
@@ -405,7 +406,7 @@ function Step3({
   async function toggleSent(brand: SessionBrand) {
     if (sent[brand.id]) return;
     setSaving((prev) => ({ ...prev, [brand.id]: true }));
-    await fetch(`/api/brands/${brand.id}`, {
+    await apiFetch(`/api/brands/${brand.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -492,7 +493,7 @@ function StepQualify({
 
   async function handleStatus(id: string, status: string) {
     setSaving((prev) => ({ ...prev, [id]: true }));
-    await fetch(`/api/import/${id}/status`, {
+    await apiFetch(`/api/import/${id}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -503,7 +504,7 @@ function StepQualify({
 
   async function handleCategory(id: string, brandCategory: string) {
     setCategories((prev) => ({ ...prev, [id]: brandCategory || null }));
-    await fetch(`/api/import/${id}/status`, {
+    await apiFetch(`/api/import/${id}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ brandCategory: brandCategory || null }),
@@ -639,7 +640,7 @@ function Step4({
     // On ne persiste qu'à la coche (pas au décochage) : ça avance la cadence de 2-3x/semaine
     // et fait tourner vers le prochain contact identifié la prochaine fois.
     if (nowDone) {
-      await fetch(`/api/brands/${brand.id}`, {
+      await apiFetch(`/api/brands/${brand.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

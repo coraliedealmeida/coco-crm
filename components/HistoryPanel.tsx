@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { apiFetch } from "@/lib/apiClient";
 
 function toDateInputValue(isoDate: string): string {
   return new Date(isoDate).toISOString().slice(0, 10);
@@ -32,14 +33,14 @@ function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
   async function handleDelete() {
     if (!confirm("Supprimer cette entrée du suivi ? Cette action est irréversible.")) return;
     setDeleting(true);
-    await fetch(`/api/brands/${brandId}/contact/${entry.id}`, { method: "DELETE" });
+    await apiFetch(`/api/brands/${brandId}/contact/${entry.id}`, { method: "DELETE" });
     router.refresh();
   }
 
   async function handleDateChange(value: string) {
     if (!value) return;
     setEditingDate(false);
-    await fetch(`/api/brands/${brandId}/contact/${entry.id}`, {
+    await apiFetch(`/api/brands/${brandId}/contact/${entry.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ date: new Date(value).toISOString() }),

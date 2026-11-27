@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import CreatableSelect from "@/components/CreatableSelect";
+import { apiFetch } from "@/lib/apiClient";
 
 type Client = {
   name: string;
@@ -29,7 +30,7 @@ export default function NewClientForm() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch("/api/options/sectors")
+    apiFetch("/api/options/sectors")
       .then((r) => r.json())
       .then((data) => setSectors(data.map((d: { label: string }) => d.label)));
   }, []);
@@ -38,7 +39,7 @@ export default function NewClientForm() {
     e.preventDefault();
     setSaving(true);
 
-    const res = await fetch("/api/brands", {
+    const res = await apiFetch("/api/brands", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -99,7 +100,7 @@ export default function NewClientForm() {
           value={client.sector}
           onChange={(v) => setClient({ ...client, sector: v })}
           onCreate={async (v) => {
-            await fetch("/api/options/sectors", {
+            await apiFetch("/api/options/sectors", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ label: v }),

@@ -6,6 +6,8 @@ import { ServiceType } from "@prisma/client";
 import { resolveSteps, insertCustomStep, removeStep, isCustomStep } from "@/lib/projects";
 import InvoicesPanel from "@/components/InvoicesPanel";
 import { formatRevenue } from "@/lib/format";
+import { apiFetch } from "@/lib/apiClient";
+import { blurOnEnter } from "@/lib/inputs";
 
 type Invoice = { id: string; label: string; amount: number; sentAt: string | null; paidAt: string | null };
 
@@ -40,7 +42,7 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
 
   async function update(data: Partial<Project>) {
     setProject((prev) => ({ ...prev, ...data }));
-    await fetch(`/api/projects/${project.id}`, {
+    await apiFetch(`/api/projects/${project.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -71,7 +73,7 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
   async function handleDelete() {
     if (!confirm("Supprimer ce projet ? Cette action est irréversible.")) return;
     setDeleting(true);
-    await fetch(`/api/projects/${project.id}`, { method: "DELETE" });
+    await apiFetch(`/api/projects/${project.id}`, { method: "DELETE" });
     router.push(`/clients/${project.clientId}`);
     router.refresh();
   }
@@ -224,7 +226,9 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
               <input
                 type="number"
                 value={project.quoteAmount ?? ""}
-                onChange={(e) => update({ quoteAmount: e.target.value ? Number(e.target.value) : null })}
+                onChange={(e) => setProject((prev) => ({ ...prev, quoteAmount: e.target.value ? Number(e.target.value) : null }))}
+                onBlur={(e) => update({ quoteAmount: e.target.value ? Number(e.target.value) : null })}
+                onKeyDown={blurOnEnter}
                 className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
               />
             </Field>

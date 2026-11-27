@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/apiClient";
 
 type Contact = {
   id: string;
@@ -22,7 +23,7 @@ export default function BrandContactsPanel({ brandId, contacts }: { brandId: str
   async function handleAdd() {
     if (!name.trim()) return;
     setSaving(true);
-    await fetch(`/api/brands/${brandId}/contacts`, {
+    await apiFetch(`/api/brands/${brandId}/contacts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: name.trim(), role: role.trim() || null, profileUrl: profileUrl.trim() || null, platform }),
@@ -37,7 +38,7 @@ export default function BrandContactsPanel({ brandId, contacts }: { brandId: str
 
   async function handleDelete(id: string) {
     if (!confirm("Supprimer ce contact ?")) return;
-    await fetch(`/api/brand-contacts/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/brand-contacts/${id}`, { method: "DELETE" });
     router.refresh();
   }
 

@@ -7,6 +7,7 @@ import { serviceTypeOptions, serviceTypeLabel } from "@/lib/serviceTypes";
 import { statusLabel, statusColor } from "@/lib/pipeline";
 import { quoteRequestStatuses, isQuoteRequestClosed } from "@/lib/quoteRequests";
 import { formatRevenue } from "@/lib/format";
+import { apiFetch } from "@/lib/apiClient";
 
 type QuoteRequest = {
   id: string;
@@ -53,7 +54,7 @@ export default function QuoteRequestsCard({
 
   async function handleStatusChange(id: string, status: PipelineStatus) {
     setQuoteRequests((prev) => prev.map((q) => (q.id === id ? { ...q, status } : q)));
-    await fetch(`/api/quote-requests/${id}`, {
+    await apiFetch(`/api/quote-requests/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -63,7 +64,7 @@ export default function QuoteRequestsCard({
 
   async function handleDateChange(id: string, isoDate: string) {
     setQuoteRequests((prev) => prev.map((q) => (q.id === id ? { ...q, lastContactDate: isoDate } : q)));
-    await fetch(`/api/quote-requests/${id}`, {
+    await apiFetch(`/api/quote-requests/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lastContactDate: isoDate }),
@@ -75,7 +76,7 @@ export default function QuoteRequestsCard({
     setQuoteRequests((prev) =>
       prev.map((q) => (q.id === id ? { ...q, status: "PAS_MAINTENANT", reconsiderDate } : q))
     );
-    await fetch(`/api/quote-requests/${id}`, {
+    await apiFetch(`/api/quote-requests/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "PAS_MAINTENANT", reconsiderDate }),
@@ -86,13 +87,13 @@ export default function QuoteRequestsCard({
   async function handleDelete(id: string) {
     if (!confirm("Supprimer cette demande de devis ?")) return;
     setQuoteRequests((prev) => prev.filter((q) => q.id !== id));
-    await fetch(`/api/quote-requests/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/quote-requests/${id}`, { method: "DELETE" });
     router.refresh();
   }
 
   async function handleCreate() {
     setSaving(true);
-    const res = await fetch(`/api/clients/${clientId}/quote-requests`, {
+    const res = await apiFetch(`/api/clients/${clientId}/quote-requests`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/apiClient";
 
 const actionTypes = [
   "Premier contact",
@@ -36,7 +37,7 @@ export default function BrandActions({ brandId }: { brandId: string }) {
   async function handlePause() {
     if (!pauseDate) return;
     setSaving(true);
-    await fetch(`/api/brands/${brandId}`, {
+    await apiFetch(`/api/brands/${brandId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ pipelineStatus: "PAS_MAINTENANT", reconsiderDate: pauseDate }),
@@ -49,7 +50,7 @@ export default function BrandActions({ brandId }: { brandId: string }) {
 
   async function handleLog() {
     setSaving(true);
-    await fetch(`/api/brands/${brandId}/contact`, {
+    await apiFetch(`/api/brands/${brandId}/contact`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type, content }),
@@ -64,7 +65,7 @@ export default function BrandActions({ brandId }: { brandId: string }) {
     setDeleting(true);
     setDeleteError("");
 
-    let res = await fetch(`/api/brands/${brandId}`, { method: "DELETE" });
+    let res = await apiFetch(`/api/brands/${brandId}`, { method: "DELETE" }, { expected: [409] });
 
     if (res.status === 409) {
       const data = await res.json();
@@ -82,7 +83,7 @@ export default function BrandActions({ brandId }: { brandId: string }) {
           setDeleting(false);
           return;
         }
-        res = await fetch(`/api/brands/${brandId}?force=true`, { method: "DELETE" });
+        res = await apiFetch(`/api/brands/${brandId}?force=true`, { method: "DELETE" }, { quiet: true });
       }
     }
 

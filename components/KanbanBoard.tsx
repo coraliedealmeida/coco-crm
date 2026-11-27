@@ -23,6 +23,7 @@ import { quoteRequestStatuses } from "@/lib/quoteRequests";
 import { countBusinessDays } from "@/lib/business-days";
 import { dueBadgeFromDate } from "@/lib/dueStatus";
 import BrandCard from "@/components/BrandCard";
+import { apiFetch } from "@/lib/apiClient";
 
 type Brand = {
   kind: "brand";
@@ -100,13 +101,13 @@ export default function KanbanBoard({
   async function updateStatus(item: PipelineItem, newStatus: PipelineStatus) {
     setItems((prev) => prev.map((it) => (it === item ? { ...it, pipelineStatus: newStatus } : it)));
     if (item.kind === "brand") {
-      await fetch(`/api/brands/${item.id}`, {
+      await apiFetch(`/api/brands/${item.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pipelineStatus: newStatus }),
       });
     } else {
-      await fetch(`/api/quote-requests/${item.id}`, {
+      await apiFetch(`/api/quote-requests/${item.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
