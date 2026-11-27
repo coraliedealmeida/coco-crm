@@ -2,29 +2,32 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/apiClient";
+import { formatDateFr } from "@/lib/format";
+import { parisDayKey, parisToday } from "@/lib/dates";
 
 type Note = { id: string; date: string; content: string };
 
 function toDateInputValue(iso: string): string {
-  return new Date(iso).toISOString().slice(0, 10);
+  return parisDayKey(iso);
 }
 
 export default function ProjectNotesPanel({ projectId, notes }: { projectId: string; notes: Note[] }) {
   const router = useRouter();
   const [content, setContent] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(parisToday());
   const [adding, setAdding] = useState(false);
 
   async function handleAdd() {
     if (!content.trim()) return;
     setAdding(true);
-    await fetch(`/api/projects/${projectId}/notes`, {
+    await apiFetch(`/api/projects/${projectId}/notes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ date: new Date(date).toISOString(), content }),
     });
     setContent("");
-    setDate(new Date().toISOString().slice(0, 10));
+    setDate(parisToday());
     setAdding(false);
     router.refresh();
   }
@@ -75,14 +78,14 @@ function NoteRow({ note }: { note: Note }) {
 
   async function handleDelete() {
     if (!confirm("Supprimer cette note ?")) return;
-    await fetch(`/api/project-notes/${note.id}`, { method: "DELETE" });
+    await apiFetch(`/api/project-notes/${note.id}`, { method: "DELETE" });
     router.refresh();
   }
 
   async function handleDateChange(value: string) {
     if (!value) return;
     setEditingDate(false);
-    await fetch(`/api/project-notes/${note.id}`, {
+    await apiFetch(`/api/project-notes/${note.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ date: new Date(value).toISOString() }),
@@ -108,7 +111,7 @@ function NoteRow({ note }: { note: Note }) {
             className="text-xs font-semibold text-accent underline-offset-2 hover:underline"
             title="Modifier la date"
           >
-            {new Date(note.date).toLocaleDateString("fr-FR")}
+            {formatDateFr(note.date)}
           </button>
         )}
         <button

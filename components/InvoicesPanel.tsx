@@ -4,11 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { invoicedTotal, paidTotal, remainingToInvoice } from "@/lib/projects";
 import { formatRevenue } from "@/lib/format";
+import { apiFetch } from "@/lib/apiClient";
+import { blurOnEnter } from "@/lib/inputs";
+import { parisDayKey } from "@/lib/dates";
 
 type Invoice = { id: string; label: string; amount: number; sentAt: string | null; paidAt: string | null };
 
 function toDateInputValue(iso: string | null): string {
-  return iso ? new Date(iso).toISOString().slice(0, 10) : "";
+  return iso ? parisDayKey(iso) : "";
 }
 
 export default function InvoicesPanel({
@@ -33,9 +36,14 @@ export default function InvoicesPanel({
   }));
   const remaining = remainingToInvoice(quoteAmount, asDates);
 
+  // Modification locale pendant la frappe ; enregistrement à la sortie du champ (onBlur).
+  function edit(id: string, data: Partial<Invoice>) {
+    setInvoices((prev) => prev.map((i) => (i.id === id ? { ...i, ...data } : i)));
+  }
+
   async function update(id: string, data: Partial<Invoice>) {
     setInvoices((prev) => prev.map((i) => (i.id === id ? { ...i, ...data } : i)));
-    await fetch(`/api/invoices/${id}`, {
+    await apiFetch(`/api/invoices/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -46,7 +54,7 @@ export default function InvoicesPanel({
   async function handleAdd() {
     const amount = Number(newAmount);
     if (!newLabel.trim() || !amount) return;
-    const res = await fetch(`/api/projects/${projectId}/invoices`, {
+    const res = await apiFetch(`/api/projects/${projectId}/invoices`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ label: newLabel, amount }),
@@ -60,8 +68,8 @@ export default function InvoicesPanel({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Supprimer cette facture ?")) return;
-    await fetch(`/api/invoices/${id}`, { method: "DELETE" });
+    if (!confirm("Mettre cette facture à la corbeille ? Elle ne comptera plus dans les totaux. Restaurable depuis Paramètres → Corbeille.")) return;
+    await apiFetch(`/api/invoices/${id}`, { method: "DELETE" });
     setInvoices((prev) => prev.filter((i) => i.id !== id));
     router.refresh();
   }
@@ -90,13 +98,17 @@ export default function InvoicesPanel({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <input
                   value={invoice.label}
-                  onChange={(e) => update(invoice.id, { label: e.target.value })}
+                  onChange={(e) => edit(invoice.id, { label: e.target.value })}
+                  onBlur={(e) => update(invoice.id, { label: e.target.value })}
+                  onKeyDown={blurOnEnter}
                   className="min-w-[8rem] flex-1 rounded-lg border border-transparent bg-transparent py-1 text-sm font-semibold text-ink outline-none hover:border-accent-light focus:border-accent"
                 />
                 <input
                   type="number"
                   value={invoice.amount}
-                  onChange={(e) => update(invoice.id, { amount: Number(e.target.value) })}
+                  onChange={(e) => edit(invoice.id, { amount: Number(e.target.value) })}
+                  onBlur={(e) => update(invoice.id, { amount: Number(e.target.value) })}
+                  onKeyDown={blurOnEnter}
                   className="w-24 rounded-lg border border-transparent bg-white px-2 py-1 text-right text-sm font-semibold text-accent outline-none hover:border-accent-light focus:border-accent"
                 />
                 <button onClick={() => handleDelete(invoice.id)} className="text-ink/30 hover:text-red-500" aria-label="Supprimer">

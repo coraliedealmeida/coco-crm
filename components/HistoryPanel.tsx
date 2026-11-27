@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { apiFetch } from "@/lib/apiClient";
+import { formatDateFr } from "@/lib/format";
+import { parisDayKey } from "@/lib/dates";
 
 function toDateInputValue(isoDate: string): string {
-  return new Date(isoDate).toISOString().slice(0, 10);
+  return parisDayKey(isoDate);
 }
 
 type Entry = {
@@ -32,14 +35,14 @@ function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
   async function handleDelete() {
     if (!confirm("Supprimer cette entrée du suivi ? Cette action est irréversible.")) return;
     setDeleting(true);
-    await fetch(`/api/brands/${brandId}/contact/${entry.id}`, { method: "DELETE" });
+    await apiFetch(`/api/brands/${brandId}/contact/${entry.id}`, { method: "DELETE" });
     router.refresh();
   }
 
   async function handleDateChange(value: string) {
     if (!value) return;
     setEditingDate(false);
-    await fetch(`/api/brands/${brandId}/contact/${entry.id}`, {
+    await apiFetch(`/api/brands/${brandId}/contact/${entry.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ date: new Date(value).toISOString() }),
@@ -90,7 +93,7 @@ function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
               className="text-xs font-light text-ink/50 underline-offset-2 hover:underline"
               title="Modifier la date"
             >
-              {new Date(entry.date).toLocaleDateString("fr-FR")}
+              {formatDateFr(entry.date)}
             </button>
           )}
           <button

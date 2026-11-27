@@ -1,28 +1,40 @@
-# CRM Prospection — Phase 1
+# COCO — CRM de Coralie
 
-CRM de prospection pour graphiste/DA spécialisée secteur animalier. Stack : Next.js (App Router) + Prisma + Vercel Postgres (Neon) + Resend.
+CRM de prospection, suivi clients/projets et facturation pour graphiste/DA spécialisée secteur animalier.
+Stack : Next.js (App Router) + Prisma + Postgres Neon + Resend, déployé sur Vercel.
+Règles de travail détaillées : voir `CLAUDE.md`.
 
 ## Démarrage local
 
 1. Copier `.env.example` en `.env` et renseigner les variables (voir ci-dessous).
+   En local, `DATABASE_URL` et `DATABASE_URL_UNPOOLED` doivent pointer vers la **base de test** (branche Neon), jamais la production.
 2. `npm install`
-3. `npx prisma migrate dev --name init`
-4. `npm run seed`
+3. `npm run migrate` — applique les migrations SQL de `prisma/migrations/` (sur la base de test).
+4. `npm run seed` (base de test uniquement)
 5. `npm run dev`
+
+⚠️ Ne jamais lancer `prisma migrate dev`, `prisma db push --force-reset` ni `prisma migrate reset` :
+ces commandes peuvent effacer les données.
 
 ## Variables d'environnement
 
-- `DATABASE_URL` — URL Postgres (Neon / Vercel Postgres)
+- `DATABASE_URL` — URL Postgres Neon (connexion « pooler »)
+- `DATABASE_URL_UNPOOLED` — URL Postgres Neon directe (utilisée par les migrations ; fournie par l'intégration Neon, y compris pour chaque prévisualisation)
 - `APP_PASSWORD` — mot de passe unique d'accès à l'app
 - `SESSION_SECRET` — chaîne aléatoire longue (signature de session)
 - `RESEND_API_KEY` — clé API Resend
-- `NOTIFICATION_EMAIL` — adresse recevant les emails de relance (hello@coraliedealmeida.com)
-- `CRON_SECRET` — chaîne aléatoire longue (protège l'endpoint cron)
+- `NOTIFICATION_EMAIL` — adresse recevant les emails de relance
+- `CRON_SECRET` — chaîne aléatoire longue (protège les routes automatiques `/api/cron/*`)
 
 ## Déploiement Vercel
 
-1. Importer le repo GitHub dans Vercel.
-2. Ajouter une base Vercel Postgres (onglet Storage) et lier les variables auto-générées, ou renseigner `DATABASE_URL` manuellement.
-3. Renseigner les autres variables d'environnement dans Settings → Environment Variables.
-4. Déployer. Le script `build` exécute automatiquement `prisma migrate deploy`.
-5. Le cron quotidien (`vercel.json`) appelle `/api/cron/relances` tous les jours à 7h UTC.
+1. Le dépôt GitHub est relié à Vercel : la branche `main` est la production, chaque autre branche
+   poussée crée une prévisualisation.
+2. Variables dans Vercel → Settings → Environment Variables :
+   - périmètre **Production** : base de production ;
+   - périmètre **Preview** : base de test (branche Neon).
+3. Le déploiement **ne lance aucune migration** : `npm run build` = `prisma generate && next build`.
+   Les migrations se lancent à la main avec `npm run migrate`, d'abord sur la base de test, puis sur la
+   production seulement après sauvegarde et accord de Coralie.
+4. Tâches automatiques (`vercel.json`) : `/api/cron/activate-prospects` (6h UTC), `/api/cron/relances`
+   (7h UTC), `/api/cron/backup` (8h UTC).

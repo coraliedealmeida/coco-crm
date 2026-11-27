@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { scheduleProspects } from "@/lib/prospectScheduling";
+import { requireSession } from "@/lib/apiAuth";
 
 // Réglage simple : espacement (en jours ouvrés) entre deux nouvelles marques activées,
 // pour ne jamais faire arriver plusieurs nouvelles marques le même jour en routine
@@ -16,6 +17,9 @@ const MIN_START_DATE = new Date("2026-08-10T00:00:00.000Z");
 // aux prospects validés ("Oui") pas encore programmés. La fiche Brand n'est créée que le jour J,
 // par le cron d'activation (app/api/cron/activate-prospects/route.ts).
 export async function POST() {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const toSchedule = await prisma.prospectImport.findMany({
     where: { status: "OUI", scheduledDate: null, integratedAt: null },
     orderBy: { importedAt: "asc" },

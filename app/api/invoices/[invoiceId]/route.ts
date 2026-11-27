@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireSession } from "@/lib/apiAuth";
+import { trashInvoice } from "@/lib/trash";
 
 export async function PATCH(request: NextRequest, { params }: { params: { invoiceId: string } }) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const body = await request.json();
   const data: Record<string, unknown> = {};
   if ("label" in body) data.label = body.label;
@@ -14,6 +19,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { invoic
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: { invoiceId: string } }) {
-  await prisma.invoice.delete({ where: { id: params.invoiceId } });
+  const denied = await requireSession();
+  if (denied) return denied;
+
+  // Corbeille : la facture est masquée et ne compte plus dans les totaux, mais reste restaurable.
+  await trashInvoice(params.invoiceId);
   return NextResponse.json({ ok: true });
 }

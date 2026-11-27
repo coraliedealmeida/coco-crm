@@ -3,9 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ServiceType } from "@prisma/client";
-import { resolveSteps, insertCustomStep, removeStep, isCustomStep } from "@/lib/projects";
+import { resolveSteps, insertCustomStep, removeStep, isCustomStep, monthlyCycleProgress } from "@/lib/projects";
 import InvoicesPanel from "@/components/InvoicesPanel";
-import { formatRevenue } from "@/lib/format";
+import { formatRevenue, formatDateFr } from "@/lib/format";
+import { apiFetch } from "@/lib/apiClient";
+import { blurOnEnter } from "@/lib/inputs";
+import { parisDayKey } from "@/lib/dates";
+import { OFFBOARDING_STEPS } from "@/lib/steps";
 
 type Invoice = { id: string; label: string; amount: number; sentAt: string | null; paidAt: string | null };
 
@@ -25,7 +29,7 @@ type Project = {
 };
 
 function toDateInputValue(iso: string | null): string {
-  return iso ? new Date(iso).toISOString().slice(0, 10) : "";
+  return iso ? parisDayKey(iso) : "";
 }
 
 export default function ProjectForm({ initial, suiviSlot }: { initial: Project; suiviSlot: React.ReactNode }) {
@@ -40,7 +44,7 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
 
   async function update(data: Partial<Project>) {
     setProject((prev) => ({ ...prev, ...data }));
-    await fetch(`/api/projects/${project.id}`, {
+    await apiFetch(`/api/projects/${project.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -69,9 +73,9 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
   }
 
   async function handleDelete() {
-    if (!confirm("Supprimer ce projet ? Cette action est irréversible.")) return;
+    if (!confirm("Mettre ce projet à la corbeille ? Ses factures partent avec lui (elles ne comptent plus dans les totaux). Tu pourras tout restaurer depuis Paramètres → Corbeille.")) return;
     setDeleting(true);
-    await fetch(`/api/projects/${project.id}`, { method: "DELETE" });
+    await apiFetch(`/api/projects/${project.id}`, { method: "DELETE" });
     router.push(`/clients/${project.clientId}`);
     router.refresh();
   }
@@ -85,7 +89,7 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
           label="Date de livraison"
           value={
             project.estimatedDeliveryDate
-              ? new Date(project.estimatedDeliveryDate).toLocaleDateString("fr-FR")
+              ? formatDateFr(project.estimatedDeliveryDate)
               : "Non renseignée"
           }
           accent="#C4B5FD"
@@ -168,7 +172,7 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
           <button
             onClick={() => {
               const firstOffboardingIndex = steps.findIndex((s) =>
-                ["Facture à faire", "Facture envoyée", "Attente avis", "Terminé"].includes(s)
+                OFFBOARDING_STEPS.includes(s)
               );
               setAfterStep(steps[Math.max(0, firstOffboardingIndex - 1)]);
               setAddingStep(true);
@@ -224,7 +228,9 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
               <input
                 type="number"
                 value={project.quoteAmount ?? ""}
-                onChange={(e) => update({ quoteAmount: e.target.value ? Number(e.target.value) : null })}
+                onChange={(e) => setProject((prev) => ({ ...prev, quoteAmount: e.target.value ? Number(e.target.value) : null }))}
+                onBlur={(e) => update({ quoteAmount: e.target.value ? Number(e.target.value) : null })}
+                onKeyDown={blurOnEnter}
                 className="w-full rounded-xl border border-accent-light bg-soft px-4 py-3 text-sm text-ink outline-none focus:border-accent"
               />
             </Field>
@@ -286,10 +292,8 @@ function MonthlyCycle({ startDate }: { startDate: string | null }) {
       </p>
     );
   }
-  const start = new Date(startDate);
-  const now = new Date();
-  const monthsElapsed = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
-  const position = (((monthsElapsed % 3) + 3) % 3) + 1;
+  // Même calcul que partout ailleurs (lib/projects.ts), en mois calendaires à Paris.
+  const position = monthlyCycleProgress(new Date(startDate)) ?? 1;
 
   return (
     <div>

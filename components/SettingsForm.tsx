@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/apiClient";
 
 type Settings = {
   daysBeforeGreenLight: number;
@@ -52,12 +53,13 @@ export default function SettingsForm({ initial }: { initial: Settings }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    await fetch("/api/settings", {
+    const res = await apiFetch("/api/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(settings),
     });
     setSaving(false);
+    if (!res.ok) return;
     setSaved(true);
     router.refresh();
     setTimeout(() => setSaved(false), 2000);

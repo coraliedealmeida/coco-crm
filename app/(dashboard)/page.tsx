@@ -1,15 +1,15 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { prisma, NOT_DELETED } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { statusLabel } from "@/lib/pipeline";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isProjectActive, projectLabel, remainingToInvoice } from "@/lib/projects";
+import { factureRelanceDue, isProjectActive, projectLabel, remainingToInvoice } from "@/lib/projects";
 import DashboardSection from "@/components/DashboardSection";
 import BrandCard from "@/components/BrandCard";
 import RelaunchButton from "@/components/RelaunchButton";
 import GuidedSession from "@/components/GuidedSession";
 import type { SessionBrand } from "@/components/GuidedSession";
-import { formatRevenue } from "@/lib/format";
+import { formatRevenue, formatDateFr } from "@/lib/format";
 import { dueBadgeFromDate, dueBadgeFromThreshold, dueSortKey } from "@/lib/dueStatus";
 import { getDailyQualificationBatch } from "@/lib/prospectImport";
 import DashboardNotesWidget from "@/components/DashboardNotesWidget";
@@ -24,6 +24,10 @@ import {
   contactProfileLink,
   type EngagementContact,
 } from "@/lib/pipeline";
+import { parisEndOfToday } from "@/lib/dates";
+import { STEP } from "@/lib/steps";
+import { getSettings } from "@/lib/settings";
+import { RELANCE_STATUSES } from "@/lib/statusEffects";
 
 export const dynamic = "force-dynamic";
 
@@ -114,22 +118,22 @@ export default async function DashboardPage() {
       where: { archivedAt: null, OR: [{ acquisitionPath: null }, { acquisitionPath: { not: "DIRECT" } }] },
       include: { contacts: { orderBy: { createdAt: "asc" } } },
     }),
-    prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+    getSettings(),
     // Rappels programmés sur une marque OU sur un projet (jamais les deux) — on exclut les
     // marques archivées et les projets déjà terminés, comme pour le reste du Dashboard.
     prisma.reminder.findMany({
       where: {
         completed: false,
-        date: { lte: new Date() },
+        date: { lte: parisEndOfToday() },
         OR: [
-          { brandId: { not: null }, brand: { archivedAt: null } },
-          { projectId: { not: null }, project: { currentStep: { not: "Terminé" } } },
+          { brandId: { not: null }, brand: { archivedAt: null, deletedAt: null } },
+          { projectId: { not: null }, project: { currentStep: { not: STEP.TERMINE }, deletedAt: null } },
         ],
       },
       include: { brand: true, project: { include: { client: { include: { brand: true } } } } },
       orderBy: { date: "asc" },
     }),
-    prisma.project.findMany({ include: { client: { include: { brand: true } }, invoices: true } }),
+    prisma.project.findMany({ include: { client: { include: { brand: true } }, invoices: { where: NOT_DELETED } } }),
     prisma.invoice.findMany({
       where: { sentAt: { not: null }, paidAt: null },
       include: { project: { include: { client: { include: { brand: true } } } } },
@@ -140,14 +144,14 @@ export default async function DashboardPage() {
     prisma.quoteRequest.findMany({
       where: {
         status: { in: ["DEVIS_ENVOYE", "RELANCE_DEVIS_1"] },
-        nextActionDate: { lte: new Date() },
+        nextActionDate: { lte: parisEndOfToday() },
       },
       include: { client: { include: { brand: true } } },
     }),
     prisma.brand.findMany({
       where: {
         pipelineStatus: "PAS_MAINTENANT",
-        reconsiderDate: { lte: new Date() },
+        reconsiderDate: { lte: parisEndOfToday() },
         archivedAt: null,
       },
       orderBy: { reconsiderDate: "asc" },
@@ -155,7 +159,7 @@ export default async function DashboardPage() {
     // Demandes de devis mises "Pas maintenant" (indépendamment du statut de la marque
     // elle-même, cf. cas d'un client existant avec une nouvelle demande en parallèle).
     prisma.quoteRequest.findMany({
-      where: { status: "PAS_MAINTENANT", reconsiderDate: { lte: new Date() } },
+      where: { status: "PAS_MAINTENANT", reconsiderDate: { lte: parisEndOfToday() } },
       include: { client: { include: { brand: true } } },
       orderBy: { reconsiderDate: "asc" },
     }),
@@ -165,6 +169,8 @@ export default async function DashboardPage() {
   ]);
 
   const now = new Date();
+  // « Dû aujourd'hui » = jusqu'à 23h59 à Paris (et non à l'heure UTC du serveur).
+  const endOfToday = parisEndOfToday(now);
 
   const routineBrands = brands
     .filter((b) => b.pipelineStatus === "ROUTINE_ENGAGEMENT")
@@ -197,9 +203,9 @@ export default async function DashboardPage() {
   const relanceBrands = brands
     .filter(
       (b) =>
-        ["PREMIER_DM", "RELANCE_1", "DEVIS_ENVOYE", "RELANCE_DEVIS_1"].includes(b.pipelineStatus) &&
+        RELANCE_STATUSES.includes(b.pipelineStatus) &&
         b.nextActionDate &&
-        b.nextActionDate <= now
+        b.nextActionDate <= endOfToday
     )
     .map((b) => ({ ...b, dueBadge: dueBadgeFromDate(b.nextActionDate, now) }))
     .sort((a, b) => dueSortKey(a.dueBadge) - dueSortKey(b.dueBadge));
@@ -280,7 +286,7 @@ export default async function DashboardPage() {
         amount: inv.amount as number | null,
       }));
     }
-    if (p.currentStep === "Facture à faire") {
+    if (p.currentStep === STEP.FACTURE_A_FAIRE) {
       return [
         {
           key: `project-${p.id}`,
@@ -309,7 +315,7 @@ export default async function DashboardPage() {
   const pendingInvoicesTotal = pendingInvoices.reduce((sum, inv) => sum + inv.amount, 0);
 
   // Tâches personnelles datées d'aujourd'hui ou en retard, non terminées.
-  const dueTasks = dashboardTasks.filter((t) => !t.completed && t.dueDate && t.dueDate <= now);
+  const dueTasks = dashboardTasks.filter((t) => !t.completed && t.dueDate && t.dueDate <= endOfToday);
 
   // Les sources de "Relances du jour" (marques, rappels, demandes de devis, tâches datées) sont
   // fusionnées et triées ensemble par gravité de retard, pour un seul ordre cohérent dans le bloc.
@@ -390,7 +396,7 @@ export default async function DashboardPage() {
             dueBadge={dueBadge}
             statusContent={
               <span style={{ color: "#C4B5FD" }}>
-                ⏸ rappel du {b.reconsiderDate ? new Date(b.reconsiderDate).toLocaleDateString("fr-FR") : ""}
+                ⏸ rappel du {b.reconsiderDate ? formatDateFr(b.reconsiderDate) : ""}
               </span>
             }
             footer={<RelaunchButton id={b.id} kind="brand" />}
@@ -420,7 +426,7 @@ export default async function DashboardPage() {
             dueBadge={dueBadge}
             statusContent={
               <span style={{ color: "#C4B5FD" }}>
-                ⏸ rappel du {q.reconsiderDate ? new Date(q.reconsiderDate).toLocaleDateString("fr-FR") : ""}
+                ⏸ rappel du {q.reconsiderDate ? formatDateFr(q.reconsiderDate) : ""}
               </span>
             }
             footer={<RelaunchButton id={q.id} kind="quoteRequest" />}
@@ -581,13 +587,8 @@ export default async function DashboardPage() {
             emptyLabel="Aucune facture en attente de paiement."
           >
             {pendingInvoices.map((invoice) => {
-              const elapsed = countBusinessDays(invoice.sentAt!, now);
-              const relance =
-                elapsed >= settings.daysBeforeFactureRelance1 + settings.daysBeforeFactureRelance2
-                  ? 2
-                  : elapsed >= settings.daysBeforeFactureRelance1
-                    ? 1
-                    : null;
+              // Même règle que partout ailleurs (lib/projects.ts).
+              const relance = factureRelanceDue([invoice], settings, now);
               return (
                 <ProjectRow
                   key={invoice.id}

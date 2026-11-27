@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import StatsGrid from "@/components/StatsGrid";
 import ProfileLink from "@/components/ProfileLink";
 import { platformBadge } from "@/lib/pipeline";
-import { bestProfileLink } from "@/lib/prospectImport";
+import { bestProfileLink } from "@/lib/prospectLinks";
+import { apiFetch } from "@/lib/apiClient";
+import { formatDateFr } from "@/lib/format";
 
 interface Contact {
   name: string;
@@ -64,7 +66,7 @@ function FilterField({
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return formatDateFr(iso, { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 export default function ImportClient({
@@ -104,7 +106,7 @@ export default function ImportClient({
   const handleImport = async () => {
     setImporting(true);
     try {
-      const res = await fetch("/api/import/parse", { method: "POST" });
+      const res = await apiFetch("/api/import/parse", { method: "POST" }, { quiet: true });
       const data = await res.json();
       if (!res.ok) { alert(data.error ?? "Erreur lors de l'import"); return; }
       alert(`Import terminé : ${data.linkedin} marques LinkedIn · ${data.instagram} comptes Instagram · ${data.total} total`);
@@ -115,7 +117,7 @@ export default function ImportClient({
   };
 
   const handleStatus = async (id: string, status: string) => {
-    await fetch(`/api/import/${id}/status`, {
+    await apiFetch(`/api/import/${id}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -136,7 +138,7 @@ export default function ImportClient({
   };
 
   const handleCategory = async (id: string, brandCategory: string) => {
-    await fetch(`/api/import/${id}/status`, {
+    await apiFetch(`/api/import/${id}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ brandCategory: brandCategory || null }),
@@ -153,12 +155,12 @@ export default function ImportClient({
     setMerging(true);
     try {
       const [keepId, removeId] = selected;
-      const res = await fetch("/api/import/merge", {
+      const res = await apiFetch("/api/import/merge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ keepId, removeId }),
       });
-      if (!res.ok) { alert("Erreur lors de la fusion"); return; }
+      if (!res.ok) return; // message affiché par apiFetch
       setSelected([]);
       router.refresh();
     } finally {
@@ -169,7 +171,7 @@ export default function ImportClient({
   const handleSchedule = async () => {
     setScheduling(true);
     try {
-      const res = await fetch("/api/import/schedule", { method: "POST" });
+      const res = await apiFetch("/api/import/schedule", { method: "POST" }, { quiet: true });
       const data = await res.json();
       if (!res.ok) { alert(data.error ?? "Erreur"); return; }
       alert(data.scheduled > 0 ? `${data.scheduled} marque(s) programmée(s).` : (data.message ?? "Rien à programmer."));

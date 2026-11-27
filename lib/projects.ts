@@ -1,6 +1,8 @@
 import { ServiceType } from "@prisma/client";
 import { countBusinessDays } from "@/lib/business-days";
+import { monthsBetween } from "@/lib/dates";
 import { projectSteps, serviceTypeLabel } from "@/lib/serviceTypes";
+import { STEP, ONBOARDING_STEPS, OFFBOARDING_STEPS } from "@/lib/steps";
 
 /** Libellé affiché pour un projet : son nom libre s'il en a un, sinon le type de prestation. */
 export function projectLabel(project: { name: string | null; serviceType: ServiceType }): string {
@@ -9,8 +11,7 @@ export function projectLabel(project: { name: string | null; serviceType: Servic
 
 // Étapes communes à toutes les prestations (cf. lib/serviceTypes.ts) qui bornent les 3
 // colonnes macro du Kanban Projets. Seul le milieu ("En cours") varie selon le type.
-export const ONBOARDING_STEPS = ["Devis signé", "Attente acompte"];
-export const OFFBOARDING_STEPS = ["Facture à faire", "Facture envoyée", "Attente avis", "Terminé"];
+export { ONBOARDING_STEPS, OFFBOARDING_STEPS } from "@/lib/steps";
 
 export type ProjectMacroGroupId = "ONBOARDING" | "EN_COURS" | "OFFBOARDING";
 
@@ -71,7 +72,7 @@ export function firstStepOfMacroGroup(steps: string[], group: ProjectMacroGroupI
 }
 
 export function isProjectDone(project: { currentStep: string }): boolean {
-  return project.currentStep === "Terminé";
+  return project.currentStep === STEP.TERMINE;
 }
 
 /**
@@ -113,7 +114,7 @@ export function pendingInvoices(invoices: InvoiceLike[]): InvoiceLike[] {
 }
 
 function inMonth(date: Date | null, now: Date): boolean {
-  return !!date && date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+  return !!date && monthsBetween(date, now) === 0;
 }
 
 /** Montant facturé sur le mois courant, toutes factures confondues. */
@@ -149,8 +150,7 @@ export function factureRelanceDue(
 /** Compteur visuel 1/3 — 2/3 — 3/3 pour l'Accompagnement mensuel, basé sur la date de début saisie. */
 export function monthlyCycleProgress(startDate: Date | null, now: Date = new Date()): number | null {
   if (!startDate) return null;
-  const monthsElapsed =
-    (now.getFullYear() - startDate.getFullYear()) * 12 + (now.getMonth() - startDate.getMonth());
+  const monthsElapsed = monthsBetween(startDate, now);
   const cyclePosition = ((monthsElapsed % 3) + 3) % 3;
   return cyclePosition + 1;
 }

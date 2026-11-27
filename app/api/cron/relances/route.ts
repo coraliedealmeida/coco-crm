@@ -1,31 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
+import { isCronAuthorized } from "@/lib/cronAuth";
 import { statusLabel } from "@/lib/pipeline";
 import { projectLabel } from "@/lib/projects";
+import { parisEndOfToday } from "@/lib/dates";
+import { STEP } from "@/lib/steps";
+import { getSettings } from "@/lib/settings";
+import { RELANCE_STATUSES } from "@/lib/statusEffects";
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   }
 
-  const settings = await prisma.settings.upsert({
-    where: { id: "singleton" },
-    update: {},
-    create: { id: "singleton" },
-  });
+  const settings = await getSettings();
 
   if (!settings.emailNotifications) {
     return NextResponse.json({ skipped: true, reason: "Notifications désactivées." });
   }
 
-  const now = new Date();
+  // Tout ce qui est dû jusqu'à ce soir 23h59 à Paris.
+  const now = parisEndOfToday();
   const [brands, quoteRequests, reminders] = await Promise.all([
     prisma.brand.findMany({
       where: {
         archivedAt: null,
-        pipelineStatus: { in: ["PREMIER_DM", "RELANCE_1", "DEVIS_ENVOYE", "RELANCE_DEVIS_1"] },
+        pipelineStatus: { in: RELANCE_STATUSES },
         nextActionDate: { lte: now },
       },
     }),
@@ -43,8 +44,8 @@ export async function GET(request: NextRequest) {
         completed: false,
         date: { lte: now },
         OR: [
-          { brandId: { not: null }, brand: { archivedAt: null } },
-          { projectId: { not: null }, project: { currentStep: { not: "Terminé" } } },
+          { brandId: { not: null }, brand: { archivedAt: null, deletedAt: null } },
+          { projectId: { not: null }, project: { currentStep: { not: STEP.TERMINE }, deletedAt: null } },
         ],
       },
       include: { brand: true, project: { include: { client: { include: { brand: true } } } } },

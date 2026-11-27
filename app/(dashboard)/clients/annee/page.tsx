@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { prisma, NOT_DELETED } from "@/lib/prisma";
 import { projectLabel } from "@/lib/projects";
 import { formatRevenue } from "@/lib/format";
 import StatsGrid from "@/components/StatsGrid";
 import BackButton from "@/components/BackButton";
+import { parisYearMonth } from "@/lib/dates";
+import { STEP } from "@/lib/steps";
 
 export const dynamic = "force-dynamic";
 
@@ -31,17 +33,17 @@ function amountFor(p: { quoteAmount: number | null; invoices: { amount: number }
 export default async function AnneeProjetsPage({ searchParams }: { searchParams: { year?: string } }) {
   const now = new Date();
   const projects = await prisma.project.findMany({
-    where: { currentStep: "Terminé" },
-    include: { client: { include: { brand: true } }, invoices: true },
+    where: { currentStep: STEP.TERMINE },
+    include: { client: { include: { brand: true } }, invoices: { where: NOT_DELETED } },
   });
 
-  const years = Array.from(new Set(projects.map((p) => (p.completedAt ?? p.createdAt).getFullYear())));
-  if (!years.includes(now.getFullYear())) years.push(now.getFullYear());
+  const years = Array.from(new Set(projects.map((p) => parisYearMonth(p.completedAt ?? p.createdAt).year)));
+  if (!years.includes(parisYearMonth(now).year)) years.push(parisYearMonth(now).year);
   years.sort((a, b) => b - a);
 
-  const selectedYear = Number(searchParams.year) || now.getFullYear();
+  const selectedYear = Number(searchParams.year) || parisYearMonth(now).year;
 
-  const projectsOfYear = projects.filter((p) => (p.completedAt ?? p.createdAt).getFullYear() === selectedYear);
+  const projectsOfYear = projects.filter((p) => parisYearMonth(p.completedAt ?? p.createdAt).year === selectedYear);
   const clientsOfYear = new Set(projectsOfYear.map((p) => p.clientId)).size;
 
   // Le CA encaissé se base sur la date de paiement réelle des factures (Invoice.paidAt), pas sur
@@ -50,13 +52,13 @@ export default async function AnneeProjetsPage({ searchParams }: { searchParams:
     where: { paidAt: { not: null } },
   });
   const revenueEncaisse = paidInvoices
-    .filter((inv) => inv.paidAt!.getFullYear() === selectedYear)
+    .filter((inv) => parisYearMonth(inv.paidAt!).year === selectedYear)
     .reduce((sum, inv) => sum + inv.amount, 0);
 
   const months = MONTH_LABELS.map((label, index) => ({
     label,
     projects: projectsOfYear
-      .filter((p) => (p.completedAt ?? p.createdAt).getMonth() === index)
+      .filter((p) => parisYearMonth(p.completedAt ?? p.createdAt).month === index + 1)
       .sort((a, b) => (a.completedAt ?? a.createdAt).getTime() - (b.completedAt ?? b.createdAt).getTime()),
   }));
 

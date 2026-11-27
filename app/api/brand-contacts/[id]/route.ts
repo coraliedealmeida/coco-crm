@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireSession } from "@/lib/apiAuth";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const { id } = await params;
   const body = (await req.json()) as { name?: string; role?: string | null; profileUrl?: string | null; platform?: string };
 
@@ -16,6 +20,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const { id } = await params;
   await prisma.brandContact.delete({ where: { id } });
   return NextResponse.json({ ok: true });

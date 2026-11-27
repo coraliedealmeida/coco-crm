@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { ServiceType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { projectSteps } from "@/lib/serviceTypes";
+import { requireSession } from "@/lib/apiAuth";
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const { serviceType, name } = (await request.json()) as { serviceType: ServiceType; name?: string };
   if (!serviceType || !(serviceType in projectSteps)) {
     return NextResponse.json({ error: "Type de prestation invalide." }, { status: 400 });

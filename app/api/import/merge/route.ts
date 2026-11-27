@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, prismaRaw } from "@/lib/prisma";
+import { requireSession } from "@/lib/apiAuth";
 
 // Fusionne 2 lignes ProspectImport (doublon LinkedIn/Instagram détecté manuellement) :
-// keepId est conservé (fusion des infos), removeId est supprimé.
+// keepId est conservé (fusion des infos), removeId part à la corbeille.
 export async function POST(req: Request) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const { keepId, removeId } = (await req.json()) as { keepId?: string; removeId?: string };
 
   if (!keepId || !removeId || keepId === removeId) {
@@ -34,7 +38,8 @@ export async function POST(req: Request) {
     },
   });
 
-  await prisma.prospectImport.delete({ where: { id: removeId } });
+  // Le doublon fusionné part à la corbeille (masqué, jamais effacé).
+  await prismaRaw.prospectImport.update({ where: { id: removeId }, data: { deletedAt: new Date() } });
 
   return NextResponse.json(merged);
 }

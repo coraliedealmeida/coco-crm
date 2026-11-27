@@ -2,7 +2,7 @@ import Link from "next/link";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
 import { avatarColor, initials } from "@/lib/pipeline";
 import { projectLabel } from "@/lib/projects";
-import { formatRevenue } from "@/lib/format";
+import { formatRevenue, formatDateFr } from "@/lib/format";
 
 export type ProjectCardData = {
   id: string;
@@ -62,7 +62,7 @@ export default function ProjectCard({
         )}
         {project.estimatedDeliveryDate && (
           <span className="rounded-full bg-soft px-2.5 py-1 text-xs font-semibold text-ink/70">
-            📅 {new Date(project.estimatedDeliveryDate).toLocaleDateString("fr-FR")}
+            📅 {formatDateFr(project.estimatedDeliveryDate)}
           </span>
         )}
       </div>

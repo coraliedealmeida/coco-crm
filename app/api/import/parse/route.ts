@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, prismaRaw } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
 import { parse as csvParse } from "csv-parse/sync";
+import { requireSession } from "@/lib/apiAuth";
 
 const ROOT = process.cwd();
 
@@ -146,8 +147,12 @@ function tryMatch(linkedinKey: string, instagramBrands: Map<string, BrandEntry>)
 }
 
 export async function POST() {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   try {
-    const existing = await prisma.prospectImport.count();
+    // Accès brut : les doublons fusionnés (corbeille) comptent aussi.
+    const existing = await prismaRaw.prospectImport.count();
     if (existing > 0) {
       return NextResponse.json(
         { error: "Import déjà effectué. Supprimez les prospects existants pour recommencer." },

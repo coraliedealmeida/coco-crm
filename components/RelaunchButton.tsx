@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { pipelineColumns } from "@/lib/pipeline";
 import type { PipelineStatus } from "@prisma/client";
+import { apiFetch } from "@/lib/apiClient";
 
 const RELAUNCH_STATUSES: Record<"brand" | "quoteRequest", PipelineStatus[]> = {
   brand: ["ROUTINE_ENGAGEMENT", "PREMIER_DM", "RELANCE_1", "RELANCE_2"],
@@ -19,7 +20,7 @@ export default function RelaunchButton({ id, kind = "brand" }: { id: string; kin
     setSaving(true);
     const endpoint = kind === "brand" ? `/api/brands/${id}` : `/api/quote-requests/${id}`;
     const body = kind === "brand" ? { pipelineStatus: status, reconsiderDate: null } : { status, reconsiderDate: null };
-    await fetch(endpoint, {
+    await apiFetch(endpoint, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

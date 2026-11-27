@@ -5,7 +5,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 enum Platform {
@@ -45,36 +45,39 @@ enum PipelineStatus {
 }
 
 model Brand {
-  id                  String         @id @default(cuid())
-  name                String
-  emoji               String?
-  platform            Platform
-  acquisitionPath     AcquisitionPath?
-  sector              String
-  source              String
-  notes               String?
-  engagementStartDate DateTime
-  pipelineStatus      PipelineStatus @default(ROUTINE_ENGAGEMENT)
-  contactName         String?
-  contactRole         String?
-  lastContactDate     DateTime?
-  nextActionDate      DateTime?
-  messageUsed         String?
-  potentialRevenue    Float?
-  discoveryNotes      Json?
-  archivedAt          DateTime?
-  reconsiderDate      DateTime?
+  id                         String           @id @default(cuid())
+  name                       String
+  emoji                      String?
+  platform                   Platform
+  acquisitionPath            AcquisitionPath?
+  sector                     String
+  source                     String
+  notes                      String?
+  engagementStartDate        DateTime
+  pipelineStatus             PipelineStatus   @default(ROUTINE_ENGAGEMENT)
+  contactName                String?
+  contactRole                String?
+  lastContactDate            DateTime?
+  nextActionDate             DateTime?
+  messageUsed                String?
+  potentialRevenue           Float?
+  discoveryNotes             Json?
+  archivedAt                 DateTime?
+  // Corbeille : posée quand l'élément est « supprimé » depuis l'interface. Rien n'est jamais
+  // effacé de la base ; l'élément est masqué partout et restaurable (Paramètres → Corbeille).
+  deletedAt                  DateTime?
+  reconsiderDate             DateTime?
   // Dernier passage en routine d'engagement (like/commentaire) — sert à espacer les passages
   // dans le temps plutôt que de repasser sur la marque tous les jours.
-  lastEngagementAt         DateTime?
+  lastEngagementAt           DateTime?
   // Index du contact ciblé lors du dernier passage (discoveryNotes.allContacts), pour faire
   // tourner automatiquement entre les différentes personnes d'intérêt d'une même marque.
   lastEngagementContactIndex Int?
   // Nombre de passages en routine réellement effectués : la "Prise de contact" en dépend (pas des
   // seuls jours écoulés), pour qu'une routine sautée ne fasse pas avancer la marque.
-  engagementCount            Int            @default(0)
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  engagementCount            Int              @default(0)
+  createdAt                  DateTime         @default(now())
+  updatedAt                  DateTime         @updatedAt
 
   contactHistory ContactHistoryEntry[]
   reminders      Reminder[]
@@ -98,36 +101,39 @@ model BrandContact {
 }
 
 model ProspectImport {
-  id                  String    @id @default(cuid())
+  id                 String    @id @default(cuid())
   // "INSTAGRAM" | "LINKEDIN" | "BOTH"
-  platform            String
+  platform           String
   // Nom brut de la marque/entreprise (Company LinkedIn ou handle Instagram)
-  rawName             String
+  rawName            String
   // Handle Instagram si applicable
-  handle              String?
+  handle             String?
   // URL du profil Instagram ou page LinkedIn entreprise
-  profileUrl          String?
+  profileUrl         String?
   // Contacts connus : [{ name, position, profileUrl, platform }]
-  contacts            Json      @default("[]")
-  brandCategory       String?   // "GRANDE_MARQUE" | "PME_STARTUP" | "INDEPENDANT"
-  status              String    @default("PENDING") // PENDING | OUI | NON | PLUS_TARD
-  enrichedAt          DateTime?
-  enrichedName        String?
-  enrichedSummary     String?
-  deepEnrichedAt      DateTime?
-  enrichedRevenue     String?
-  enrichedFunding     String?
-  enrichedWebsite     String?
-  enrichedCity        String?
+  contacts           Json      @default("[]")
+  brandCategory      String? // "GRANDE_MARQUE" | "PME_STARTUP" | "INDEPENDANT"
+  status             String    @default("PENDING") // PENDING | OUI | NON | PLUS_TARD
+  enrichedAt         DateTime?
+  enrichedName       String?
+  enrichedSummary    String?
+  deepEnrichedAt     DateTime?
+  enrichedRevenue    String?
+  enrichedFunding    String?
+  enrichedWebsite    String?
+  enrichedCity       String?
   // Date de lancement calculée automatiquement à la validation ("Oui"), avant création de la fiche Brand
-  scheduledDate       DateTime?
+  scheduledDate      DateTime?
   // Marque comme faisant partie du lot "à qualifier" de la Session du jour (persiste tant que le
   // statut reste PENDING, pour ne pas re-tirer un nouveau lot aléatoire à chaque ouverture).
-  queuedForSessionAt  DateTime?
-  importedAt          DateTime  @default(now())
-  integratedAt        DateTime?
-  brandId             String?   @unique
-  brand               Brand?    @relation(fields: [brandId], references: [id])
+  queuedForSessionAt DateTime?
+  importedAt         DateTime  @default(now())
+  integratedAt       DateTime?
+  // Corbeille : posée quand (ex. doublon fusionné) l'élément est « supprimé » depuis l'interface. Rien n'est jamais
+  // effacé de la base ; l'élément est masqué partout et restaurable (Paramètres → Corbeille).
+  deletedAt          DateTime?
+  brandId            String?   @unique
+  brand              Brand?    @relation(fields: [brandId], references: [id])
 }
 
 // Rappel programmable librement (date + libellé), indépendant du calcul automatique des relances.
@@ -169,18 +175,18 @@ model SourceOption {
 }
 
 model Settings {
-  id                   String  @id @default("singleton")
-  daysBeforeGreenLight Int     @default(15)
-  daysBeforeRelance1   Int     @default(15)
-  daysBeforeRelance2   Int     @default(15)
-  daysBeforeDevisRelance1 Int  @default(15)
-  daysBeforeDevisRelance2 Int  @default(15)
-  daysBeforeFactureRelance1 Int @default(15)
-  daysBeforeFactureRelance2 Int @default(15)
+  id                        String  @id @default("singleton")
+  daysBeforeGreenLight      Int     @default(15)
+  daysBeforeRelance1        Int     @default(15)
+  daysBeforeRelance2        Int     @default(15)
+  daysBeforeDevisRelance1   Int     @default(15)
+  daysBeforeDevisRelance2   Int     @default(15)
+  daysBeforeFactureRelance1 Int     @default(15)
+  daysBeforeFactureRelance2 Int     @default(15)
   // Nombre minimum de jours ouvrés entre deux passages en routine d'engagement sur une même
   // marque (like/commentaire) — évite de relancer une marque tous les jours.
-  daysBetweenEngagements Int @default(3)
-  emailNotifications   Boolean @default(false)
+  daysBetweenEngagements    Int     @default(3)
+  emailNotifications        Boolean @default(false)
 }
 
 // ---- Squelette Phase 2 (créé mais inutilisé en Phase 1) ----
@@ -202,6 +208,10 @@ model Client {
   brandId       String         @unique
   brand         Brand          @relation(fields: [brandId], references: [id])
   createdAt     DateTime       @default(now())
+  // Corbeille (voir Brand.deletedAt). Aussi posée quand un « Devis accepté » est annulé et que
+  // le client n'avait rien d'autre ; restauré automatiquement si le devis est de nouveau accepté.
+  deletedAt     DateTime?
+  deletedReason String?
   projects      Project[]
   quoteRequests QuoteRequest[]
 }
@@ -228,6 +238,9 @@ model QuoteRequest {
   reconsiderDate   DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  // Corbeille (voir Brand.deletedAt).
+  deletedAt        DateTime?
+  projects         Project[]
 }
 
 model Project {
@@ -252,6 +265,16 @@ model Project {
   // ressort) — alimente la vue annuelle des projets archivés (lib/projects.ts).
   completedAt           DateTime?
   createdAt             DateTime      @default(now())
+  // Origine d'un projet créé automatiquement : "BRAND_ACCEPTED" (marque passée en Devis accepté)
+  // ou "QUOTE_REQUEST" (demande de devis acceptée, voir quoteRequestId). Null = créé à la main
+  // ou avant le 27/11/2026 : jamais masqué automatiquement.
+  createdFrom           String?
+  quoteRequestId        String?
+  quoteRequest          QuoteRequest? @relation(fields: [quoteRequestId], references: [id], onDelete: SetNull)
+  // Corbeille (voir Brand.deletedAt). deletedReason = "DEVIS_ANNULE" quand le projet a été masqué
+  // automatiquement parce que son « Devis accepté » a été annulé (réaffiché s'il est ré-accepté).
+  deletedAt             DateTime?
+  deletedReason         String?
   invoices              Invoice[]
   trackingNotes         ProjectNote[]
   reminders             Reminder[]
@@ -278,6 +301,8 @@ model Invoice {
   sentAt    DateTime?
   paidAt    DateTime?
   createdAt DateTime  @default(now())
+  // Corbeille (voir Brand.deletedAt) : une facture à la corbeille ne compte plus dans aucun total.
+  deletedAt DateTime?
 }
 
 enum PriceType {

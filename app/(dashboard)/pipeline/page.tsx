@@ -5,6 +5,8 @@ import StatsGrid from "@/components/StatsGrid";
 import { formatRevenue } from "@/lib/format";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
 import { macroGroupForStatus } from "@/lib/pipeline";
+import { parisMidnight, parisMonthStartKey } from "@/lib/dates";
+import { getSettings } from "@/lib/settings";
 
 // Le revenu potentiel "en cours" ne doit compter que les cartes activement en négociation :
 // pas les prospects froids pas encore contactés (À contacter), ni les dossiers clos ou en
@@ -15,7 +17,8 @@ export const dynamic = "force-dynamic";
 
 export default async function PipelinePage() {
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  // Début du mois à Paris (et non à minuit UTC).
+  const startOfMonth = parisMidnight(parisMonthStartKey(now));
 
   const [brands, settings, appelsGroups, devisGroups, quoteRequests] = await Promise.all([
     // Les clients créés directement (bouton "+ Nouveau client", import) n'ont jamais fait de
@@ -26,7 +29,7 @@ export default async function PipelinePage() {
       where: { OR: [{ acquisitionPath: null }, { acquisitionPath: { not: "DIRECT" } }] },
       orderBy: { updatedAt: "desc" },
     }),
-    prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+    getSettings(),
     // Prisma ne supporte pas un filtre sur une relation à l'intérieur de groupBy (where.brand
     // est silencieusement ignoré et peut vider le résultat) : on filtre donc côté code, après
     // coup, en comparant aux marques déjà chargées (qui excluent les clients "création directe").

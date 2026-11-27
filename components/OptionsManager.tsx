@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { apiFetch } from "@/lib/apiClient";
 
 type Option = { id: string; label: string };
 
@@ -19,7 +20,7 @@ export default function OptionsManager({
   async function handleAdd() {
     const trimmed = newValue.trim();
     if (!trimmed || options.some((o) => o.label === trimmed)) return;
-    const res = await fetch(endpoint, {
+    const res = await apiFetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ label: trimmed }),
@@ -31,7 +32,7 @@ export default function OptionsManager({
 
   async function handleDelete(id: string) {
     setOptions((prev) => prev.filter((o) => o.id !== id));
-    await fetch(`${endpoint}/${id}`, { method: "DELETE" });
+    await apiFetch(`${endpoint}/${id}`, { method: "DELETE" });
   }
 
   return (

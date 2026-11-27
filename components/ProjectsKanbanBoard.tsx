@@ -13,6 +13,7 @@ import {
 } from "@dnd-kit/core";
 import { projectMacroGroups, macroGroupForStep, firstStepOfMacroGroup, resolveSteps, isProjectDone } from "@/lib/projects";
 import ProjectCard, { ProjectCardData } from "@/components/ProjectCard";
+import { apiFetch } from "@/lib/apiClient";
 
 type BoardProject = ProjectCardData & { steps: string[]; relance: 1 | 2 | null };
 
@@ -29,7 +30,7 @@ export default function ProjectsKanbanBoard({ projects: initialProjects }: { pro
 
   async function updateStep(projectId: string, currentStep: string) {
     setProjects((prev) => prev.map((p) => (p.id === projectId ? { ...p, currentStep } : p)));
-    await fetch(`/api/projects/${projectId}`, {
+    await apiFetch(`/api/projects/${projectId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ currentStep }),

@@ -1,18 +1,17 @@
 import { countBusinessDays } from "@/lib/business-days";
+import { parisDayKey } from "@/lib/dates";
 
 export type DueBadge = { variant: "today" | "late"; lateDays: number };
-
-function isSameCalendarDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
 
 /** Badge Aujourd'hui/En retard à partir d'une date d'action explicite (ex: nextActionDate). */
 export function dueBadgeFromDate(date: Date | string | null | undefined, now: Date): DueBadge | null {
   if (!date) return null;
-  const d = typeof date === "string" ? new Date(date) : date;
-  if (isSameCalendarDay(d, now)) return { variant: "today", lateDays: 0 };
-  if (d > now) return null;
-  return { variant: "late", lateDays: countBusinessDays(d, now) };
+  // Comparaison en jours du calendrier à Paris (et non en heures UTC du serveur).
+  const day = parisDayKey(date);
+  const today = parisDayKey(now);
+  if (day === today) return { variant: "today", lateDays: 0 };
+  if (day > today) return null;
+  return { variant: "late", lateDays: countBusinessDays(date, now) };
 }
 
 /**

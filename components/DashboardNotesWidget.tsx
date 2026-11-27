@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import DueBadge from "@/components/DueBadge";
 import { dueBadgeFromDate } from "@/lib/dueStatus";
+import { apiFetch } from "@/lib/apiClient";
+import { formatDateFr } from "@/lib/format";
 
 type Task = { id: string; label: string; completed: boolean; dueDate: string | null };
 
@@ -35,7 +37,7 @@ export default function DashboardNotesWidget({
     if (!label) return;
     setAdding(true);
     try {
-      const res = await fetch("/api/dashboard-tasks", {
+      const res = await apiFetch("/api/dashboard-tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ label, dueDate: newTaskDate ? new Date(newTaskDate).toISOString() : null }),
@@ -51,7 +53,7 @@ export default function DashboardNotesWidget({
 
   async function toggleTask(id: string, completed: boolean) {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed } : t)));
-    await fetch(`/api/dashboard-tasks/${id}`, {
+    await apiFetch(`/api/dashboard-tasks/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ completed }),
@@ -61,7 +63,7 @@ export default function DashboardNotesWidget({
 
   async function setTaskDate(id: string, dueDate: string | null) {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, dueDate } : t)));
-    await fetch(`/api/dashboard-tasks/${id}`, {
+    await apiFetch(`/api/dashboard-tasks/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dueDate }),
@@ -71,16 +73,17 @@ export default function DashboardNotesWidget({
 
   async function deleteTask(id: string) {
     setTasks((prev) => prev.filter((t) => t.id !== id));
-    await fetch(`/api/dashboard-tasks/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/dashboard-tasks/${id}`, { method: "DELETE" });
     router.refresh();
   }
 
   async function handleNoteBlur() {
-    await fetch("/api/dashboard-note", {
+    const res = await apiFetch("/api/dashboard-note", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: note }),
     });
+    if (!res.ok) return;
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
   }
@@ -207,7 +210,7 @@ function TaskRow({
           onClick={() => setEditingDate(true)}
           className="shrink-0 text-xs font-light text-ink/40 hover:text-accent hover:underline"
         >
-          {task.dueDate ? new Date(task.dueDate).toLocaleDateString("fr-FR") : "📅"}
+          {task.dueDate ? formatDateFr(task.dueDate) : "📅"}
         </button>
       )}
       <button

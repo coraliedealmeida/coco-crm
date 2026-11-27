@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/apiClient";
+import { parisDayKey, addMonthsToKey } from "@/lib/dates";
 
 const actionTypes = [
   "Premier contact",
@@ -18,9 +20,7 @@ const actionTypes = [
 ];
 
 function addMonths(date: Date, months: number): string {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + months);
-  return d.toISOString().slice(0, 10);
+  return addMonthsToKey(parisDayKey(date), months);
 }
 
 export default function BrandActions({ brandId }: { brandId: string }) {
@@ -36,7 +36,7 @@ export default function BrandActions({ brandId }: { brandId: string }) {
   async function handlePause() {
     if (!pauseDate) return;
     setSaving(true);
-    await fetch(`/api/brands/${brandId}`, {
+    await apiFetch(`/api/brands/${brandId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ pipelineStatus: "PAS_MAINTENANT", reconsiderDate: pauseDate }),
@@ -49,7 +49,7 @@ export default function BrandActions({ brandId }: { brandId: string }) {
 
   async function handleLog() {
     setSaving(true);
-    await fetch(`/api/brands/${brandId}/contact`, {
+    await apiFetch(`/api/brands/${brandId}/contact`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type, content }),
@@ -60,11 +60,11 @@ export default function BrandActions({ brandId }: { brandId: string }) {
   }
 
   async function handleDelete() {
-    if (!confirm("Supprimer cette fiche prospect ? Cette action est irréversible.")) return;
+    if (!confirm("Mettre cette fiche à la corbeille ? Tu pourras la restaurer depuis Paramètres → Corbeille.")) return;
     setDeleting(true);
     setDeleteError("");
 
-    let res = await fetch(`/api/brands/${brandId}`, { method: "DELETE" });
+    let res = await apiFetch(`/api/brands/${brandId}`, { method: "DELETE" }, { expected: [409] });
 
     if (res.status === 409) {
       const data = await res.json();
@@ -76,13 +76,13 @@ export default function BrandActions({ brandId }: { brandId: string }) {
           .filter(Boolean)
           .join(" et ");
         const warning = detail
-          ? `Cette marque a un client avec ${detail}. Tout sera supprimé définitivement, y compris l'historique de facturation. Confirmer la suppression ?`
-          : "Cette marque a un client associé (sans projet). Le client sera aussi supprimé. Confirmer ?";
+          ? `Cette marque a un client avec ${detail}. Tout partira ensemble à la corbeille (masqué partout, hors des totaux) et pourra être restauré ensemble depuis Paramètres → Corbeille. Confirmer ?`
+          : "Cette marque a un client associé (sans projet). Il partira aussi à la corbeille, restaurable depuis Paramètres → Corbeille. Confirmer ?";
         if (!confirm(warning)) {
           setDeleting(false);
           return;
         }
-        res = await fetch(`/api/brands/${brandId}?force=true`, { method: "DELETE" });
+        res = await apiFetch(`/api/brands/${brandId}?force=true`, { method: "DELETE" }, { quiet: true });
       }
     }
 

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { GROUP_ORDER, groupFor } from "@/lib/serviceGroups";
 import { formatRevenue as formatPrice } from "@/lib/format";
+import { apiFetch } from "@/lib/apiClient";
+import { blurOnEnter } from "@/lib/inputs";
 
 type PriceType = "FIXED" | "HOURLY" | "MONTHLY";
 
@@ -92,9 +94,14 @@ export default function PricingGridManager({
   const activeBundles = bundles.filter((b) => b.active);
   const inactiveBundles = bundles.filter((b) => !b.active);
 
+  // Modification locale pendant la frappe ; enregistrement à la sortie du champ (onBlur).
+  function editService(id: string, data: Partial<ServiceRow>) {
+    setServices((prev) => prev.map((s) => (s.id === id ? { ...s, ...data } : s)));
+  }
+
   async function updateService(id: string, data: Partial<ServiceRow>) {
     setServices((prev) => prev.map((s) => (s.id === id ? { ...s, ...data } : s)));
-    await fetch(`/api/services/${id}`, {
+    await apiFetch(`/api/services/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -104,7 +111,7 @@ export default function PricingGridManager({
 
   async function deleteService(id: string) {
     if (!confirm("Supprimer cette prestation ?")) return;
-    const res = await fetch(`/api/services/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`/api/services/${id}`, { method: "DELETE" }, { quiet: true });
     if (!res.ok) {
       const data = await res.json();
       setError(data.error ?? "Suppression impossible.");
@@ -118,7 +125,7 @@ export default function PricingGridManager({
   async function handleAddService() {
     const price = Number(newService.price);
     if (!newService.name.trim() || !price) return;
-    const res = await fetch("/api/services", {
+    const res = await apiFetch("/api/services", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newService),
@@ -133,7 +140,7 @@ export default function PricingGridManager({
   async function handleAddBundle() {
     const discountPercent = Number(bundleForm.discountPercent);
     if (!bundleForm.name.trim() || bundleForm.serviceIds.length < 2) return;
-    const res = await fetch("/api/bundles", {
+    const res = await apiFetch("/api/bundles", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -150,9 +157,13 @@ export default function PricingGridManager({
     router.refresh();
   }
 
+  function editBundle(id: string, data: Partial<BundleRow>) {
+    setBundles((prev) => prev.map((b) => (b.id === id ? { ...b, ...data } : b)));
+  }
+
   async function updateBundle(id: string, data: Partial<BundleRow>) {
     setBundles((prev) => prev.map((b) => (b.id === id ? { ...b, ...data } : b)));
-    await fetch(`/api/bundles/${id}`, {
+    await apiFetch(`/api/bundles/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -162,7 +173,7 @@ export default function PricingGridManager({
 
   async function deleteBundle(id: string) {
     if (!confirm("Supprimer ce bundle ?")) return;
-    await fetch(`/api/bundles/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/bundles/${id}`, { method: "DELETE" });
     setBundles((prev) => prev.filter((b) => b.id !== id));
     router.refresh();
   }
@@ -188,6 +199,7 @@ export default function PricingGridManager({
                     key={s.id}
                     service={s}
                     onUpdate={(data) => updateService(s.id, data)}
+                    onEdit={(data) => editService(s.id, data)}
                     onDelete={() => deleteService(s.id)}
                   />
                 ))}
@@ -209,6 +221,7 @@ export default function PricingGridManager({
                           key={s.id}
                           service={s}
                           onUpdate={(data) => updateService(s.id, data)}
+                    onEdit={(data) => editService(s.id, data)}
                           onDelete={() => deleteService(s.id)}
                         />
                       ))}
@@ -233,6 +246,7 @@ export default function PricingGridManager({
               bundle={b}
               services={services}
               onUpdate={(data) => updateBundle(b.id, data)}
+              onEdit={(data) => editBundle(b.id, data)}
               onDelete={() => deleteBundle(b.id)}
             />
           ))}
@@ -258,6 +272,7 @@ export default function PricingGridManager({
                     bundle={b}
                     services={services}
                     onUpdate={(data) => updateBundle(b.id, data)}
+              onEdit={(data) => editBundle(b.id, data)}
                     onDelete={() => deleteBundle(b.id)}
                   />
                 ))}
@@ -443,11 +458,13 @@ function BundleRowEditor({
   bundle,
   services,
   onUpdate,
+  onEdit,
   onDelete,
 }: {
   bundle: BundleRow;
   services: ServiceRow[];
   onUpdate: (data: Partial<BundleRow>) => void;
+  onEdit: (data: Partial<BundleRow>) => void;
   onDelete: () => void;
 }) {
   const included = bundle.serviceIds.map((id) => services.find((s) => s.id === id)?.name).filter(Boolean);
@@ -458,14 +475,17 @@ function BundleRowEditor({
       <div>
         <input
           value={bundle.name}
-          onChange={(e) => onUpdate({ name: e.target.value })}
+          onChange={(e) => onEdit({ name: e.target.value })}
+          onBlur={(e) => onUpdate({ name: e.target.value })}
+          onKeyDown={blurOnEnter}
           className="w-full rounded-lg border border-transparent bg-transparent py-1 font-sans text-sm font-extrabold text-ink outline-none hover:border-accent-light focus:border-accent"
         />
         <p className="mt-0.5 text-xs font-light text-ink/50">{included.join(" + ")}</p>
       </div>
       <textarea
         value={bundle.description ?? ""}
-        onChange={(e) => onUpdate({ description: e.target.value })}
+        onChange={(e) => onEdit({ description: e.target.value })}
+          onBlur={(e) => onUpdate({ description: e.target.value })}
         placeholder="Description du bundle"
         rows={2}
         className="w-full resize-none rounded-lg border border-transparent bg-transparent py-1 text-sm font-light leading-relaxed text-ink/70 outline-none hover:border-accent-light focus:border-accent"
@@ -478,7 +498,9 @@ function BundleRowEditor({
           <input
             type="number"
             value={bundle.discountPercent}
-            onChange={(e) => onUpdate({ discountPercent: Number(e.target.value) })}
+            onChange={(e) => onEdit({ discountPercent: Number(e.target.value) })}
+          onBlur={(e) => onUpdate({ discountPercent: Number(e.target.value) })}
+          onKeyDown={blurOnEnter}
             className="w-10 rounded-lg border border-transparent bg-soft px-1 py-0.5 text-center outline-none hover:border-accent-light focus:border-accent"
           />
           %
@@ -510,23 +532,28 @@ function ColumnHeaders() {
 function ServiceRowEditor({
   service,
   onUpdate,
+  onEdit,
   onDelete,
 }: {
   service: ServiceRow;
   onUpdate: (data: Partial<ServiceRow>) => void;
+  onEdit: (data: Partial<ServiceRow>) => void;
   onDelete: () => void;
 }) {
   return (
     <div className={`grid grid-cols-1 gap-3 px-6 py-4 sm:grid-cols-[1fr_2fr_140px] sm:gap-4 ${service.active ? "" : "opacity-40"}`}>
       <input
         value={service.name}
-        onChange={(e) => onUpdate({ name: e.target.value })}
+        onChange={(e) => onEdit({ name: e.target.value })}
+          onBlur={(e) => onUpdate({ name: e.target.value })}
+          onKeyDown={blurOnEnter}
         className="w-full rounded-lg border border-transparent bg-transparent py-1 font-sans text-sm font-extrabold text-ink outline-none hover:border-accent-light focus:border-accent"
       />
 
       <textarea
         value={service.content ?? ""}
-        onChange={(e) => onUpdate({ content: e.target.value })}
+        onChange={(e) => onEdit({ content: e.target.value })}
+          onBlur={(e) => onUpdate({ content: e.target.value })}
         placeholder="Contenu inclus (une ligne par élément)"
         rows={Math.max(2, (service.content ?? "").split("\n").length)}
         className="w-full resize-none rounded-lg border border-transparent bg-transparent py-1 text-sm font-light leading-relaxed text-ink/70 outline-none hover:border-accent-light focus:border-accent"
@@ -537,7 +564,9 @@ function ServiceRowEditor({
           <input
             type="number"
             value={service.price}
-            onChange={(e) => onUpdate({ price: Number(e.target.value) })}
+            onChange={(e) => onEdit({ price: Number(e.target.value) })}
+          onBlur={(e) => onUpdate({ price: Number(e.target.value) })}
+          onKeyDown={blurOnEnter}
             className="w-20 rounded-lg border border-transparent bg-soft px-2 py-1 text-right font-sans text-sm font-extrabold text-accent outline-none hover:border-accent-light focus:border-accent"
           />
         </div>

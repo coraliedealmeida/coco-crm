@@ -1,13 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import SettingsForm from "@/components/SettingsForm";
 import OptionsManager from "@/components/OptionsManager";
+import Link from "next/link";
 import LogoutButton from "@/components/LogoutButton";
+import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function ParametresPage() {
   const [settings, sectors, sources] = await Promise.all([
-    prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+    getSettings(),
     prisma.sectorOption.findMany({ orderBy: { label: "asc" } }),
     prisma.sourceOption.findMany({ orderBy: { label: "asc" } }),
   ]);
@@ -37,6 +39,18 @@ export default async function ParametresPage() {
           <OptionsManager title="Sources" endpoint="/api/options/sources" initial={sources} />
         </div>
       </div>
+      <Link
+        href="/parametres/corbeille"
+        className="flex items-center justify-between rounded-3xl bg-white p-6 shadow-soft hover:shadow-softer"
+      >
+        <div>
+          <h2 className="font-sans text-base font-extrabold text-ink">Corbeille</h2>
+          <p className="text-sm font-light text-ink/60">
+            Éléments supprimés (marques, projets, factures, demandes de devis) : rien n&apos;est effacé, tout se restaure.
+          </p>
+        </div>
+        <span className="text-sm font-semibold text-accent">Ouvrir →</span>
+      </Link>
       <LogoutButton />
     </div>
   );

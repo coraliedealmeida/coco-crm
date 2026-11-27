@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { prisma, NOT_DELETED } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { avatarColor, initials, statusLabel, nextAutomaticActionLabel, macroGroupForStatus, isReadyForContact } from "@/lib/pipeline";
 import { paidTotal } from "@/lib/projects";
@@ -13,8 +13,9 @@ import NewProjectButton from "@/components/NewProjectButton";
 import ClientProjectsCard from "@/components/ClientProjectsCard";
 import QuoteRequestsCard from "@/components/QuoteRequestsCard";
 import BrandContactsPanel from "@/components/BrandContactsPanel";
-import { formatRevenue } from "@/lib/format";
+import { formatRevenue, formatDateFr } from "@/lib/format";
 import BackButton from "@/components/BackButton";
+import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -28,12 +29,12 @@ export default async function BrandDetailPage({ params }: { params: { id: string
         contacts: { orderBy: { createdAt: "asc" } },
       },
     }),
-    prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+    getSettings(),
     prisma.client.findUnique({
       where: { brandId: params.id },
       include: {
-        projects: { orderBy: { createdAt: "desc" }, include: { invoices: true } },
-        quoteRequests: { orderBy: { createdAt: "desc" } },
+        projects: { where: NOT_DELETED, orderBy: { createdAt: "desc" }, include: { invoices: { where: NOT_DELETED } } },
+        quoteRequests: { where: NOT_DELETED, orderBy: { createdAt: "desc" } },
       },
     }),
   ]);
@@ -50,9 +51,9 @@ export default async function BrandDetailPage({ params }: { params: { id: string
   const nextReminder = brand.reminders.find((r) => !r.completed);
   const autoActionLabel = nextAutomaticActionLabel(brand.pipelineStatus);
   const nextActionLabel = nextReminder
-    ? `${nextReminder.label} — ${new Date(nextReminder.date).toLocaleDateString("fr-FR")}`
+    ? `${nextReminder.label} — ${formatDateFr(nextReminder.date)}`
     : brand.nextActionDate
-      ? `${autoActionLabel ?? "Action prévue"} — ${new Date(brand.nextActionDate).toLocaleDateString("fr-FR")}`
+      ? `${autoActionLabel ?? "Action prévue"} — ${formatDateFr(brand.nextActionDate)}`
       : (autoActionLabel ?? "Aucune prévue");
   const nextActionDueDate = nextReminder ? nextReminder.date : brand.nextActionDate;
   // Devis accepté/refusé, ghosté ou archivé : plus rien à relancer, donc plus de badge de retard
@@ -97,7 +98,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
         <InfoTile
           icon="📅"
           label="Premier contact"
-          value={new Date(firstContactDate).toLocaleDateString("fr-FR")}
+          value={formatDateFr(firstContactDate)}
           accent="#C4B5FD"
         />
         <InfoTile icon="🎯" label="Statut actuel" value={statusLabel(brand.pipelineStatus)} accent="#60A5FA" />

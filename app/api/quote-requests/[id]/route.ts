@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PipelineStatus, ServiceType } from "@prisma/client";
+import { PipelineStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { computeNextActionDate, statusActionType } from "@/lib/statusEffects";
 import { statusLabel } from "@/lib/pipeline";
-import { projectSteps } from "@/lib/serviceTypes";
+import { requireSession } from "@/lib/apiAuth";
+import { acceptQuoteRequest, cancelQuoteAcceptance, leavesAccepted, trashQuoteRequest } from "@/lib/trash";
+import { getSettings } from "@/lib/settings";
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+  const denied = await requireSession();
+  if (denied) return denied;
+
   const body = await request.json();
   const data: Record<string, unknown> = {};
 
@@ -19,17 +24,18 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   const now = new Date();
   let logType: string | null = null;
 
+  // Statut avant modification : sert au garde-fou anti-doublons de projets (plus bas).
+  let previousStatus: PipelineStatus | null = null;
+
   if ("status" in body) {
     const newStatus = body.status as PipelineStatus;
+    const before = await prisma.quoteRequest.findUnique({ where: { id: params.id }, select: { status: true } });
+    previousStatus = before?.status ?? null;
     data.status = newStatus;
     data.lastContactDate = now;
     logType = statusActionType[newStatus] ?? `Statut → ${statusLabel(newStatus)}`;
 
-    const settings = await prisma.settings.upsert({
-      where: { id: "singleton" },
-      update: {},
-      create: { id: "singleton" },
-    });
+    const settings = await getSettings();
     const computed = computeNextActionDate(newStatus, now, settings);
     if (computed !== undefined) data.nextActionDate = computed;
   } else if ("lastContactDate" in body) {
@@ -40,11 +46,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     data.lastContactDate = correctedDate;
 
     const current = await prisma.quoteRequest.findUniqueOrThrow({ where: { id: params.id } });
-    const settings = await prisma.settings.upsert({
-      where: { id: "singleton" },
-      update: {},
-      create: { id: "singleton" },
-    });
+    const settings = await getSettings();
     const computed = computeNextActionDate(current.status, correctedDate, settings);
     if (computed !== undefined) data.nextActionDate = computed;
   }
@@ -61,26 +63,26 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     });
   }
 
-  if (body.status === "DEVIS_ACCEPTE") {
-    const serviceTypes = (quoteRequest.serviceTypes ?? []) as ServiceType[];
-    for (const [index, serviceType] of serviceTypes.entries()) {
-      await prisma.project.create({
-        data: {
-          clientId: quoteRequest.clientId,
-          serviceType,
-          name: quoteRequest.label,
-          currentStep: projectSteps[serviceType][0],
-          startDate: now,
-          quoteAmount: index === 0 ? quoteRequest.potentialRevenue : null,
-        },
-      });
-    }
+  // Passage à « Devis accepté » : réaffiche les projets masqués par une annulation, crée ceux
+  // qui manquent, jamais de doublon (lib/trash.ts).
+  if (body.status === "DEVIS_ACCEPTE" && previousStatus !== "DEVIS_ACCEPTE") {
+    await acceptQuoteRequest(quoteRequest);
+  }
+
+  // « Devis accepté » annulé : les projets créés automatiquement et encore vierges sont masqués.
+  if (leavesAccepted(previousStatus, body.status)) {
+    const result = await cancelQuoteAcceptance(quoteRequest.id);
+    return NextResponse.json({ ...quoteRequest, projectsHidden: result.hidden, projectsKept: result.kept });
   }
 
   return NextResponse.json(quoteRequest);
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
-  await prisma.quoteRequest.delete({ where: { id: params.id } });
+  const denied = await requireSession();
+  if (denied) return denied;
+
+  // Corbeille : masquée, restaurable (ses projets éventuels restent en place).
+  await trashQuoteRequest(params.id);
   return NextResponse.json({ ok: true });
 }

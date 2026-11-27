@@ -23,6 +23,8 @@ import { quoteRequestStatuses } from "@/lib/quoteRequests";
 import { countBusinessDays } from "@/lib/business-days";
 import { dueBadgeFromDate } from "@/lib/dueStatus";
 import BrandCard from "@/components/BrandCard";
+import { apiFetch } from "@/lib/apiClient";
+import { formatDateFr } from "@/lib/format";
 
 type Brand = {
   kind: "brand";
@@ -100,13 +102,13 @@ export default function KanbanBoard({
   async function updateStatus(item: PipelineItem, newStatus: PipelineStatus) {
     setItems((prev) => prev.map((it) => (it === item ? { ...it, pipelineStatus: newStatus } : it)));
     if (item.kind === "brand") {
-      await fetch(`/api/brands/${item.id}`, {
+      await apiFetch(`/api/brands/${item.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pipelineStatus: newStatus }),
       });
     } else {
-      await fetch(`/api/quote-requests/${item.id}`, {
+      await apiFetch(`/api/quote-requests/${item.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
@@ -383,10 +385,10 @@ function CardBody({
             <p className="font-semibold text-accent/80">📋 Demande de devis · client existant</p>
           )}
           {item.lastContactDate && (
-            <p>Dernier contact : {new Date(item.lastContactDate).toLocaleDateString("fr-FR")}</p>
+            <p>Dernier contact : {formatDateFr(item.lastContactDate)}</p>
           )}
           {item.nextActionDate && (
-            <p>Prochaine action : {new Date(item.nextActionDate).toLocaleDateString("fr-FR")}</p>
+            <p>Prochaine action : {formatDateFr(item.nextActionDate)}</p>
           )}
         </div>
       }
