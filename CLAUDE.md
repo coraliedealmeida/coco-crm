@@ -132,8 +132,11 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
   appliquée sur la copie de test `preview/phase-0bis-corrections` via l'éditeur SQL Neon (port 5432 bloqué
   sur le wifi de Coralie), ligne ajoutée dans `_prisma_migrations` (checksum sha256 du fichier). Vérifié :
   32 migrations, nombre de projets/factures et CA encaissé identiques avant/après.
-  **Production : PAS encore migrée.** Ordre obligatoire : sauvegarde → migration prod → fusion du code
-  (le nouveau code lit des colonnes qui n'existent pas encore en prod).
+  **Production migrée le 27/11/2026** (accord de Coralie) : sauvegarde Neon
+  `sauvegarde-2026-11-27-avant-corbeille` (n'expire jamais) + tag Git `avant-phase-0bis-2026-11-27`, puis
+  migration en un seul bloc atomique (DO $$ … $$) via l'éditeur SQL. Vérifié : 32 migrations, 0 inachevée,
+  6 colonnes `deletedAt`, nombres de marques/clients/projets/factures/devis/prospects et CA encaissé
+  identiques avant/après. Puis fusion de `phase-0bis-corrections` dans `main`.
 - 2026-11-27 — Contrôle des montants (lecture seule) : 2 projets dont le total des factures ≠ devis,
   signalés à Coralie (détail non noté ici : données clients).
 - Ne jamais écrire de noms de clients, montants ou chiffre d'affaires dans les fichiers du dépôt.
@@ -146,7 +149,7 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
 |---|---|---|
 | 0 | Audit, CLAUDE.md | ✅ validé le 27/11/2026 |
 | infra | Outil Vercel ✅, sauvegarde Neon ✅, prévisualisations isolées ✅, base de dev locale (à faire) | ⏳ en cours |
-| 0 bis | ✅ sur `phase-0bis-corrections`, **testée et validée par Coralie le 27/11/2026** : sauvegarde complète + restauration, sécurité, enregistrements fiables, dates Paris + fériés, anti-doublons, corbeille + devis accepté annulable, étapes centralisées, montants vérifiés, tests. Reste : migration prod + fusion (accord de Coralie), Next 15 (branche dédiée) | ⏳ mise en production |
+| 0 bis | ✅ **en production le 27/11/2026** (validée par Coralie) : sauvegarde complète + restauration, sécurité, enregistrements fiables, dates Paris + fériés, anti-doublons, corbeille + devis accepté annulable, étapes centralisées, montants vérifiés, tests. Reste : Next 15 (branche dédiée) | ✅ (Next 15 à faire) |
 | 1 | Système de design (fondations, composants, guide de style, application à toutes les pages) | à faire |
 | 2 | Suivi du temps, feuille de mois (clients à l'heure), changement de type de projet | à faire |
 | 3 | Dashboard « quoi faire aujourd'hui », vue annuelle heures/CA, rappel fin de mois, saisie rapide | à faire |
