@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { isCronAuthorized } from "@/lib/cronAuth";
 import { statusLabel } from "@/lib/pipeline";
 import { projectLabel } from "@/lib/projects";
+import { parisEndOfToday } from "@/lib/dates";
 
 export async function GET(request: NextRequest) {
   if (!isCronAuthorized(request)) {
@@ -20,7 +21,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ skipped: true, reason: "Notifications désactivées." });
   }
 
-  const now = new Date();
+  // Tout ce qui est dû jusqu'à ce soir 23h59 à Paris.
+  const now = parisEndOfToday();
   const [brands, quoteRequests, reminders] = await Promise.all([
     prisma.brand.findMany({
       where: {

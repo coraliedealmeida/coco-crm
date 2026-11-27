@@ -9,7 +9,7 @@ import BrandCard from "@/components/BrandCard";
 import RelaunchButton from "@/components/RelaunchButton";
 import GuidedSession from "@/components/GuidedSession";
 import type { SessionBrand } from "@/components/GuidedSession";
-import { formatRevenue } from "@/lib/format";
+import { formatRevenue, formatDateFr } from "@/lib/format";
 import { dueBadgeFromDate, dueBadgeFromThreshold, dueSortKey } from "@/lib/dueStatus";
 import { getDailyQualificationBatch } from "@/lib/prospectImport";
 import DashboardNotesWidget from "@/components/DashboardNotesWidget";
@@ -24,6 +24,7 @@ import {
   contactProfileLink,
   type EngagementContact,
 } from "@/lib/pipeline";
+import { parisEndOfToday } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -120,7 +121,7 @@ export default async function DashboardPage() {
     prisma.reminder.findMany({
       where: {
         completed: false,
-        date: { lte: new Date() },
+        date: { lte: parisEndOfToday() },
         OR: [
           { brandId: { not: null }, brand: { archivedAt: null } },
           { projectId: { not: null }, project: { currentStep: { not: "Terminé" } } },
@@ -140,14 +141,14 @@ export default async function DashboardPage() {
     prisma.quoteRequest.findMany({
       where: {
         status: { in: ["DEVIS_ENVOYE", "RELANCE_DEVIS_1"] },
-        nextActionDate: { lte: new Date() },
+        nextActionDate: { lte: parisEndOfToday() },
       },
       include: { client: { include: { brand: true } } },
     }),
     prisma.brand.findMany({
       where: {
         pipelineStatus: "PAS_MAINTENANT",
-        reconsiderDate: { lte: new Date() },
+        reconsiderDate: { lte: parisEndOfToday() },
         archivedAt: null,
       },
       orderBy: { reconsiderDate: "asc" },
@@ -155,7 +156,7 @@ export default async function DashboardPage() {
     // Demandes de devis mises "Pas maintenant" (indépendamment du statut de la marque
     // elle-même, cf. cas d'un client existant avec une nouvelle demande en parallèle).
     prisma.quoteRequest.findMany({
-      where: { status: "PAS_MAINTENANT", reconsiderDate: { lte: new Date() } },
+      where: { status: "PAS_MAINTENANT", reconsiderDate: { lte: parisEndOfToday() } },
       include: { client: { include: { brand: true } } },
       orderBy: { reconsiderDate: "asc" },
     }),
@@ -165,6 +166,8 @@ export default async function DashboardPage() {
   ]);
 
   const now = new Date();
+  // « Dû aujourd'hui » = jusqu'à 23h59 à Paris (et non à l'heure UTC du serveur).
+  const endOfToday = parisEndOfToday(now);
 
   const routineBrands = brands
     .filter((b) => b.pipelineStatus === "ROUTINE_ENGAGEMENT")
@@ -199,7 +202,7 @@ export default async function DashboardPage() {
       (b) =>
         ["PREMIER_DM", "RELANCE_1", "DEVIS_ENVOYE", "RELANCE_DEVIS_1"].includes(b.pipelineStatus) &&
         b.nextActionDate &&
-        b.nextActionDate <= now
+        b.nextActionDate <= endOfToday
     )
     .map((b) => ({ ...b, dueBadge: dueBadgeFromDate(b.nextActionDate, now) }))
     .sort((a, b) => dueSortKey(a.dueBadge) - dueSortKey(b.dueBadge));
@@ -309,7 +312,7 @@ export default async function DashboardPage() {
   const pendingInvoicesTotal = pendingInvoices.reduce((sum, inv) => sum + inv.amount, 0);
 
   // Tâches personnelles datées d'aujourd'hui ou en retard, non terminées.
-  const dueTasks = dashboardTasks.filter((t) => !t.completed && t.dueDate && t.dueDate <= now);
+  const dueTasks = dashboardTasks.filter((t) => !t.completed && t.dueDate && t.dueDate <= endOfToday);
 
   // Les sources de "Relances du jour" (marques, rappels, demandes de devis, tâches datées) sont
   // fusionnées et triées ensemble par gravité de retard, pour un seul ordre cohérent dans le bloc.
@@ -390,7 +393,7 @@ export default async function DashboardPage() {
             dueBadge={dueBadge}
             statusContent={
               <span style={{ color: "#C4B5FD" }}>
-                ⏸ rappel du {b.reconsiderDate ? new Date(b.reconsiderDate).toLocaleDateString("fr-FR") : ""}
+                ⏸ rappel du {b.reconsiderDate ? formatDateFr(b.reconsiderDate) : ""}
               </span>
             }
             footer={<RelaunchButton id={b.id} kind="brand" />}
@@ -420,7 +423,7 @@ export default async function DashboardPage() {
             dueBadge={dueBadge}
             statusContent={
               <span style={{ color: "#C4B5FD" }}>
-                ⏸ rappel du {q.reconsiderDate ? new Date(q.reconsiderDate).toLocaleDateString("fr-FR") : ""}
+                ⏸ rappel du {q.reconsiderDate ? formatDateFr(q.reconsiderDate) : ""}
               </span>
             }
             footer={<RelaunchButton id={q.id} kind="quoteRequest" />}

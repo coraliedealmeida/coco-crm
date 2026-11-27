@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { formatRevenue } from "@/lib/format";
+import { formatRevenue, formatDateFr } from "@/lib/format";
 
 export type ClientRow = {
   id: string;
@@ -93,7 +93,7 @@ export default function ClientsTable({ rows }: { rows: ClientRow[] }) {
                 )}
               </td>
               <td className="px-5 py-3 text-ink/70">
-                {c.lastProjectDate ? new Date(c.lastProjectDate).toLocaleDateString("fr-FR") : "—"}
+                {c.lastProjectDate ? formatDateFr(c.lastProjectDate) : "—"}
               </td>
               <td className="px-5 py-3 font-semibold text-ink">{formatRevenue(c.revenue)}</td>
             </tr>

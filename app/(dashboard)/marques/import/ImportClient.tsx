@@ -7,6 +7,7 @@ import ProfileLink from "@/components/ProfileLink";
 import { platformBadge } from "@/lib/pipeline";
 import { bestProfileLink } from "@/lib/prospectImport";
 import { apiFetch } from "@/lib/apiClient";
+import { formatDateFr } from "@/lib/format";
 
 interface Contact {
   name: string;
@@ -65,7 +66,7 @@ function FilterField({
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return formatDateFr(iso, { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 export default function ImportClient({

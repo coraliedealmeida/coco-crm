@@ -6,8 +6,9 @@ import { PipelineStatus, ServiceType } from "@prisma/client";
 import { serviceTypeOptions, serviceTypeLabel } from "@/lib/serviceTypes";
 import { statusLabel, statusColor } from "@/lib/pipeline";
 import { quoteRequestStatuses, isQuoteRequestClosed } from "@/lib/quoteRequests";
-import { formatRevenue } from "@/lib/format";
+import { formatRevenue, formatDateFr } from "@/lib/format";
 import { apiFetch } from "@/lib/apiClient";
+import { parisDayKey, addMonthsToKey } from "@/lib/dates";
 
 type QuoteRequest = {
   id: string;
@@ -20,13 +21,11 @@ type QuoteRequest = {
 };
 
 function toDateInputValue(iso: string): string {
-  return new Date(iso).toISOString().slice(0, 10);
+  return parisDayKey(iso);
 }
 
 function addMonths(date: Date, months: number): string {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + months);
-  return d.toISOString().slice(0, 10);
+  return addMonthsToKey(parisDayKey(date), months);
 }
 
 export default function QuoteRequestsCard({
@@ -249,7 +248,7 @@ function QuoteRequestRow({
         )}
         {q.status === "PAS_MAINTENANT" && q.reconsiderDate && (
           <p className="text-xs font-semibold" style={{ color: "#8B5CF6" }}>
-            ⏸ rappel du {new Date(q.reconsiderDate).toLocaleDateString("fr-FR")}
+            ⏸ rappel du {formatDateFr(q.reconsiderDate)}
           </p>
         )}
         {q.lastContactDate &&
@@ -272,7 +271,7 @@ function QuoteRequestRow({
               title="Modifier la date"
               className="text-xs font-light text-ink/40 underline-offset-2 hover:underline"
             >
-              Dernier contact : {new Date(q.lastContactDate).toLocaleDateString("fr-FR")}
+              Dernier contact : {formatDateFr(q.lastContactDate)}
             </button>
           ))}
       </div>

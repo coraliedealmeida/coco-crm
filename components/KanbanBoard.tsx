@@ -24,6 +24,7 @@ import { countBusinessDays } from "@/lib/business-days";
 import { dueBadgeFromDate } from "@/lib/dueStatus";
 import BrandCard from "@/components/BrandCard";
 import { apiFetch } from "@/lib/apiClient";
+import { formatDateFr } from "@/lib/format";
 
 type Brand = {
   kind: "brand";
@@ -384,10 +385,10 @@ function CardBody({
             <p className="font-semibold text-accent/80">📋 Demande de devis · client existant</p>
           )}
           {item.lastContactDate && (
-            <p>Dernier contact : {new Date(item.lastContactDate).toLocaleDateString("fr-FR")}</p>
+            <p>Dernier contact : {formatDateFr(item.lastContactDate)}</p>
           )}
           {item.nextActionDate && (
-            <p>Prochaine action : {new Date(item.nextActionDate).toLocaleDateString("fr-FR")}</p>
+            <p>Prochaine action : {formatDateFr(item.nextActionDate)}</p>
           )}
         </div>
       }

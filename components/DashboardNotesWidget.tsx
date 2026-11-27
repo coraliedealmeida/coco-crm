@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import DueBadge from "@/components/DueBadge";
 import { dueBadgeFromDate } from "@/lib/dueStatus";
 import { apiFetch } from "@/lib/apiClient";
+import { formatDateFr } from "@/lib/format";
 
 type Task = { id: string; label: string; completed: boolean; dueDate: string | null };
 
@@ -209,7 +210,7 @@ function TaskRow({
           onClick={() => setEditingDate(true)}
           className="shrink-0 text-xs font-light text-ink/40 hover:text-accent hover:underline"
         >
-          {task.dueDate ? new Date(task.dueDate).toLocaleDateString("fr-FR") : "📅"}
+          {task.dueDate ? formatDateFr(task.dueDate) : "📅"}
         </button>
       )}
       <button

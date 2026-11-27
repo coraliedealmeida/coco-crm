@@ -5,6 +5,7 @@ import StatsGrid from "@/components/StatsGrid";
 import { formatRevenue } from "@/lib/format";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
 import { macroGroupForStatus } from "@/lib/pipeline";
+import { parisMidnight, parisMonthStartKey } from "@/lib/dates";
 
 // Le revenu potentiel "en cours" ne doit compter que les cartes activement en négociation :
 // pas les prospects froids pas encore contactés (À contacter), ni les dossiers clos ou en
@@ -15,7 +16,8 @@ export const dynamic = "force-dynamic";
 
 export default async function PipelinePage() {
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  // Début du mois à Paris (et non à minuit UTC).
+  const startOfMonth = parisMidnight(parisMonthStartKey(now));
 
   const [brands, settings, appelsGroups, devisGroups, quoteRequests] = await Promise.all([
     // Les clients créés directement (bouton "+ Nouveau client", import) n'ont jamais fait de

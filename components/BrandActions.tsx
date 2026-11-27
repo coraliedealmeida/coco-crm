@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/apiClient";
+import { parisDayKey, addMonthsToKey } from "@/lib/dates";
 
 const actionTypes = [
   "Premier contact",
@@ -19,9 +20,7 @@ const actionTypes = [
 ];
 
 function addMonths(date: Date, months: number): string {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + months);
-  return d.toISOString().slice(0, 10);
+  return addMonthsToKey(parisDayKey(date), months);
 }
 
 export default function BrandActions({ brandId }: { brandId: string }) {

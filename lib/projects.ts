@@ -1,5 +1,6 @@
 import { ServiceType } from "@prisma/client";
 import { countBusinessDays } from "@/lib/business-days";
+import { monthsBetween } from "@/lib/dates";
 import { projectSteps, serviceTypeLabel } from "@/lib/serviceTypes";
 
 /** Libellé affiché pour un projet : son nom libre s'il en a un, sinon le type de prestation. */
@@ -113,7 +114,7 @@ export function pendingInvoices(invoices: InvoiceLike[]): InvoiceLike[] {
 }
 
 function inMonth(date: Date | null, now: Date): boolean {
-  return !!date && date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+  return !!date && monthsBetween(date, now) === 0;
 }
 
 /** Montant facturé sur le mois courant, toutes factures confondues. */
@@ -149,8 +150,7 @@ export function factureRelanceDue(
 /** Compteur visuel 1/3 — 2/3 — 3/3 pour l'Accompagnement mensuel, basé sur la date de début saisie. */
 export function monthlyCycleProgress(startDate: Date | null, now: Date = new Date()): number | null {
   if (!startDate) return null;
-  const monthsElapsed =
-    (now.getFullYear() - startDate.getFullYear()) * 12 + (now.getMonth() - startDate.getMonth());
+  const monthsElapsed = monthsBetween(startDate, now);
   const cyclePosition = ((monthsElapsed % 3) + 3) % 3;
   return cyclePosition + 1;
 }

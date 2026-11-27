@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiFetch } from "@/lib/apiClient";
+import { formatDateFr } from "@/lib/format";
+import { parisDayKey } from "@/lib/dates";
 
 function toDateInputValue(isoDate: string): string {
-  return new Date(isoDate).toISOString().slice(0, 10);
+  return parisDayKey(isoDate);
 }
 
 type Entry = {
@@ -91,7 +93,7 @@ function EntryRow({ brandId, entry }: { brandId: string; entry: Entry }) {
               className="text-xs font-light text-ink/50 underline-offset-2 hover:underline"
               title="Modifier la date"
             >
-              {new Date(entry.date).toLocaleDateString("fr-FR")}
+              {formatDateFr(entry.date)}
             </button>
           )}
           <button

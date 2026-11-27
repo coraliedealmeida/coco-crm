@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DatePicker from "@/components/DatePicker";
 import { apiFetch } from "@/lib/apiClient";
+import { formatDateFr } from "@/lib/format";
 
 type Reminder = {
   id: string;
@@ -71,7 +72,7 @@ export default function RemindersPanel({ createUrl, reminders }: { createUrl: st
               <div>
                 <p className="text-sm font-semibold text-ink">{r.label}</p>
                 <p className="text-xs font-light text-ink/50">
-                  {new Date(r.date).toLocaleDateString("fr-FR")}
+                  {formatDateFr(r.date)}
                 </p>
               </div>
               <div className="flex items-center gap-3">

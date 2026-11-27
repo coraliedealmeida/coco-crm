@@ -6,6 +6,7 @@ import { statusLabel, statusColor, macroGroupForStatus } from "@/lib/pipeline";
 import { dueBadgeFromDate } from "@/lib/dueStatus";
 import DueBadge from "@/components/DueBadge";
 import type { PipelineStatus } from "@prisma/client";
+import { formatDateFr } from "@/lib/format";
 
 type Row = {
   id: string;
@@ -78,7 +79,7 @@ export default function MarquesTable({ rows }: { rows: Row[] }) {
               </td>
               <td className="px-5 py-3 text-ink/70">
                 <div className="flex items-center gap-2">
-                  <span>{b.nextActionDate ? new Date(b.nextActionDate).toLocaleDateString("fr-FR") : "—"}</span>
+                  <span>{b.nextActionDate ? formatDateFr(b.nextActionDate) : "—"}</span>
                   <DueBadge
                     badge={
                       macroGroupForStatus(b.pipelineStatus).id === "CLOSING"

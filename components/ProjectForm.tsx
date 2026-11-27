@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ServiceType } from "@prisma/client";
-import { resolveSteps, insertCustomStep, removeStep, isCustomStep } from "@/lib/projects";
+import { resolveSteps, insertCustomStep, removeStep, isCustomStep, monthlyCycleProgress } from "@/lib/projects";
 import InvoicesPanel from "@/components/InvoicesPanel";
-import { formatRevenue } from "@/lib/format";
+import { formatRevenue, formatDateFr } from "@/lib/format";
 import { apiFetch } from "@/lib/apiClient";
 import { blurOnEnter } from "@/lib/inputs";
+import { parisDayKey } from "@/lib/dates";
 
 type Invoice = { id: string; label: string; amount: number; sentAt: string | null; paidAt: string | null };
 
@@ -27,7 +28,7 @@ type Project = {
 };
 
 function toDateInputValue(iso: string | null): string {
-  return iso ? new Date(iso).toISOString().slice(0, 10) : "";
+  return iso ? parisDayKey(iso) : "";
 }
 
 export default function ProjectForm({ initial, suiviSlot }: { initial: Project; suiviSlot: React.ReactNode }) {
@@ -87,7 +88,7 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
           label="Date de livraison"
           value={
             project.estimatedDeliveryDate
-              ? new Date(project.estimatedDeliveryDate).toLocaleDateString("fr-FR")
+              ? formatDateFr(project.estimatedDeliveryDate)
               : "Non renseignée"
           }
           accent="#C4B5FD"
@@ -290,10 +291,8 @@ function MonthlyCycle({ startDate }: { startDate: string | null }) {
       </p>
     );
   }
-  const start = new Date(startDate);
-  const now = new Date();
-  const monthsElapsed = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
-  const position = (((monthsElapsed % 3) + 3) % 3) + 1;
+  // Même calcul que partout ailleurs (lib/projects.ts), en mois calendaires à Paris.
+  const position = monthlyCycleProgress(new Date(startDate)) ?? 1;
 
   return (
     <div>

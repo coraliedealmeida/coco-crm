@@ -4,3 +4,11 @@ export function formatRevenue(amount: number): string {
     amount
   );
 }
+
+/** Date au format français, toujours en heure de Paris (le serveur Vercel est en UTC). */
+export function formatDateFr(
+  date: Date | string,
+  options: Intl.DateTimeFormatOptions = { day: "2-digit", month: "2-digit", year: "numeric" }
+): string {
+  return new Date(date).toLocaleDateString("fr-FR", { ...options, timeZone: "Europe/Paris" });
+}

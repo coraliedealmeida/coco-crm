@@ -6,11 +6,12 @@ import { invoicedTotal, paidTotal, remainingToInvoice } from "@/lib/projects";
 import { formatRevenue } from "@/lib/format";
 import { apiFetch } from "@/lib/apiClient";
 import { blurOnEnter } from "@/lib/inputs";
+import { parisDayKey } from "@/lib/dates";
 
 type Invoice = { id: string; label: string; amount: number; sentAt: string | null; paidAt: string | null };
 
 function toDateInputValue(iso: string | null): string {
-  return iso ? new Date(iso).toISOString().slice(0, 10) : "";
+  return iso ? parisDayKey(iso) : "";
 }
 
 export default function InvoicesPanel({

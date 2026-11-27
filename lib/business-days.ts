@@ -1,45 +1,25 @@
-function isWeekend(date: Date): boolean {
-  const day = date.getDay();
-  return day === 0 || day === 6;
-}
-
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+/**
+ * Jours ouvrés (lundi-vendredi, hors jours fériés français), comptés en jours de
+ * calendrier à Paris. Règles détaillées : `lib/dates.ts`.
+ */
+import {
+  addBusinessDaysToKey,
+  countBusinessDaysBetweenKeys,
+  parisDayKey,
+  parisMidnight,
+} from "@/lib/dates";
 
 /** Nombre de jours ouvrés écoulés strictement entre deux dates (hors week-ends, hors jours fériés). */
-export function countBusinessDays(start: Date, end: Date): number {
-  const from = startOfDay(start);
-  const to = startOfDay(end);
-  if (to <= from) return 0;
-
-  let count = 0;
-  const cursor = new Date(from);
-  cursor.setDate(cursor.getDate() + 1);
-
-  while (cursor <= to) {
-    if (!isWeekend(cursor)) count++;
-    cursor.setDate(cursor.getDate() + 1);
-  }
-
-  return count;
+export function countBusinessDays(start: Date | string, end: Date | string): number {
+  return countBusinessDaysBetweenKeys(parisDayKey(start), parisDayKey(end));
 }
 
-/** Ajoute N jours ouvrés à une date (hors week-ends). */
-export function addBusinessDays(start: Date, days: number): Date {
-  const result = startOfDay(start);
-  let remaining = days;
-
-  while (remaining > 0) {
-    result.setDate(result.getDate() + 1);
-    if (!isWeekend(result)) remaining--;
-  }
-
-  return result;
+/** Ajoute N jours ouvrés à une date ; renvoie minuit (heure de Paris) du jour obtenu. */
+export function addBusinessDays(start: Date | string, days: number): Date {
+  return parisMidnight(addBusinessDaysToKey(parisDayKey(start), days));
 }
 
-export function isSameDayOrBefore(date: Date, reference: Date): boolean {
-  return startOfDay(date) <= startOfDay(reference);
+/** Le jour (à Paris) de `date` est-il aujourd'hui ou avant celui de `reference` ? */
+export function isSameDayOrBefore(date: Date | string, reference: Date | string): boolean {
+  return parisDayKey(date) <= parisDayKey(reference);
 }
