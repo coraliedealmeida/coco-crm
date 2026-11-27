@@ -7,7 +7,7 @@ Règles de travail détaillées : voir `CLAUDE.md`.
 ## Démarrage local
 
 1. Copier `.env.example` en `.env` et renseigner les variables (voir ci-dessous).
-   En local, `DATABASE_URL` et `DIRECT_URL` doivent pointer vers la **base de test** (branche Neon), jamais la production.
+   En local, `DATABASE_URL` et `DATABASE_URL_UNPOOLED` doivent pointer vers la **base de test** (branche Neon), jamais la production.
 2. `npm install`
 3. `npm run migrate` — applique les migrations SQL de `prisma/migrations/` (sur la base de test).
 4. `npm run seed` (base de test uniquement)
@@ -19,7 +19,7 @@ ces commandes peuvent effacer les données.
 ## Variables d'environnement
 
 - `DATABASE_URL` — URL Postgres Neon (connexion « pooler »)
-- `DIRECT_URL` — URL Postgres Neon directe (utilisée par les migrations)
+- `DATABASE_URL_UNPOOLED` — URL Postgres Neon directe (utilisée par les migrations ; fournie par l'intégration Neon, y compris pour chaque prévisualisation)
 - `APP_PASSWORD` — mot de passe unique d'accès à l'app
 - `SESSION_SECRET` — chaîne aléatoire longue (signature de session)
 - `RESEND_API_KEY` — clé API Resend

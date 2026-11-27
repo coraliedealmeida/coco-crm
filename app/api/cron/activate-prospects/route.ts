@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isCronAuthorized } from "@/lib/cronAuth";
 import { engagementOverdueDays, PAUSE_ACTIVATION_OVERDUE_DAYS } from "@/lib/pipeline";
 
 // Tâche quotidienne : crée la fiche Brand des prospects dont la date programmée est arrivée.
 // Avant ce moment, ces marques n'existent que dans ProspectImport (invisibles du Pipeline/Dashboard).
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   }
 
