@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { computeNextActionDate } from "@/lib/statusEffects";
 import { ensureClientAndProjects } from "@/lib/clientTransition";
 import { requireSession } from "@/lib/apiAuth";
+import { getSettings } from "@/lib/settings";
 
 export async function GET() {
   const denied = await requireSession();
@@ -29,11 +30,7 @@ export async function POST(request: NextRequest) {
   // un changement de statut, pour que la carte affiche ces informations dès la création.
   let nextActionDate: Date | null = null;
   if (pipelineStatus !== "ROUTINE_ENGAGEMENT") {
-    const settings = await prisma.settings.upsert({
-      where: { id: "singleton" },
-      update: {},
-      create: { id: "singleton" },
-    });
+    const settings = await getSettings();
     const computed = computeNextActionDate(pipelineStatus, now, settings);
     nextActionDate = computed ?? null;
   }

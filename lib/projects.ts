@@ -2,6 +2,7 @@ import { ServiceType } from "@prisma/client";
 import { countBusinessDays } from "@/lib/business-days";
 import { monthsBetween } from "@/lib/dates";
 import { projectSteps, serviceTypeLabel } from "@/lib/serviceTypes";
+import { STEP, ONBOARDING_STEPS, OFFBOARDING_STEPS } from "@/lib/steps";
 
 /** Libellé affiché pour un projet : son nom libre s'il en a un, sinon le type de prestation. */
 export function projectLabel(project: { name: string | null; serviceType: ServiceType }): string {
@@ -10,8 +11,7 @@ export function projectLabel(project: { name: string | null; serviceType: Servic
 
 // Étapes communes à toutes les prestations (cf. lib/serviceTypes.ts) qui bornent les 3
 // colonnes macro du Kanban Projets. Seul le milieu ("En cours") varie selon le type.
-export const ONBOARDING_STEPS = ["Devis signé", "Attente acompte"];
-export const OFFBOARDING_STEPS = ["Facture à faire", "Facture envoyée", "Attente avis", "Terminé"];
+export { ONBOARDING_STEPS, OFFBOARDING_STEPS } from "@/lib/steps";
 
 export type ProjectMacroGroupId = "ONBOARDING" | "EN_COURS" | "OFFBOARDING";
 
@@ -72,7 +72,7 @@ export function firstStepOfMacroGroup(steps: string[], group: ProjectMacroGroupI
 }
 
 export function isProjectDone(project: { currentStep: string }): boolean {
-  return project.currentStep === "Terminé";
+  return project.currentStep === STEP.TERMINE;
 }
 
 /**

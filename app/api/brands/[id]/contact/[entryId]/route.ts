@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { computeNextActionDate, statusForActionType } from "@/lib/statusEffects";
 import { requireSession } from "@/lib/apiAuth";
+import { getSettings } from "@/lib/settings";
 
 export async function PATCH(
   request: NextRequest,
@@ -35,11 +36,7 @@ export async function PATCH(
   if (latestEntry?.id === params.entryId) {
     const mappedStatus = statusForActionType[entry.type];
     if (mappedStatus) {
-      const settings = await prisma.settings.upsert({
-        where: { id: "singleton" },
-        update: {},
-        create: { id: "singleton" },
-      });
+      const settings = await getSettings();
       const nextActionDate = computeNextActionDate(mappedStatus, newDate, settings);
 
       await prisma.brand.update({

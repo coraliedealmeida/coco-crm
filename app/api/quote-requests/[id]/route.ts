@@ -5,6 +5,7 @@ import { computeNextActionDate, statusActionType } from "@/lib/statusEffects";
 import { statusLabel } from "@/lib/pipeline";
 import { requireSession } from "@/lib/apiAuth";
 import { acceptQuoteRequest, cancelQuoteAcceptance, leavesAccepted, trashQuoteRequest } from "@/lib/trash";
+import { getSettings } from "@/lib/settings";
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   const denied = await requireSession();
@@ -34,11 +35,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     data.lastContactDate = now;
     logType = statusActionType[newStatus] ?? `Statut → ${statusLabel(newStatus)}`;
 
-    const settings = await prisma.settings.upsert({
-      where: { id: "singleton" },
-      update: {},
-      create: { id: "singleton" },
-    });
+    const settings = await getSettings();
     const computed = computeNextActionDate(newStatus, now, settings);
     if (computed !== undefined) data.nextActionDate = computed;
   } else if ("lastContactDate" in body) {
@@ -49,11 +46,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     data.lastContactDate = correctedDate;
 
     const current = await prisma.quoteRequest.findUniqueOrThrow({ where: { id: params.id } });
-    const settings = await prisma.settings.upsert({
-      where: { id: "singleton" },
-      update: {},
-      create: { id: "singleton" },
-    });
+    const settings = await getSettings();
     const computed = computeNextActionDate(current.status, correctedDate, settings);
     if (computed !== undefined) data.nextActionDate = computed;
   }

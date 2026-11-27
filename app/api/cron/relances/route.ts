@@ -5,17 +5,16 @@ import { isCronAuthorized } from "@/lib/cronAuth";
 import { statusLabel } from "@/lib/pipeline";
 import { projectLabel } from "@/lib/projects";
 import { parisEndOfToday } from "@/lib/dates";
+import { STEP } from "@/lib/steps";
+import { getSettings } from "@/lib/settings";
+import { RELANCE_STATUSES } from "@/lib/statusEffects";
 
 export async function GET(request: NextRequest) {
   if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   }
 
-  const settings = await prisma.settings.upsert({
-    where: { id: "singleton" },
-    update: {},
-    create: { id: "singleton" },
-  });
+  const settings = await getSettings();
 
   if (!settings.emailNotifications) {
     return NextResponse.json({ skipped: true, reason: "Notifications désactivées." });
@@ -27,7 +26,7 @@ export async function GET(request: NextRequest) {
     prisma.brand.findMany({
       where: {
         archivedAt: null,
-        pipelineStatus: { in: ["PREMIER_DM", "RELANCE_1", "DEVIS_ENVOYE", "RELANCE_DEVIS_1"] },
+        pipelineStatus: { in: RELANCE_STATUSES },
         nextActionDate: { lte: now },
       },
     }),
@@ -46,7 +45,7 @@ export async function GET(request: NextRequest) {
         date: { lte: now },
         OR: [
           { brandId: { not: null }, brand: { archivedAt: null, deletedAt: null } },
-          { projectId: { not: null }, project: { currentStep: { not: "Terminé" }, deletedAt: null } },
+          { projectId: { not: null }, project: { currentStep: { not: STEP.TERMINE }, deletedAt: null } },
         ],
       },
       include: { brand: true, project: { include: { client: { include: { brand: true } } } } },

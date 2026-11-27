@@ -75,3 +75,6 @@ export function computeNextActionDate(
       return undefined;
   }
 }
+
+/** Statuts dont la prochaine action est une relance datée (Dashboard, email du matin, recalcul des délais). */
+export const RELANCE_STATUSES: PipelineStatus[] = ["PREMIER_DM", "RELANCE_1", "DEVIS_ENVOYE", "RELANCE_DEVIS_1"];

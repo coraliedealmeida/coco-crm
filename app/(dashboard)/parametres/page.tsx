@@ -3,12 +3,13 @@ import SettingsForm from "@/components/SettingsForm";
 import OptionsManager from "@/components/OptionsManager";
 import Link from "next/link";
 import LogoutButton from "@/components/LogoutButton";
+import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function ParametresPage() {
   const [settings, sectors, sources] = await Promise.all([
-    prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+    getSettings(),
     prisma.sectorOption.findMany({ orderBy: { label: "asc" } }),
     prisma.sourceOption.findMany({ orderBy: { label: "asc" } }),
   ]);

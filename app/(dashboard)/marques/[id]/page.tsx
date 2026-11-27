@@ -15,6 +15,7 @@ import QuoteRequestsCard from "@/components/QuoteRequestsCard";
 import BrandContactsPanel from "@/components/BrandContactsPanel";
 import { formatRevenue, formatDateFr } from "@/lib/format";
 import BackButton from "@/components/BackButton";
+import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export default async function BrandDetailPage({ params }: { params: { id: string
         contacts: { orderBy: { createdAt: "asc" } },
       },
     }),
-    prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+    getSettings(),
     prisma.client.findUnique({
       where: { brandId: params.id },
       include: {

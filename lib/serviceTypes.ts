@@ -1,4 +1,5 @@
 import { ServiceType } from "@prisma/client";
+import { withCommonSteps } from "@/lib/steps";
 
 export const serviceTypeLabel: Record<ServiceType, string> = {
   LA_PATTE: "La Patte",
@@ -26,23 +27,15 @@ export const serviceTypeOptions: { value: ServiceType; label: string }[] = (
  * macro (Onboarding / En cours / Offboarding) utilisé par le Kanban Projets.
  */
 export const projectSteps: Record<ServiceType, string[]> = {
-  LA_PATTE: [
-    "Devis signé",
-    "Attente acompte",
+  LA_PATTE: withCommonSteps([
     "Questionnaire envoyé",
     "Propositions DA",
     "DA validée",
     "Propositions concepts",
     "Révision 1",
     "Révision 2",
-    "Facture à faire",
-    "Facture envoyée",
-    "Attente avis",
-    "Terminé",
-  ],
-  LEMPREINTE: [
-    "Devis signé",
-    "Attente acompte",
+  ]),
+  LEMPREINTE: withCommonSteps([
     "Questionnaire envoyé",
     "Proposition DA",
     "DA validée",
@@ -54,14 +47,8 @@ export const projectSteps: Record<ServiceType, string[]> = {
     "Proposition templates",
     "Révision templates",
     "Livraison",
-    "Facture à faire",
-    "Facture envoyée",
-    "Attente avis",
-    "Terminé",
-  ],
-  SITE_ONE_PAGE: [
-    "Devis signé",
-    "Attente acompte",
+  ]),
+  SITE_ONE_PAGE: withCommonSteps([
     "Questionnaire envoyé",
     "Contenus reçus",
     "Proposition maquette",
@@ -71,14 +58,8 @@ export const projectSteps: Record<ServiceType, string[]> = {
     "Intégration",
     "Formation",
     "Mise en ligne",
-    "Facture à faire",
-    "Facture envoyée",
-    "Attente avis",
-    "Terminé",
-  ],
-  SITE_VITRINE: [
-    "Devis signé",
-    "Attente acompte",
+  ]),
+  SITE_VITRINE: withCommonSteps([
     "Questionnaire envoyé",
     "Contenus reçus",
     "Proposition maquette",
@@ -88,65 +69,31 @@ export const projectSteps: Record<ServiceType, string[]> = {
     "Intégration",
     "Formation",
     "Mise en ligne",
-    "Facture à faire",
-    "Facture envoyée",
-    "Attente avis",
-    "Terminé",
-  ],
-  KIT_RS: [
-    "Devis signé",
-    "Attente acompte",
+  ]),
+  KIT_RS: withCommonSteps([
     "Questionnaire envoyé",
     "Proposition",
     "Révision 1",
     "Révision 2",
     "Livraison Canva",
-    "Facture à faire",
-    "Facture envoyée",
-    "Attente avis",
-    "Terminé",
-  ],
-  GRAPHISME_A_LA_CARTE: [
-    "Devis signé",
-    "Attente acompte",
+  ]),
+  GRAPHISME_A_LA_CARTE: withCommonSteps([
     "En création",
     "Révision 1",
     "Révision 2",
     "Livraison",
-    "Facture à faire",
-    "Facture envoyée",
-    "Attente avis",
-    "Terminé",
-  ],
-  ACCOMPAGNEMENT_MENSUEL: [
-    "Devis signé",
-    "Attente acompte",
+  ]),
+  ACCOMPAGNEMENT_MENSUEL: withCommonSteps([
     "En création",
     "Bilan mensuel",
     "Renouvellement ou Fin",
-    "Facture à faire",
-    "Facture envoyée",
-    "Attente avis",
-    "Terminé",
-  ],
-  ECOLES: [
-    "Devis signé",
-    "Attente acompte",
+  ]),
+  ECOLES: withCommonSteps([
     "Confirmé",
     "En cours",
-    "Facture à faire",
-    "Facture envoyée",
-    "Attente avis",
-    "Terminé",
-  ],
-  JURY: [
-    "Devis signé",
-    "Attente acompte",
+  ]),
+  JURY: withCommonSteps([
     "Confirmé",
     "En cours",
-    "Facture à faire",
-    "Facture envoyée",
-    "Attente avis",
-    "Terminé",
-  ],
+  ]),
 };

@@ -3,7 +3,7 @@ import { prisma, NOT_DELETED } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { statusLabel } from "@/lib/pipeline";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
-import { isProjectActive, projectLabel, remainingToInvoice } from "@/lib/projects";
+import { factureRelanceDue, isProjectActive, projectLabel, remainingToInvoice } from "@/lib/projects";
 import DashboardSection from "@/components/DashboardSection";
 import BrandCard from "@/components/BrandCard";
 import RelaunchButton from "@/components/RelaunchButton";
@@ -25,6 +25,9 @@ import {
   type EngagementContact,
 } from "@/lib/pipeline";
 import { parisEndOfToday } from "@/lib/dates";
+import { STEP } from "@/lib/steps";
+import { getSettings } from "@/lib/settings";
+import { RELANCE_STATUSES } from "@/lib/statusEffects";
 
 export const dynamic = "force-dynamic";
 
@@ -115,7 +118,7 @@ export default async function DashboardPage() {
       where: { archivedAt: null, OR: [{ acquisitionPath: null }, { acquisitionPath: { not: "DIRECT" } }] },
       include: { contacts: { orderBy: { createdAt: "asc" } } },
     }),
-    prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+    getSettings(),
     // Rappels programmés sur une marque OU sur un projet (jamais les deux) — on exclut les
     // marques archivées et les projets déjà terminés, comme pour le reste du Dashboard.
     prisma.reminder.findMany({
@@ -124,7 +127,7 @@ export default async function DashboardPage() {
         date: { lte: parisEndOfToday() },
         OR: [
           { brandId: { not: null }, brand: { archivedAt: null, deletedAt: null } },
-          { projectId: { not: null }, project: { currentStep: { not: "Terminé" }, deletedAt: null } },
+          { projectId: { not: null }, project: { currentStep: { not: STEP.TERMINE }, deletedAt: null } },
         ],
       },
       include: { brand: true, project: { include: { client: { include: { brand: true } } } } },
@@ -200,7 +203,7 @@ export default async function DashboardPage() {
   const relanceBrands = brands
     .filter(
       (b) =>
-        ["PREMIER_DM", "RELANCE_1", "DEVIS_ENVOYE", "RELANCE_DEVIS_1"].includes(b.pipelineStatus) &&
+        RELANCE_STATUSES.includes(b.pipelineStatus) &&
         b.nextActionDate &&
         b.nextActionDate <= endOfToday
     )
@@ -283,7 +286,7 @@ export default async function DashboardPage() {
         amount: inv.amount as number | null,
       }));
     }
-    if (p.currentStep === "Facture à faire") {
+    if (p.currentStep === STEP.FACTURE_A_FAIRE) {
       return [
         {
           key: `project-${p.id}`,
@@ -584,13 +587,8 @@ export default async function DashboardPage() {
             emptyLabel="Aucune facture en attente de paiement."
           >
             {pendingInvoices.map((invoice) => {
-              const elapsed = countBusinessDays(invoice.sentAt!, now);
-              const relance =
-                elapsed >= settings.daysBeforeFactureRelance1 + settings.daysBeforeFactureRelance2
-                  ? 2
-                  : elapsed >= settings.daysBeforeFactureRelance1
-                    ? 1
-                    : null;
+              // Même règle que partout ailleurs (lib/projects.ts).
+              const relance = factureRelanceDue([invoice], settings, now);
               return (
                 <ProjectRow
                   key={invoice.id}

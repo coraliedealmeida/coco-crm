@@ -9,6 +9,7 @@ import { formatRevenue, formatDateFr } from "@/lib/format";
 import { apiFetch } from "@/lib/apiClient";
 import { blurOnEnter } from "@/lib/inputs";
 import { parisDayKey } from "@/lib/dates";
+import { OFFBOARDING_STEPS } from "@/lib/steps";
 
 type Invoice = { id: string; label: string; amount: number; sentAt: string | null; paidAt: string | null };
 
@@ -171,7 +172,7 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
           <button
             onClick={() => {
               const firstOffboardingIndex = steps.findIndex((s) =>
-                ["Facture à faire", "Facture envoyée", "Attente avis", "Terminé"].includes(s)
+                OFFBOARDING_STEPS.includes(s)
               );
               setAfterStep(steps[Math.max(0, firstOffboardingIndex - 1)]);
               setAddingStep(true);

@@ -4,6 +4,7 @@ import { archivingStatuses } from "@/lib/pipeline";
 import { computeNextActionDate, statusForActionType } from "@/lib/statusEffects";
 import { requireSession } from "@/lib/apiAuth";
 import { cancelBrandAcceptance, leavesAccepted } from "@/lib/trash";
+import { getSettings } from "@/lib/settings";
 
 /**
  * Journalise un contact (premier DM, relance, appel, etc.) et fait avancer
@@ -16,11 +17,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   const body = await request.json();
   const { type, content } = body as { type: string; content?: string };
 
-  const settings = await prisma.settings.upsert({
-    where: { id: "singleton" },
-    update: {},
-    create: { id: "singleton" },
-  });
+  const settings = await getSettings();
 
   const now = new Date();
   const nextStatus = statusForActionType[type];

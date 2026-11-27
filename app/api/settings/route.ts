@@ -3,21 +3,19 @@ import { PipelineStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { computeNextActionDate } from "@/lib/statusEffects";
 import { requireSession } from "@/lib/apiAuth";
+import { getSettings } from "@/lib/settings";
+import { RELANCE_STATUSES } from "@/lib/statusEffects";
 
 // Statuts dont la prochaine relance (nextActionDate) est calculée à partir d'un nombre de
 // jours réglable dans les Paramètres. Les autres statuts ne dépendent d'aucun réglage
 // (computeNextActionDate y renvoie null/undefined) et n'ont donc rien à recalculer.
-const RECOMPUTE_STATUSES: PipelineStatus[] = ["PREMIER_DM", "RELANCE_1", "DEVIS_ENVOYE", "RELANCE_DEVIS_1"];
+const RECOMPUTE_STATUSES = RELANCE_STATUSES;
 
 export async function GET() {
   const denied = await requireSession();
   if (denied) return denied;
 
-  const settings = await prisma.settings.upsert({
-    where: { id: "singleton" },
-    update: {},
-    create: { id: "singleton" },
-  });
+  const settings = await getSettings();
   return NextResponse.json(settings);
 }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isCronAuthorized } from "@/lib/cronAuth";
 import { engagementOverdueDays, PAUSE_ACTIVATION_OVERDUE_DAYS } from "@/lib/pipeline";
+import { getSettings } from "@/lib/settings";
 
 // Tâche quotidienne : crée la fiche Brand des prospects dont la date programmée est arrivée.
 // Avant ce moment, ces marques n'existent que dans ProspectImport (invisibles du Pipeline/Dashboard).
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
       where: { pipelineStatus: "ROUTINE_ENGAGEMENT", archivedAt: null },
       select: { lastEngagementAt: true, engagementStartDate: true },
     }),
-    prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+    getSettings(),
   ]);
   const maxOverdue = Math.max(
     0,

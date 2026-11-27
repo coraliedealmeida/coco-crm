@@ -6,6 +6,7 @@ import { computeNextActionDate, statusActionType } from "@/lib/statusEffects";
 import { ensureClientAndProjects } from "@/lib/clientTransition";
 import { requireSession } from "@/lib/apiAuth";
 import { cancelBrandAcceptance, leavesAccepted, trashBrand } from "@/lib/trash";
+import { getSettings } from "@/lib/settings";
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const denied = await requireSession();
@@ -98,11 +99,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     logType = statusActionType[newStatus] ?? `Statut → ${statusLabel(newStatus)}`;
 
     if (!("nextActionDate" in body)) {
-      const settings = await prisma.settings.upsert({
-        where: { id: "singleton" },
-        update: {},
-        create: { id: "singleton" },
-      });
+      const settings = await getSettings();
       const computed = computeNextActionDate(newStatus, now, settings);
       if (computed !== undefined) data.nextActionDate = computed;
     }

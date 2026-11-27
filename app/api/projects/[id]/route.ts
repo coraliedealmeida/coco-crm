@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/apiAuth";
 import { trashProject } from "@/lib/trash";
+import { STEP } from "@/lib/steps";
 
 const DATE_FIELDS = ["signedAt", "startDate", "estimatedDeliveryDate", "completedAt"] as const;
 
@@ -26,7 +27,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   // projet en ressort), sauf si elle est explicitement fournie dans la requête (antidatage
   // manuel depuis la fiche projet, qui garde alors la priorité).
   if ("currentStep" in body && !("completedAt" in body)) {
-    data.completedAt = body.currentStep === "Terminé" ? new Date() : null;
+    data.completedAt = body.currentStep === STEP.TERMINE ? new Date() : null;
   }
 
   const project = await prisma.project.update({ where: { id: params.id }, data });

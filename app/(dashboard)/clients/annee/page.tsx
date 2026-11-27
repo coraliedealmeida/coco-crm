@@ -5,6 +5,7 @@ import { formatRevenue } from "@/lib/format";
 import StatsGrid from "@/components/StatsGrid";
 import BackButton from "@/components/BackButton";
 import { parisYearMonth } from "@/lib/dates";
+import { STEP } from "@/lib/steps";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ function amountFor(p: { quoteAmount: number | null; invoices: { amount: number }
 export default async function AnneeProjetsPage({ searchParams }: { searchParams: { year?: string } }) {
   const now = new Date();
   const projects = await prisma.project.findMany({
-    where: { currentStep: "Terminé" },
+    where: { currentStep: STEP.TERMINE },
     include: { client: { include: { brand: true } }, invoices: { where: NOT_DELETED } },
   });
 

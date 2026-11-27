@@ -38,6 +38,12 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
   `computeNextActionDate` (`lib/statusEffects.ts`).
 - **Sauvegarde** : toutes les tables listées dans `lib/backup.ts` (un test échoue si une table manque) ;
   restauration : `docs/restauration-sauvegarde.md`.
+- **Corbeille** : « supprimer » = `deletedAt` (jamais de `delete` sur marques, clients, projets, factures,
+  demandes de devis, prospects importés ; `lib/trash.ts`). `prisma` masque la corbeille automatiquement
+  (`lib/prisma.ts`) sauf dans les relations incluses → `{ where: NOT_DELETED }`. `prismaRaw` = accès brut.
+  Annuler un « Devis accepté » masque les projets auto-créés encore vierges (`deletedReason = DEVIS_ANNULE`).
+- **Étapes** : noms communs dans `lib/steps.ts` (`STEP.TERMINE`…), jamais écrits en dur.
+- **Paramètres** : `getSettings()` (`lib/settings.ts`).
 - **Appels API depuis l'interface** : toujours `apiFetch` (`lib/apiClient.ts`), jamais `fetch` direct.
   Chaque route API commence par `requireSession()` (`lib/apiAuth.ts`). Tests : `npm test`.
 - **Routine d'engagement** : 3 marques max/jour, espacement `daysBetweenEngagements`, « Prise de contact »
@@ -122,12 +128,22 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
   - **Phase 3** : rappel de fin de mois le dernier jour ouvré (Dashboard + email) ; emails envoyés depuis une
     adresse du domaine de Coralie au lieu de `onboarding@resend.dev` (vérification du domaine dans Resend).
 
+- 2026-11-27 — Migration `20261127120000_corbeille_et_lien_devis` (ajouts seulement, `rollback.sql` fourni) :
+  appliquée sur la copie de test `preview/phase-0bis-corrections` via l'éditeur SQL Neon (port 5432 bloqué
+  sur le wifi de Coralie), ligne ajoutée dans `_prisma_migrations` (checksum sha256 du fichier). Vérifié :
+  32 migrations, nombre de projets/factures et CA encaissé identiques avant/après.
+  **Production : PAS encore migrée.** Ordre obligatoire : sauvegarde → migration prod → fusion du code
+  (le nouveau code lit des colonnes qui n'existent pas encore en prod).
+- 2026-11-27 — Contrôle des montants (lecture seule) : 2 projets dont le total des factures ≠ devis,
+  signalés à Coralie (détail non noté ici : données clients).
+- Ne jamais écrire de noms de clients, montants ou chiffre d'affaires dans les fichiers du dépôt.
+
 ## Plan des phases
 | Phase | Contenu | État |
 |---|---|---|
 | 0 | Audit, CLAUDE.md | ✅ validé le 27/11/2026 |
 | infra | Outil Vercel ✅, sauvegarde Neon ✅, prévisualisations isolées ✅, base de dev locale (à faire) | ⏳ en cours |
-| 0 bis | Partie 1 ✅ (branche `phase-0bis-corrections`) : sauvegarde complète + restauration, sécurité connexion/API/cron, enregistrements fiables, dates Paris + fériés, anti-doublons, tests. Reste : archivage (migration), centralisation des étapes, vérification des montants, Next 15 (branche dédiée) | ⏳ en cours |
+| 0 bis | ✅ sur `phase-0bis-corrections` (à valider) : sauvegarde complète + restauration, sécurité, enregistrements fiables, dates Paris + fériés, anti-doublons, corbeille + devis accepté annulable, étapes centralisées, montants vérifiés, tests. Reste : Next 15 (branche dédiée), migration prod | ⏳ test de Coralie |
 | 1 | Système de design (fondations, composants, guide de style, application à toutes les pages) | à faire |
 | 2 | Suivi du temps, feuille de mois (clients à l'heure), changement de type de projet | à faire |
 | 3 | Dashboard « quoi faire aujourd'hui », vue annuelle heures/CA, rappel fin de mois, saisie rapide | à faire |

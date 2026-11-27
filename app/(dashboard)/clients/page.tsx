@@ -4,13 +4,14 @@ import StatsGrid from "@/components/StatsGrid";
 import ProjectsKanbanBoard from "@/components/ProjectsKanbanBoard";
 import { isProjectActive, invoicedInMonth, paidInMonth, factureRelanceDue } from "@/lib/projects";
 import { formatRevenue } from "@/lib/format";
+import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
   const [projects, settings] = await Promise.all([
     prisma.project.findMany({ include: { client: { include: { brand: true } }, invoices: { where: NOT_DELETED } } }),
-    prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
+    getSettings(),
   ]);
 
   // Le plus récent en haut de chaque colonne, le plus ancien en bas : date de début (modifiable,
