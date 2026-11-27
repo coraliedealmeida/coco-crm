@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/apiAuth";
+import { trashProject } from "@/lib/trash";
 
 const DATE_FIELDS = ["signedAt", "startDate", "estimatedDeliveryDate", "completedAt"] as const;
 
@@ -36,6 +37,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
   const denied = await requireSession();
   if (denied) return denied;
 
-  await prisma.project.delete({ where: { id: params.id } });
+  // Corbeille : le projet et ses factures sont masqués, jamais effacés (restaurables).
+  await trashProject(params.id);
   return NextResponse.json({ ok: true });
 }

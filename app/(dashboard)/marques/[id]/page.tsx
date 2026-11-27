@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { prisma, NOT_DELETED } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { avatarColor, initials, statusLabel, nextAutomaticActionLabel, macroGroupForStatus, isReadyForContact } from "@/lib/pipeline";
 import { paidTotal } from "@/lib/projects";
@@ -32,8 +32,8 @@ export default async function BrandDetailPage({ params }: { params: { id: string
     prisma.client.findUnique({
       where: { brandId: params.id },
       include: {
-        projects: { orderBy: { createdAt: "desc" }, include: { invoices: true } },
-        quoteRequests: { orderBy: { createdAt: "desc" } },
+        projects: { where: NOT_DELETED, orderBy: { createdAt: "desc" }, include: { invoices: { where: NOT_DELETED } } },
+        quoteRequests: { where: NOT_DELETED, orderBy: { createdAt: "desc" } },
       },
     }),
   ]);

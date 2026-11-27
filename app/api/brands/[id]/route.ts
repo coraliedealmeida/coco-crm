@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PipelineStatus } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { prisma, NOT_DELETED } from "@/lib/prisma";
 import { archivingStatuses, statusLabel } from "@/lib/pipeline";
 import { computeNextActionDate, statusActionType } from "@/lib/statusEffects";
 import { ensureClientAndProjects } from "@/lib/clientTransition";
 import { requireSession } from "@/lib/apiAuth";
+import { cancelBrandAcceptance, leavesAccepted, trashBrand } from "@/lib/trash";
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const denied = await requireSession();
@@ -27,7 +28,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
   const client = await prisma.client.findUnique({
     where: { brandId: params.id },
-    include: { projects: { include: { invoices: true } } },
+    include: { projects: { where: NOT_DELETED, include: { invoices: { where: NOT_DELETED } } } },
   });
 
   if (client && !force) {
@@ -42,16 +43,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     );
   }
 
-  await prisma.$transaction(async (tx) => {
-    if (client) {
-      // Les factures et notes de suivi de chaque projet partent en cascade (onDelete: Cascade).
-      await tx.project.deleteMany({ where: { clientId: client.id } });
-      await tx.client.delete({ where: { id: client.id } });
-    }
-    await tx.reminder.deleteMany({ where: { brandId: params.id } });
-    await tx.contactHistoryEntry.deleteMany({ where: { brandId: params.id } });
-    await tx.brand.delete({ where: { id: params.id } });
-  });
+  // Corbeille : la marque, son client, ses projets, factures et demandes de devis sont masqués
+  // ensemble (jamais effacés) et restaurables ensemble depuis Paramètres → Corbeille.
+  await trashBrand(params.id);
 
   return NextResponse.json({ ok: true });
 }
@@ -92,8 +86,13 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   const now = new Date();
   let logType: string | null = null;
 
+  // Statut avant modification : sert à détecter l'annulation d'un « Devis accepté ».
+  let previousStatus: PipelineStatus | null = null;
+
   if ("pipelineStatus" in body) {
     const newStatus = body.pipelineStatus as PipelineStatus;
+    const before = await prisma.brand.findUnique({ where: { id: params.id }, select: { pipelineStatus: true } });
+    previousStatus = before?.pipelineStatus ?? null;
     data.archivedAt = archivingStatuses.includes(newStatus) ? now : null;
     data.lastContactDate = now;
     logType = statusActionType[newStatus] ?? `Statut → ${statusLabel(newStatus)}`;
@@ -122,6 +121,13 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
   if (body.pipelineStatus === "DEVIS_ACCEPTE") {
     await ensureClientAndProjects(brand.id, brand.discoveryNotes, brand.potentialRevenue);
+  }
+
+  // « Devis accepté » annulé : projets créés automatiquement et encore vierges masqués,
+  // ainsi que le client s'il n'a plus rien (réaffichés si le devis est de nouveau accepté).
+  if (leavesAccepted(previousStatus, body.pipelineStatus)) {
+    const result = await cancelBrandAcceptance(brand.id);
+    return NextResponse.json({ ...brand, projectsHidden: result.hidden, projectsKept: result.kept });
   }
 
   return NextResponse.json(brand);

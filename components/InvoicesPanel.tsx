@@ -68,7 +68,7 @@ export default function InvoicesPanel({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Supprimer cette facture ?")) return;
+    if (!confirm("Mettre cette facture à la corbeille ? Elle ne comptera plus dans les totaux. Restaurable depuis Paramètres → Corbeille.")) return;
     await apiFetch(`/api/invoices/${id}`, { method: "DELETE" });
     setInvoices((prev) => prev.filter((i) => i.id !== id));
     router.refresh();

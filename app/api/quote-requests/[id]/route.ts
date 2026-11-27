@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PipelineStatus, ServiceType } from "@prisma/client";
+import { PipelineStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { computeNextActionDate, statusActionType } from "@/lib/statusEffects";
 import { statusLabel } from "@/lib/pipeline";
-import { projectSteps } from "@/lib/serviceTypes";
 import { requireSession } from "@/lib/apiAuth";
+import { acceptQuoteRequest, cancelQuoteAcceptance, leavesAccepted, trashQuoteRequest } from "@/lib/trash";
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   const denied = await requireSession();
@@ -70,38 +70,16 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     });
   }
 
-  // Garde-fou anti-doublons : les projets ne sont créés qu'au PASSAGE à « Devis accepté »
-  // (pas si la demande y était déjà), et jamais pour un type de prestation dont le projet
-  // existe déjà (même client, même nom, créé depuis cette demande). Avant, repasser une demande
-  // à « Devis accepté » après une erreur de statut recréait tous ses projets.
+  // Passage à « Devis accepté » : réaffiche les projets masqués par une annulation, crée ceux
+  // qui manquent, jamais de doublon (lib/trash.ts).
   if (body.status === "DEVIS_ACCEPTE" && previousStatus !== "DEVIS_ACCEPTE") {
-    const serviceTypes = (quoteRequest.serviceTypes ?? []) as ServiceType[];
-    await prisma.$transaction(async (tx) => {
-      const existing = await tx.project.findMany({
-        where: {
-          clientId: quoteRequest.clientId,
-          name: quoteRequest.label,
-          createdAt: { gte: quoteRequest.createdAt },
-          serviceType: { in: serviceTypes },
-        },
-        select: { serviceType: true },
-      });
-      const alreadyCreated = new Set(existing.map((p) => p.serviceType));
-      const hasAnyProject = alreadyCreated.size > 0;
-      for (const [index, serviceType] of serviceTypes.entries()) {
-        if (alreadyCreated.has(serviceType)) continue;
-        await tx.project.create({
-          data: {
-            clientId: quoteRequest.clientId,
-            serviceType,
-            name: quoteRequest.label,
-            currentStep: projectSteps[serviceType][0],
-            startDate: now,
-            quoteAmount: index === 0 && !hasAnyProject ? quoteRequest.potentialRevenue : null,
-          },
-        });
-      }
-    });
+    await acceptQuoteRequest(quoteRequest);
+  }
+
+  // « Devis accepté » annulé : les projets créés automatiquement et encore vierges sont masqués.
+  if (leavesAccepted(previousStatus, body.status)) {
+    const result = await cancelQuoteAcceptance(quoteRequest.id);
+    return NextResponse.json({ ...quoteRequest, projectsHidden: result.hidden, projectsKept: result.kept });
   }
 
   return NextResponse.json(quoteRequest);
@@ -111,6 +89,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
   const denied = await requireSession();
   if (denied) return denied;
 
-  await prisma.quoteRequest.delete({ where: { id: params.id } });
+  // Corbeille : masquée, restaurable (ses projets éventuels restent en place).
+  await trashQuoteRequest(params.id);
   return NextResponse.json({ ok: true });
 }

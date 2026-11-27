@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { prisma, NOT_DELETED } from "@/lib/prisma";
 import { projectLabel } from "@/lib/projects";
 import { formatRevenue } from "@/lib/format";
 import StatsGrid from "@/components/StatsGrid";
@@ -33,7 +33,7 @@ export default async function AnneeProjetsPage({ searchParams }: { searchParams:
   const now = new Date();
   const projects = await prisma.project.findMany({
     where: { currentStep: "Terminé" },
-    include: { client: { include: { brand: true } }, invoices: true },
+    include: { client: { include: { brand: true } }, invoices: { where: NOT_DELETED } },
   });
 
   const years = Array.from(new Set(projects.map((p) => parisYearMonth(p.completedAt ?? p.createdAt).year)));

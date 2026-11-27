@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { prisma, NOT_DELETED } from "@/lib/prisma";
 import StatsGrid from "@/components/StatsGrid";
 import ProjectsKanbanBoard from "@/components/ProjectsKanbanBoard";
 import { isProjectActive, invoicedInMonth, paidInMonth, factureRelanceDue } from "@/lib/projects";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
   const [projects, settings] = await Promise.all([
-    prisma.project.findMany({ include: { client: { include: { brand: true } }, invoices: true } }),
+    prisma.project.findMany({ include: { client: { include: { brand: true } }, invoices: { where: NOT_DELETED } } }),
     prisma.settings.upsert({ where: { id: "singleton" }, update: {}, create: { id: "singleton" } }),
   ]);
 

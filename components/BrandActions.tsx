@@ -60,7 +60,7 @@ export default function BrandActions({ brandId }: { brandId: string }) {
   }
 
   async function handleDelete() {
-    if (!confirm("Supprimer cette fiche prospect ? Cette action est irréversible.")) return;
+    if (!confirm("Mettre cette fiche à la corbeille ? Tu pourras la restaurer depuis Paramètres → Corbeille.")) return;
     setDeleting(true);
     setDeleteError("");
 
@@ -76,8 +76,8 @@ export default function BrandActions({ brandId }: { brandId: string }) {
           .filter(Boolean)
           .join(" et ");
         const warning = detail
-          ? `Cette marque a un client avec ${detail}. Tout sera supprimé définitivement, y compris l'historique de facturation. Confirmer la suppression ?`
-          : "Cette marque a un client associé (sans projet). Le client sera aussi supprimé. Confirmer ?";
+          ? `Cette marque a un client avec ${detail}. Tout partira ensemble à la corbeille (masqué partout, hors des totaux) et pourra être restauré ensemble depuis Paramètres → Corbeille. Confirmer ?`
+          : "Cette marque a un client associé (sans projet). Il partira aussi à la corbeille, restaurable depuis Paramètres → Corbeille. Confirmer ?";
         if (!confirm(warning)) {
           setDeleting(false);
           return;

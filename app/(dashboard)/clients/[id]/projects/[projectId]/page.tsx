@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { prisma, NOT_DELETED } from "@/lib/prisma";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
 import { projectLabel } from "@/lib/projects";
 import ProjectForm from "@/components/ProjectForm";
@@ -16,7 +16,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
     include: {
       client: { include: { brand: true } },
       trackingNotes: { orderBy: { date: "desc" } },
-      invoices: { orderBy: { createdAt: "asc" } },
+      invoices: { where: NOT_DELETED, orderBy: { createdAt: "asc" } },
       reminders: { orderBy: { date: "asc" } },
     },
   });

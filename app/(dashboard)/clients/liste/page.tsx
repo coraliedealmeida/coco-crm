@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { prisma, NOT_DELETED } from "@/lib/prisma";
 import { isProjectActive, paidTotal } from "@/lib/projects";
 import ClientsTable from "@/components/ClientsTable";
 import BackButton from "@/components/BackButton";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ClientsListPage() {
   const clients = await prisma.client.findMany({
-    include: { brand: true, projects: { include: { invoices: true } } },
+    include: { brand: true, projects: { where: NOT_DELETED, include: { invoices: { where: NOT_DELETED } } } },
     orderBy: { createdAt: "desc" },
   });
 

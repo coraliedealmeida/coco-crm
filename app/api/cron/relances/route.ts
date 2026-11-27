@@ -45,8 +45,8 @@ export async function GET(request: NextRequest) {
         completed: false,
         date: { lte: now },
         OR: [
-          { brandId: { not: null }, brand: { archivedAt: null } },
-          { projectId: { not: null }, project: { currentStep: { not: "Terminé" } } },
+          { brandId: { not: null }, brand: { archivedAt: null, deletedAt: null } },
+          { projectId: { not: null }, project: { currentStep: { not: "Terminé" }, deletedAt: null } },
         ],
       },
       include: { brand: true, project: { include: { client: { include: { brand: true } } } } },

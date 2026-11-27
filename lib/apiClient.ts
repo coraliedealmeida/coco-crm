@@ -13,7 +13,7 @@
  */
 export const SAVE_ERROR_EVENT = "coco:save-error";
 
-export type SaveErrorDetail = { message: string; sessionExpired: boolean };
+export type SaveErrorDetail = { message: string; sessionExpired: boolean; kind?: "error" | "info" };
 
 type Options = { expected?: number[]; quiet?: boolean };
 
@@ -53,6 +53,17 @@ export async function apiFetch(
         });
   }
 
+  // Annulation d'un « Devis accepté » : prévenir de ce qui a été masqué ou conservé.
+  if (res.ok && init?.method && init.method !== "GET") {
+    try {
+      const data = await res.clone().json();
+      const notice = cancelledAcceptanceNotice(data);
+      if (notice) notify({ message: notice, sessionExpired: false, kind: "info" });
+    } catch {
+      // pas de JSON : rien à signaler
+    }
+  }
+
   if (!res.ok && !options.quiet && !options.expected?.includes(res.status)) {
     let message = `Erreur ${res.status} : la modification n'a pas été enregistrée.`;
     try {
@@ -64,4 +75,28 @@ export async function apiFetch(
     notify({ message, sessionExpired: false });
   }
   return res;
+}
+
+function plural(n: number, one: string, many: string) {
+  return n > 1 ? many : one;
+}
+
+export function cancelledAcceptanceNotice(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const { projectsHidden, projectsKept } = data as { projectsHidden?: unknown; projectsKept?: unknown };
+  if (typeof projectsHidden !== "number" || typeof projectsKept !== "number") return null;
+  const parts: string[] = [];
+  if (projectsHidden > 0) {
+    parts.push(
+      `${projectsHidden} ${plural(projectsHidden, "projet créé par ce devis a été masqué", "projets créés par ce devis ont été masqués")} ` +
+        `(Paramètres → Corbeille). ${plural(projectsHidden, "Il réapparaîtra", "Ils réapparaîtront")} si le devis est de nouveau accepté.`
+    );
+  }
+  if (projectsKept > 0) {
+    parts.push(
+      `${projectsKept} ${plural(projectsKept, "projet contient", "projets contiennent")} déjà des informations : ` +
+        `${plural(projectsKept, "il reste", "ils restent")} dans Projets.`
+    );
+  }
+  return parts.length ? parts.join(" ") : null;
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { prisma, NOT_DELETED } from "@/lib/prisma";
 import { countBusinessDays } from "@/lib/business-days";
 import { statusLabel } from "@/lib/pipeline";
 import { serviceTypeLabel } from "@/lib/serviceTypes";
@@ -123,14 +123,14 @@ export default async function DashboardPage() {
         completed: false,
         date: { lte: parisEndOfToday() },
         OR: [
-          { brandId: { not: null }, brand: { archivedAt: null } },
-          { projectId: { not: null }, project: { currentStep: { not: "Terminé" } } },
+          { brandId: { not: null }, brand: { archivedAt: null, deletedAt: null } },
+          { projectId: { not: null }, project: { currentStep: { not: "Terminé" }, deletedAt: null } },
         ],
       },
       include: { brand: true, project: { include: { client: { include: { brand: true } } } } },
       orderBy: { date: "asc" },
     }),
-    prisma.project.findMany({ include: { client: { include: { brand: true } }, invoices: true } }),
+    prisma.project.findMany({ include: { client: { include: { brand: true } }, invoices: { where: NOT_DELETED } } }),
     prisma.invoice.findMany({
       where: { sentAt: { not: null }, paidAt: null },
       include: { project: { include: { client: { include: { brand: true } } } } },

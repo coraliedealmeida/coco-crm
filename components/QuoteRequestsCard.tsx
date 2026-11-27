@@ -84,7 +84,7 @@ export default function QuoteRequestsCard({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Supprimer cette demande de devis ?")) return;
+    if (!confirm("Mettre cette demande de devis à la corbeille ? Restaurable depuis Paramètres → Corbeille.")) return;
     setQuoteRequests((prev) => prev.filter((q) => q.id !== id));
     await apiFetch(`/api/quote-requests/${id}`, { method: "DELETE" });
     router.refresh();

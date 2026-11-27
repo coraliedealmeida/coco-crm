@@ -15,8 +15,9 @@ export default function SaveErrorToaster() {
 
   useEffect(() => {
     function onError(event: Event) {
-      setError((event as CustomEvent<SaveErrorDetail>).detail);
-      router.refresh();
+      const detail = (event as CustomEvent<SaveErrorDetail>).detail;
+      setError(detail);
+      if (detail.kind !== "info") router.refresh();
     }
     window.addEventListener(SAVE_ERROR_EVENT, onError);
     return () => window.removeEventListener(SAVE_ERROR_EVENT, onError);
@@ -32,17 +33,20 @@ export default function SaveErrorToaster() {
 
   return (
     <div
-      role="alert"
+      role={error.kind === "info" ? "status" : "alert"}
       className="fixed bottom-24 right-4 z-50 flex max-w-sm items-start gap-3 rounded-2xl bg-ink px-4 py-3 text-sm text-white shadow-soft md:bottom-6"
     >
-      <span aria-hidden className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full bg-red-400" />
+      <span
+        aria-hidden
+        className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${error.kind === "info" ? "bg-accent-light" : "bg-red-400"}`}
+      />
       <div className="flex-1">
         <p className="font-semibold">{error.message}</p>
         {error.sessionExpired ? (
           <a href="/login" className="mt-1 inline-block font-semibold text-accent-light underline">
             Me reconnecter
           </a>
-        ) : (
+        ) : error.kind === "info" ? null : (
           <p className="mt-1 font-light text-white/80">L&apos;écran affiche maintenant l&apos;état réellement enregistré.</p>
         )}
       </div>

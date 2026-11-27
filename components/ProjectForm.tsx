@@ -72,7 +72,7 @@ export default function ProjectForm({ initial, suiviSlot }: { initial: Project; 
   }
 
   async function handleDelete() {
-    if (!confirm("Supprimer ce projet ? Cette action est irréversible.")) return;
+    if (!confirm("Mettre ce projet à la corbeille ? Ses factures partent avec lui (elles ne comptent plus dans les totaux). Tu pourras tout restaurer depuis Paramètres → Corbeille.")) return;
     setDeleting(true);
     await apiFetch(`/api/projects/${project.id}`, { method: "DELETE" });
     router.push(`/clients/${project.clientId}`);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
-import { prisma } from "@/lib/prisma";
+import { prismaRaw } from "@/lib/prisma";
 import { buildBackup } from "@/lib/backup";
 import { isCronAuthorized } from "@/lib/cronAuth";
 
@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   }
 
-  const backup = await buildBackup(prisma);
+  // Accès brut : la sauvegarde inclut aussi la corbeille.
+  const backup = await buildBackup(prismaRaw);
   const json = JSON.stringify(backup, null, 2);
   const dateLabel = new Date().toISOString().slice(0, 10);
   const c = backup.counts;
