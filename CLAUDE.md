@@ -51,10 +51,17 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
 - Après chaque modification : `npx tsc --noEmit` puis `npm run build` ; vérifier visuellement dans le
   navigateur toute modification d'interface.
 - Base de données : sauvegarde (export + tag Git) avant toute migration ; **jamais** de `db push --force-reset`,
-  `DROP`, ni suppression de données ; migrations SQL manuelles dans `prisma/migrations/` avec plan de retour
-  en arrière ; migrations testées sur une base de test (branche Neon) ; production seulement après accord.
+  `migrate dev`, `migrate reset`, `DROP`, ni suppression de données ; migrations SQL manuelles dans
+  `prisma/migrations/` avec plan de retour en arrière.
+- **Deux bases** : la base de **test** (branche Neon) sert aux prévisualisations Vercel (périmètre Preview)
+  ET au développement local (`.env`). La base de **production** ne sert qu'au périmètre Production.
+  Toute migration est d'abord testée sur la base de test ; migration de la production **uniquement** après
+  accord explicite de Coralie et sauvegarde préalable.
+- Toute mise à jour en masse de données existantes (renommage d'étapes, conversion de projets…) :
+  sauvegarde avant, liste des éléments concernés montrée à Coralie avant d'appliquer.
 - Accord explicite obligatoire avant : suppression de données/fichiers/branches, modification des variables
-  d'environnement Vercel, changement de domaine, force push.
+  d'environnement Vercel, changement de domaine, force push. Avant de modifier une variable Vercel : montrer
+  la variable exacte et son périmètre ; après : montrer que la variable de Production n'a pas changé.
 - Ne jamais demander de mot de passe ni de clé : donner la commande ou la page, Coralie se connecte elle-même.
 - Aucun secret dans le dépôt. Les exports LinkedIn/Instagram du dossier sont ignorés par Git : ne pas les toucher.
 - Fin de phase : résumé simple, procédure de test précise, commit, mise à jour de ce fichier, attendre l'accord.
@@ -63,12 +70,41 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
 - 2026-11-27 — Audit Phase 0 réalisé : voir `docs/audit-phase-0.md` (constats classés par priorité).
 - Aucune migration n'est lancée au déploiement (`npm run build` = `prisma generate && next build`) :
   à conserver. Migrations via `npm run migrate` uniquement, manuellement.
+- 2026-11-27 — Réponses de Coralie à l'audit (recos validées) :
+  - **Réseau** : depuis ce Mac (réseau actuel), le port 5432 est bloqué pour tous les serveurs, même hors
+    bac à sable ; le port 443 passe. À retester via le partage de connexion du téléphone.
+  - **Next.js** : aucune version 14.x corrigée (14.2.35 = dernière). Cible : **15.5.29** (corrige toutes les
+    failles listées), sur une branche dédiée, testée avec la base de test. Next 15 impose React 19.
+  - **Phase 0 bis** : ordre validé (1 → 6 → 3 → 4+5 → 7 → 2 → 8-9), plus : dates « jour » en heure de Paris,
+    fériés français calculés pour toute année et appliqués aussi aux relances, vérification des montants déjà
+    enregistrés (risque de montants tronqués), tests automatiques des calculs (temps, arrondi, montants,
+    jours ouvrés, fériés). **Ne démarre qu'après confirmation par Coralie que la sauvegarde Neon existe.**
+  - **Phase 1** : écran témoin = fiche projet (+ Dashboard) ; icônes fines à la place des émojis de titres
+    (émojis de marque conservés) ; mobile : garder fonctionnel sans l'améliorer.
+  - **Phase 2** :
+    - Étapes : ajouter « Solde reçu », renommer « Attente avis » → « Demande d'avis » pour tous les types
+      (sauvegarde + liste des projets concernés validée avant).
+    - Mode de facturation = réglage par défaut du client (heure / forfait), pas un verrou.
+    - Anciennes fiches YLG converties en missions : masquées, jamais supprimées. Contrôle obligatoire :
+      CA, vue annuelle et « À facturer » identiques avant/après, sans double comptage.
+    - Mois marqué « facturé » → création d'une facture COCO (total, n° Abby) ; le modèle `Invoice` doit
+      pouvoir couvrir un mois entier (sans projet unique).
+    - Temps enregistré **à la minute** ; arrondi de facturation réglable dans Paramètres, par défaut au
+      **quart d'heure le plus proche**, appliqué à la durée **totale de la mission** (pas à chaque entrée).
+      Afficher durée réelle ET durée facturée, en heures et minutes.
+    - Une seule liste de catégories (missions + temps). Le temps d'une mission compte dans le mois de livraison.
+    - Clients à l'heure : **YLG** et **QVLM**, 65 €/h (référence interne 80 €/h par défaut).
+    - Nouveaux montants en **centimes**, durées en **minutes** (colonnes existantes inchangées).
+    - Avant la Phase 2, Coralie fournit sa nouvelle architecture d'offres (types de projet + grille tarifaire).
+  - **Phase 3** : rappel de fin de mois le dernier jour ouvré (Dashboard + email) ; emails envoyés depuis une
+    adresse du domaine de Coralie au lieu de `onboarding@resend.dev` (vérification du domaine dans Resend).
 
 ## Plan des phases
 | Phase | Contenu | État |
 |---|---|---|
-| 0 | Audit, CLAUDE.md | ✅ terminé — en attente de validation |
-| 0 bis | Corrections prioritaires (sauvegarde, sécurité, enregistrements, dates/fériés, doublons, archivage) | ⏳ à valider |
+| 0 | Audit, CLAUDE.md | ✅ validé le 27/11/2026 |
+| infra | Outil Vercel, base de test Neon branchée aux prévisualisations + local | ⏳ en cours |
+| 0 bis | Corrections prioritaires (sauvegarde, sécurité + Next 15, enregistrements, dates Paris/fériés, montants, doublons, archivage, centralisation, tests) | ⏸ attend la confirmation de sauvegarde Neon |
 | 1 | Système de design (fondations, composants, guide de style, application à toutes les pages) | à faire |
 | 2 | Suivi du temps, feuille de mois (clients à l'heure), changement de type de projet | à faire |
 | 3 | Dashboard « quoi faire aujourd'hui », vue annuelle heures/CA, rappel fin de mois, saisie rapide | à faire |
