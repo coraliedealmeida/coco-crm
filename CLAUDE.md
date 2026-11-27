@@ -73,6 +73,12 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
 - 2026-11-27 — Réponses de Coralie à l'audit (recos validées) :
   - **Réseau** : depuis ce Mac (réseau actuel), le port 5432 est bloqué pour tous les serveurs, même hors
     bac à sable ; le port 443 passe. À retester via le partage de connexion du téléphone.
+  - **Neon / Vercel** (constaté le 27/11/2026) : projet Neon `coco-crm-db` (Free, rétention d'historique 6 h),
+    géré via l'intégration Vercel (Storage). Branche `main` = production. Branche `main_old_2026-07-23…` =
+    ancienne copie, ne pas toucher. **Sauvegarde créée : branche `sauvegarde-2026-11-27-avant-phase-0bis`**
+    (copie de `main`, n'expire jamais). L'option « Create Database Branch For Deployment → Preview » est
+    **décochée** : les prévisualisations ET le `.env` local utilisent la base de production.
+    Vercel CLI : `npx vercel@67.0.0` (dossier relié au projet `coco`).
   - **Next.js** : aucune version 14.x corrigée (14.2.35 = dernière). Cible : **15.5.29** (corrige toutes les
     failles listées), sur une branche dédiée, testée avec la base de test. Next 15 impose React 19.
   - **Phase 0 bis** : ordre validé (1 → 6 → 3 → 4+5 → 7 → 2 → 8-9), plus : dates « jour » en heure de Paris,
