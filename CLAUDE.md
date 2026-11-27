@@ -150,7 +150,7 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
 |---|---|---|
 | 0 | Audit, CLAUDE.md | ✅ validé le 27/11/2026 |
 | infra | Outil Vercel ✅, sauvegarde Neon ✅, prévisualisations isolées ✅, base de dev locale (à faire) | ⏳ en cours |
-| 0 bis | ✅ **en production le 27/11/2026** (validée par Coralie) : sauvegarde complète + restauration, sécurité, enregistrements fiables, dates Paris + fériés, anti-doublons, corbeille + devis accepté annulable, étapes centralisées, montants vérifiés, tests. Next 15.5.29 + React 19 sur `next-15-securite` (0 faille connue côté site) | ✅ (Next 15 : ⏳ test de Coralie) |
+| 0 bis | ✅ **en production le 27/11/2026** (validée par Coralie) : sauvegarde complète + restauration, sécurité, enregistrements fiables, dates Paris + fériés, anti-doublons, corbeille + devis accepté annulable, étapes centralisées, montants vérifiés, tests. Next 15.5.29 + React 19 en production le 27/11/2026 (testé et validé par Coralie, 0 faille connue côté site ; retour arrière : tag `avant-next-15-2026-11-27`) | ✅ |
 | 1 | Système de design (fondations, composants, guide de style, application à toutes les pages) | à faire |
 | 2 | Suivi du temps, feuille de mois (clients à l'heure), changement de type de projet | à faire |
 | 3 | Dashboard « quoi faire aujourd'hui », vue annuelle heures/CA, rappel fin de mois, saisie rapide | à faire |
