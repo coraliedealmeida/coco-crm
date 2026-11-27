@@ -137,13 +137,16 @@ toujours expliquer en français simple, donner les commandes exactes, détailler
 - 2026-11-27 — Contrôle des montants (lecture seule) : 2 projets dont le total des factures ≠ devis,
   signalés à Coralie (détail non noté ici : données clients).
 - Ne jamais écrire de noms de clients, montants ou chiffre d'affaires dans les fichiers du dépôt.
+- 2026-11-27 — `lib/prisma.ts` importe `server-only` : un écran (« use client ») ne doit jamais importer
+  un fichier de `lib/` qui accède à la base (sinon page blanche après connexion). Les outils utiles à
+  l'écran vont dans des fichiers sans accès base (ex. `lib/prospectLinks.ts`). Le build échoue sinon.
 
 ## Plan des phases
 | Phase | Contenu | État |
 |---|---|---|
 | 0 | Audit, CLAUDE.md | ✅ validé le 27/11/2026 |
 | infra | Outil Vercel ✅, sauvegarde Neon ✅, prévisualisations isolées ✅, base de dev locale (à faire) | ⏳ en cours |
-| 0 bis | ✅ sur `phase-0bis-corrections` (à valider) : sauvegarde complète + restauration, sécurité, enregistrements fiables, dates Paris + fériés, anti-doublons, corbeille + devis accepté annulable, étapes centralisées, montants vérifiés, tests. Reste : Next 15 (branche dédiée), migration prod | ⏳ test de Coralie |
+| 0 bis | ✅ sur `phase-0bis-corrections`, **testée et validée par Coralie le 27/11/2026** : sauvegarde complète + restauration, sécurité, enregistrements fiables, dates Paris + fériés, anti-doublons, corbeille + devis accepté annulable, étapes centralisées, montants vérifiés, tests. Reste : migration prod + fusion (accord de Coralie), Next 15 (branche dédiée) | ⏳ mise en production |
 | 1 | Système de design (fondations, composants, guide de style, application à toutes les pages) | à faire |
 | 2 | Suivi du temps, feuille de mois (clients à l'heure), changement de type de projet | à faire |
 | 3 | Dashboard « quoi faire aujourd'hui », vue annuelle heures/CA, rappel fin de mois, saisie rapide | à faire |
