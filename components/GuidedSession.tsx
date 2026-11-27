@@ -6,7 +6,7 @@ import { messageTemplates } from "@/lib/messages";
 import { platformBadge, brandProfileLink } from "@/lib/pipeline";
 import ProfileLink from "@/components/ProfileLink";
 import type { PipelineStatus } from "@prisma/client";
-import { bestProfileLink, type QualificationProspect } from "@/lib/prospectImport";
+import { bestProfileLink, type QualificationProspect } from "@/lib/prospectLinks";
 import { apiFetch } from "@/lib/apiClient";
 
 export type EngagementContact = {

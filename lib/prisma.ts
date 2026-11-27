@@ -1,3 +1,7 @@
+// Garde-fou : la construction du site échoue si un écran (code navigateur) importe ce fichier,
+// directement ou via un autre fichier de lib/. Les outils utilisables à l'écran vont dans des
+// fichiers sans accès à la base (ex. lib/prospectLinks.ts).
+import "server-only";
 import { PrismaClient } from "@prisma/client";
 
 /**

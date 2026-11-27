@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import StatsGrid from "@/components/StatsGrid";
 import ProfileLink from "@/components/ProfileLink";
 import { platformBadge } from "@/lib/pipeline";
-import { bestProfileLink } from "@/lib/prospectImport";
+import { bestProfileLink } from "@/lib/prospectLinks";
 import { apiFetch } from "@/lib/apiClient";
 import { formatDateFr } from "@/lib/format";
 
