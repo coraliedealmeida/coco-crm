@@ -19,7 +19,8 @@ import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
-export default async function BrandDetailPage({ params }: { params: { id: string } }) {
+export default async function BrandDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const [brand, settings, client] = await Promise.all([
     prisma.brand.findUnique({
       where: { id: params.id },

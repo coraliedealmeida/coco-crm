@@ -8,7 +8,8 @@ import { requireSession } from "@/lib/apiAuth";
 import { cancelBrandAcceptance, leavesAccepted, trashBrand } from "@/lib/trash";
 import { getSettings } from "@/lib/settings";
 
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const denied = await requireSession();
   if (denied) return denied;
 
@@ -21,7 +22,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   return NextResponse.json(brand);
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const denied = await requireSession();
   if (denied) return denied;
 
@@ -51,7 +53,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   return NextResponse.json({ ok: true });
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const denied = await requireSession();
   if (denied) return denied;
 

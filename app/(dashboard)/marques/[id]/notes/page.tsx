@@ -5,7 +5,8 @@ import BackButton from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
 
-export default async function DiscoveryNotesPage({ params }: { params: { id: string } }) {
+export default async function DiscoveryNotesPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const [brand, services, bundles] = await Promise.all([
     prisma.brand.findUnique({ where: { id: params.id } }),
     prisma.service.findMany({ where: { active: true }, orderBy: { order: "asc" } }),

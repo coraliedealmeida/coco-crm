@@ -7,7 +7,8 @@ import { requireSession } from "@/lib/apiAuth";
 import { acceptQuoteRequest, cancelQuoteAcceptance, leavesAccepted, trashQuoteRequest } from "@/lib/trash";
 import { getSettings } from "@/lib/settings";
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const denied = await requireSession();
   if (denied) return denied;
 
@@ -78,7 +79,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   return NextResponse.json(quoteRequest);
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_request: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise;
   const denied = await requireSession();
   if (denied) return denied;
 
